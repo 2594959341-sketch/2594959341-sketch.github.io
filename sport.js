@@ -1,0 +1,37 @@
+// 运动改善项目库 —— 跟练视频给出可靠UP主/关键词的B站搜索入口，避免失效链接
+window.MUMU_SPORT = {
+  projects: [
+    { id: "face", name: "大小脸改善", icon: "🙂", desc: "多因单侧咀嚼/托腮/侧睡导致。先改习惯，再做面部放松。",
+      plan: "每天5-8分钟：咬肌按摩+双侧交替咀嚼练习；睡前热敷紧的一侧咬肌2分钟。",
+      videos: [ { label: "B站搜：大小脸 矫正 咬肌放松", url: "https://search.bilibili.com/all?keyword=%E5%A4%A7%E5%B0%8F%E8%84%B8%20%E7%9F%AB%E6%AD%A3%20%E5%92%AC%E8%82%8C%E6%94%BE%E6%9D%BE" } ],
+      caution: "若怀疑颌骨不对称明显，建议先看口腔科/正畸科，训练只能改善肌肉性不对称。" },
+    { id: "neck", name: "天鹅颈", icon: "🦢", desc: "改善头前伸、颈纹，塑造颈部线条。",
+      plan: "每天10分钟：下巴后收（收下颌）15次×3组 + 颈前侧拉伸 + 斜方肌上束放松。",
+      videos: [ { label: "B站搜：美丽芭蕾 天鹅臂 天鹅颈", url: "https://search.bilibili.com/all?keyword=%E7%BE%8E%E4%B8%BD%E8%8A%AD%E8%95%BE%20%E5%A4%A9%E9%B9%85%E9%A2%88" }, { label: "B站搜：头前伸 矫正 跟练", url: "https://search.bilibili.com/all?keyword=%E5%A4%B4%E5%89%8D%E4%BC%B8%20%E7%9F%AB%E6%AD%A3%20%E8%B7%9F%E7%BB%83" } ],
+      caution: "练习时不要耸肩，感觉颈后侧发力而不是憋气。" },
+    { id: "hump", name: "富贵包 & 斜方肌", icon: "🐢", desc: "低头族常见，颈胸交界处凸起+肩颈厚。",
+      plan: "每天12分钟：靠墙站5分钟 + 泡沫轴放松上背 + YTWL字母操各10次。",
+      videos: [ { label: "B站搜：富贵包 消除 跟练", url: "https://search.bilibili.com/all?keyword=%E5%AF%8C%E8%B4%B5%E5%8C%85%20%E6%B6%88%E9%99%A4%20%E8%B7%9F%E7%BB%83" }, { label: "B站搜：斜方肌 放松 直角肩", url: "https://search.bilibili.com/all?keyword=%E6%96%9C%E6%96%B9%E8%82%8C%20%E6%94%BE%E6%9D%BE%20%E8%B7%9F%E7%BB%83" } ],
+      caution: "富贵包改善核心是减少低头时间——手机举到与视线平齐。" },
+    { id: "spine", name: "脊柱侧弯改善", icon: "🌀", desc: "轻度姿势性侧弯可通过训练改善体态。",
+      plan: "每天10分钟：猫牛式×10 + 侧平板（弱侧多做）+ 鸟狗式×10/侧。",
+      videos: [ { label: "B站搜：脊柱侧弯 施罗斯 跟练", url: "https://search.bilibili.com/all?keyword=%E8%84%8A%E6%9F%B1%E4%BE%A7%E5%BC%AF%20%E6%96%BD%E7%BD%97%E6%96%AF%20%E8%B7%9F%E7%BB%83" } ],
+      caution: "重要：先拍X光确认度数！>20°务必遵医嘱，训练前建议咨询康复科。" },
+    { id: "pelvis", name: "骨盆前倾", icon: "🍑", desc: "小腹突出、腰酸的常见原因（假胯宽也常相关）。",
+      plan: "每天10分钟：死虫式×15 + 臀桥×15×3组 + 髂腰肌拉伸（弓步）30秒/侧。",
+      videos: [ { label: "B站搜：骨盆前倾 矫正 跟练", url: "https://search.bilibili.com/all?keyword=%E9%AA%A8%E7%9B%86%E5%89%8D%E5%80%BE%20%E7%9F%AB%E6%AD%A3%20%E8%B7%9F%E7%BB%83" } ],
+      caution: "做臀桥时用臀发力不是腰发力，腰疼说明姿势错了。" },
+    { id: "knee", name: "膝超伸", icon: "🦵", desc: "站立时膝盖向后顶，腿看起来弯、易伤膝。",
+      plan: "每天8分钟：微屈膝站姿觉察练习 + 腘绳肌激活（俯身腿弯举）+ 小腿拉伸。",
+      videos: [ { label: "B站搜：膝超伸 矫正 跟练", url: "https://search.bilibili.com/all?keyword=%E8%86%9D%E8%B6%85%E4%BC%B8%20%E7%9F%AB%E6%AD%A3%20%E8%B7%9F%E7%BB%83" } ],
+      caution: "日常站立时刻意保持膝盖微弯5°，是最重要的一步。" },
+    { id: "leg", name: "直腿计划（XO型腿）", icon: "🦿", desc: "多为肌肉走向和习惯问题，可通过训练视觉改善。",
+      plan: "每天12分钟：臀中肌激活（蚌式开合×20/侧）+ 大腿内侧夹枕 + 站姿矫正。",
+      videos: [ { label: "B站搜：XO型腿 矫正 跟练", url: "https://search.bilibili.com/all?keyword=XO%E5%9E%8B%E8%85%BF%20%E7%9F%AB%E6%AD%A3%20%E8%B7%9F%E7%BB%83" } ],
+      caution: "骨性问题训练无法改变，坚持8周拍照对比看肌肉线条变化。" },
+    { id: "walk", name: "慢走/慢跑入门", icon: "🚶", desc: "想加有氧时随时开始，从每天20分钟快走起步（居家原地踏步也行）。",
+      plan: "第1-2周：饭后快走20分钟；第3-4周：走跑交替（走3分跑1分×5轮）；之后慢跑20分钟。",
+      videos: [ { label: "B站搜：零基础 慢跑 入门", url: "https://search.bilibili.com/all?keyword=%E9%9B%B6%E5%9F%BA%E7%A1%80%20%E6%85%A2%E8%B7%91%E5%85%A5%E9%97%A8" } ],
+      caution: "居家没器械也行：室内原地踏步+靠墙深蹲都是好的开始。" }
+  ]
+};
