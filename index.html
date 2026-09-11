@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>枝枝喵</title>
+<meta name="theme-color" content="#111111">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="manifest" href="manifest.json?v=mumu-v290">
+<link rel="icon" type="image/svg+xml" href="icon.svg?v=mumu-v290">
+<link rel="icon" type="image/png" sizes="192x192" href="assets/kitty/png/icon-192.png?v=mumu-v290">
+<link rel="icon" type="image/png" sizes="512x512" href="assets/kitty/png/icon-512.png?v=mumu-v290">
+<link rel="apple-touch-icon" sizes="180x180" href="assets/kitty/png/apple-touch-180.png?v=mumu-v290">
+<link rel="stylesheet" href="css/style.css?v=mumu-v290">
+<link rel="stylesheet" href="css/travel.css?v=mumu-v290">
+</head>
+<body>
+<div class="splash" id="splash">
+  <div class="splash-disc"><img class="splash-img" src="assets/kitty/png/splash-kitty.png?v=mumu-v290" alt="枝枝喵"/></div>
+  <div class="splash-text">枝枝喵上线</div>
+  <div class="splash-time" id="splashTime"></div>
+</div>
+<div class="layout">
+  <!-- 侧边栏遮罩 -->
+  <div class="sidebar-overlay" id="sidebarOverlay"></div>
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-avatar"><img src="assets/kitty/png/logo-64.png?v=mumu-v290" alt="枝枝喵" width="36" height="36"></div>
+      <div><b>枝枝喵</b><small>木木的专属小助理</small></div>
+    </div>
+    <nav id="nav"></nav>
+    <div class="sidebar-footer">
+      <button class="nav-item" data-key="settings"><span class="ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 11-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 110-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 114 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 110 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg></span><span class="txt">设置</span></button>
+    </div>
+  </aside>
+  <!-- 顶部栏（汉堡+每日金句） -->
+  <div class="topbar" id="topbar">
+    <button class="hamburger" id="hamburger"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg></button>
+    <div class="topbar-quote" id="topbarQuote"></div>
+  </div>
+  <main class="main" id="main"></main>
+</div>
+
+<!-- 数据（枝枝每日自动更新） -->
+<script src="js/data/incentives.js?v=mumu-v290"></script>
+<script src="js/data/shizheng.js?v=mumu-v290"></script>
+<script src="js/data/kaogong.js?v=mumu-v290"></script>
+<script src="js/data/kepu.js?v=mumu-v290"></script>
+<script src="js/data/growth.js?v=mumu-v290"></script>
+<script src="js/data/sport.js?v=mumu-v290"></script>
+<script src="js/data/watch_games.js?v=mumu-v290"></script>
+<script src="js/data/chinamap.js?v=mumu-v290"></script>
+<!-- 核心与模块 -->
+<script>window.KITTY_RES=window.KITTY_RES||function(n){return 'assets/kitty/png/'+n+'?v=mumu-v290';};window.MUMU_THEME=window.MUMU_THEME||'cat';</script>
+<script src="js/theme.js?v=mumu-v290"></script>
+<script src="js/core.js?v=mumu-v290"></script>
+<script src="js/daily.js?v=mumu-v290"></script>
+<script src="js/work.js?v=mumu-v290"></script>
+<script src="js/kaogong.js?v=mumu-v290"></script>
+<script src="js/growth.js?v=mumu-v290"></script>
+<script src="js/sport.js?v=mumu-v290"></script>
+  <script src="js/meals.js?v=mumu-v290"></script>
+  <script src="js/streak.js?v=mumu-v290"></script>
+  <script src="js/freq.js?v=mumu-v290"></script>
+  <script src="js/review.js?v=mumu-v290"></script>
+  <script src="js/travel.js?v=mumu-v290"></script>
+  <script src="js/finance.js?v=mumu-v290"></script>
+  <script src="js/fun.js?v=mumu-v290"></script>
+  <script src="js/app.js?v=mumu-v290"></script>
+<script>
+  if ('serviceWorker' in navigator && location.protocol !== 'file:') {
+    // 注册时带版本号：每次发布 SW 脚本 URL 都不同，强制浏览器拉新（解决强刷刷不出来）
+    navigator.serviceWorker.register('sw.js?v=mumu-v290').catch(function () {});
+    // SW 更新后自动刷新一次，确保用户看到最新代码（避免一直被旧缓存困住）
+    // 但等开场「破土枝丫」动画播完再刷新，避免打断入场动画
+    var _swReloading = false, _swPending = false;
+    var _doReload = function () {
+      _swReloading = true;
+      try { sessionStorage.setItem('__swReload', '1'); } catch (e) {}
+      location.reload();
+    };
+    navigator.serviceWorker.addEventListener('controllerchange', function () {
+      if (_swReloading) return;
+      if (document.getElementById('splash')) { _swPending = true; return; }
+      _doReload();
+    });
+    window.addEventListener('splashDone', function () {
+      if (_swPending && !_swReloading) _doReload();
+    });
+  }
+  window.addEventListener('load', function () {
+    var sp = document.getElementById('splash');
+    if (!sp) return;
+    // 显示当前时间（HH:mm）
+    var elTime = document.getElementById('splashTime');
+    if (elTime) {
+      var d = new Date();
+      var hh = d.getHours(), mm = d.getMinutes();
+      elTime.textContent = (hh < 10 ? '0' + hh : hh) + ':' + (mm < 10 ? '0' + mm : mm);
+    }
+    // 如果这次是 SW 更新后自动刷新回来的，跳过开场动画（避免连播两次）
+    var skip = false;
+    try { skip = sessionStorage.getItem('__swReload') === '1'; sessionStorage.removeItem('__swReload'); } catch (e) {}
+    if (skip) { sp.remove(); window.dispatchEvent(new Event('splashDone')); return; }
+    setTimeout(function () { sp.classList.add('hide'); setTimeout(function () { sp.remove(); window.dispatchEvent(new Event('splashDone')); }, 500); }, 1500);
+  });
+</script>
+</body>
+</html>
