@@ -1,0 +1,514 @@
+/* ============================================================
+ * 出行 / 旅行模块样式（mumu-workbench · v114）
+ * 只服务 js/travel.js，全部限定在 .tv-scope / .tv-modal 之下
+ * 配色仅用 #111 #333 #666 #999 #e5e5e5 #f0f0f0 #f7f7f7 #fff
+ * 唯一例外：超支差额 #c0392b（克制使用）
+ * ============================================================ */
+
+/* ---------- 通用：输入控件一律不溢出卡片 ---------- */
+.tv-scope input,
+.tv-scope textarea,
+.tv-scope select,
+.tv-modal input,
+.tv-modal textarea,
+.tv-modal select {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  min-width: 0;
+}
+.tv-scope input[type=checkbox],
+.tv-modal input[type=checkbox] { width: auto; }
+
+.tv-scope input[type=date],
+.tv-scope input[type=time],
+.tv-modal input[type=date],
+.tv-modal input[type=time] {
+  -webkit-appearance: none;
+  appearance: none;
+  min-height: 40px;
+  line-height: 1.2;
+  font-size: 13.5px;
+  padding: 8px 10px;
+  background: #fff;
+  color: #111;
+}
+.tv-scope input[type=date]::-webkit-date-and-time-value,
+.tv-scope input[type=time]::-webkit-date-and-time-value,
+.tv-modal input[type=date]::-webkit-date-and-time-value,
+.tv-modal input[type=time]::-webkit-date-and-time-value {
+  text-align: left;
+  margin: 0;
+}
+.tv-scope input[type=date]::-webkit-calendar-picker-indicator,
+.tv-modal input[type=date]::-webkit-calendar-picker-indicator {
+  margin: 0 0 0 4px;
+  padding: 0;
+  opacity: .5;
+}
+.tv-scope input[type=number],
+.tv-modal input[type=number] { -moz-appearance: textfield; }
+.tv-scope input[type=number]::-webkit-outer-spin-button,
+.tv-scope input[type=number]::-webkit-inner-spin-button,
+.tv-modal input[type=number]::-webkit-outer-spin-button,
+.tv-modal input[type=number]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+.tv-scope textarea, .tv-modal textarea { line-height: 1.65; }
+
+/* ---------- 页头：标题左，动作（含返回）一律右上角 ---------- */
+.tv-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.tv-head > span:first-child { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tv-head-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  margin-left: auto;
+  flex: none;
+}
+.tv-scope .tv-datemini {
+  width: auto;
+  max-width: 148px;
+  min-height: 34px;
+  padding: 5px 8px;
+  font-size: 12.5px;
+  border: 1px solid #e5e5e5;
+  border-radius: 8px;
+  color: #333;
+}
+
+/* ---------- 卡片小标题 ---------- */
+.tv-cardhead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+  min-width: 0;
+}
+.tv-cardhead b { font-size: 14.5px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tv-scope .card h3 { font-size: 14.5px; margin-bottom: 10px; }
+
+/* ---------- 删除按钮外观（显隐由 style.css 的长按机制控制） ---------- */
+.tv-scope .del, .tv-modal .del {
+  width: 24px; height: 24px;
+  flex: none;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: #f0f0f0;
+  color: #666;
+  font-size: 12px;
+  line-height: 1;
+}
+.tv-mini { padding: 4px; color: #666; flex: none; }
+
+/* ---------- 图片：统一装载容器 ---------- */
+.tv-img { position: relative; display: block; overflow: hidden; background: #f0f0f0; }
+.tv-thumb-img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
+
+.tv-thumbs { display: flex; flex-wrap: wrap; gap: 6px; }
+.tv-thumb {
+  position: relative;
+  width: 66px; height: 66px;
+  flex: none;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #f0f0f0;
+}
+.tv-scope .tv-thumb .del, .tv-modal .tv-thumb .del {
+  position: absolute;
+  top: 3px; right: 3px;
+  width: 18px; height: 18px;
+  background: rgba(0, 0, 0, .55);
+  color: #fff;
+  font-size: 11px;
+}
+
+/* ---------- A2 随手拍时间轴 ---------- */
+.tv-tl { display: flex; flex-direction: column; }
+.tv-tlrow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 4px;
+  border-bottom: 1px dashed #e5e5e5;
+  border-radius: 8px;
+  cursor: pointer;
+  min-width: 0;
+}
+.tv-tlrow:last-child { border-bottom: none; }
+.tv-tlpic { width: 52px; height: 52px; flex: none; border-radius: 8px; }
+.tv-tlpic.none { background: #f7f7f7; border: 1px dashed #e5e5e5; }
+.tv-tlnum {
+  position: absolute;
+  right: 2px; bottom: 2px;
+  background: rgba(0, 0, 0, .55);
+  color: #fff;
+  font-size: 10px;
+  font-style: normal;
+  line-height: 14px;
+  padding: 0 4px;
+  border-radius: 7px;
+}
+.tv-tlinfo { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.tv-tlinfo b { font-size: 13.5px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tv-sub { font-size: 12px; color: #666; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tv-tlmeta { font-size: 11.5px; color: #999; }
+
+/* ---------- A2 展开编辑表单 ---------- */
+.tv-entry {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  margin: 8px 0;
+  border: 1px solid #e5e5e5;
+  border-radius: 12px;
+}
+.tv-entry .tv-cardhead { margin-bottom: 0; }
+.tv-scope .tv-timein { width: auto; max-width: 132px; }
+.tv-mbtns { display: flex; justify-content: flex-end; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+.tv-mbtns.tv-left { justify-content: flex-start; }
+.tv-entry .tv-mbtns { margin-top: 2px; }
+
+/* ---------- 照片日历（首图铺满格子） ---------- */
+.tv-scope .cal-cell.has-photo { padding: 0 !important; border-color: transparent !important; overflow: hidden; }
+.tv-scope .cal-cell.has-photo .d,
+.tv-scope .cal-cell.has-photo .dots { display: none !important; }
+.tv-scope .cal-photo {
+  position: absolute;
+  inset: 0;
+  width: 100%; height: 100%;
+  margin: 0;
+  border-radius: 9px;
+  overflow: hidden;
+  background: #f7f7f7;
+}
+
+/* ---------- B 出行记录：照片承载信息 ---------- */
+.tv-mon { font-size: 13px; font-weight: 700; color: #111; margin: 18px 0 8px; padding-left: 2px; }
+.tv-mon:first-child { margin-top: 4px; }
+.tv-recs { display: grid; grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); gap: 6px; }
+.tv-rec {
+  position: relative;
+  aspect-ratio: 1/1;
+  border-radius: 10px;
+  overflow: hidden;
+  background: #f7f7f7;
+  cursor: pointer;
+}
+.tv-rec.nopic { background: #fff; border: 1px solid #e5e5e5; }
+.tv-recimg { position: absolute; inset: 0; width: 100%; height: 100%; }
+.tv-reccount {
+  position: absolute;
+  top: 5px; right: 6px;
+  background: rgba(0, 0, 0, .55);
+  color: #fff;
+  font-size: 10px;
+  line-height: 16px;
+  padding: 0 5px;
+  border-radius: 8px;
+}
+.tv-recmeta {
+  position: absolute;
+  left: 0; right: 0; bottom: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: 14px 7px 6px;
+  background: linear-gradient(rgba(0, 0, 0, 0), rgba(0, 0, 0, .62));
+  color: #fff;
+}
+.tv-recmeta b { font-size: 12px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tv-recmeta span { font-size: 10.5px; color: #e5e5e5; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tv-rec.nopic .tv-recmeta {
+  position: absolute;
+  inset: 0;
+  justify-content: center;
+  padding: 10px;
+  background: none;
+  color: #111;
+}
+.tv-rec.nopic .tv-recmeta span { color: #666; }
+
+/* ---------- B5 年份选择 ---------- */
+.tv-years { display: flex; flex-wrap: wrap; gap: 8px; }
+.tv-year {
+  padding: 7px 15px;
+  border: 1px solid #e5e5e5;
+  border-radius: 999px;
+  background: #fff;
+  color: #333;
+  font-size: 13px;
+}
+.tv-year.on { background: #111; border-color: #111; color: #fff; }
+
+/* ---------- 弹层通用 ---------- */
+.tv-modal { width: 100%; }
+.tv-modal h3 { font-size: 16px; margin-bottom: 12px; }
+.tv-frow { display: flex; flex-direction: column; gap: 4px; margin-bottom: 10px; min-width: 0; }
+.tv-frow > label { font-size: 12px; color: #666; }
+.tv-grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; min-width: 0; }
+.tv-grid2 > * { min-width: 0; }
+
+.tv-modal .photo-grid .pg { position: relative; }
+.tv-pgacts {
+  position: absolute;
+  left: 0; right: 0; bottom: 0;
+  display: flex;
+  justify-content: flex-end;
+  gap: 3px;
+  padding: 3px;
+  background: linear-gradient(rgba(0, 0, 0, 0), rgba(0, 0, 0, .45));
+}
+.tv-pgbtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px; height: 22px;
+  border-radius: 6px;
+  background: rgba(0, 0, 0, .45);
+  color: #fff;
+  line-height: 0;
+}
+.tv-pgbtn.on { background: #fff; color: #111; }
+
+.tv-bigwrap { display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; }
+.tv-big { position: relative; width: 100%; min-height: 110px; border-radius: 10px; overflow: hidden; background: #f0f0f0; }
+.tv-big .tv-thumb-img {
+  position: static;
+  width: 100%;
+  height: auto;
+  max-height: 56vh;
+  object-fit: contain;
+}
+.tv-bigdel { position: absolute; top: 6px; right: 6px; }
+
+/* ---------- C 旅行主页：计划中的旅行 ---------- */
+.tv-trip { border: 1px solid #e5e5e5; border-radius: 12px; padding: 12px; margin-bottom: 10px; }
+.tv-triphead { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.tv-triphead b { flex: 1; min-width: 0; font-size: 14.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tv-trip .tv-sub { margin-top: 3px; }
+.tv-tripfoot { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 10px; }
+.tv-tripfoot-r { display: flex; align-items: center; gap: 8px; }
+
+/* ---------- C6 中国地图（离线内嵌 SVG） ---------- */
+.tv-map { display: block; width: 100%; max-width: 100%; height: auto; }
+.tv-prov {
+  fill: #f7f7f7;
+  stroke: #e5e5e5;
+  stroke-width: 1;
+  cursor: pointer;
+  transition: stroke .12s;
+}
+.tv-prov:hover, .tv-prov.has { stroke: #111; }
+/* 南海诸岛：开放路径，只描边不填充，与其余区划同一套灰阶 */
+.tv-provline { fill: none; stroke: #999; stroke-width: 1.6; }
+.tv-maplabels { pointer-events: none; }
+.tv-provname {
+  fill: #999;
+  font-size: 15px;
+  text-anchor: middle;
+  font-family: "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* ---------- C7 游记库 ---------- */
+.tv-jlibrow { display: flex; justify-content: flex-end; margin-top: 10px; }
+.tv-jlib {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 12px;
+  border: 1px solid #e5e5e5;
+  border-radius: 999px;
+  background: #fff;
+  color: #666;
+  font-size: 12.5px;
+}
+.tv-jlib:active { background: #f7f7f7; }
+.tv-jlist { max-height: 56vh; overflow-y: auto; margin-top: 12px; }
+.tv-jgroup { margin-bottom: 14px; }
+.tv-jplace {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid #e5e5e5;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: #111;
+}
+.tv-jitem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 9px 2px;
+  border-bottom: 1px dashed #e5e5e5;
+  cursor: pointer;
+  min-width: 0;
+}
+.tv-jitem:last-child { border-bottom: none; }
+.tv-jitem b { flex: 1; min-width: 0; font-size: 13.5px; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tv-jtext { min-height: 200px; font-size: 13px; line-height: 1.75; }
+.tv-jpreview { white-space: pre-wrap; word-break: break-word; font-size: 13px; line-height: 1.7; background: var(--light); border-radius: 10px; padding: 10px 12px; color: var(--ink); }
+.tv-jphotos { margin-top: 10px; background: var(--light); border-radius: 10px; padding: 10px 12px; }
+.tv-jphead { font-size: 13px; font-weight: 600; color: var(--ink); margin-bottom: 8px; }
+.tv-jphotos .tv-thumbs .tv-thumb { width: 58px; height: 58px; border-radius: 8px; }
+
+/* ---------- D 旅行详情 ---------- */
+.tv-scope .tv-titlein { font-size: 16px; font-weight: 700; margin-bottom: 10px; }
+
+/* D3 行程规划 */
+.tv-day { border-bottom: 1px solid #e5e5e5; }
+.tv-day:last-child { border-bottom: none; }
+.tv-dayhead { display: flex; align-items: center; gap: 8px; padding: 10px 2px; cursor: pointer; min-width: 0; }
+.tv-dayhead b { flex: none; font-size: 13.5px; }
+.tv-dayhead .tv-sub { flex: 1; }
+.tv-dayhead .ic-svg { flex: none; color: #999; }
+.tv-daybody { display: flex; flex-direction: column; gap: 8px; padding: 2px 2px 12px; }
+.tv-daybody .tv-mbtns { margin-top: 2px; }
+
+/* D4 行李清单 */
+.tv-addrow { display: flex; align-items: center; gap: 8px; margin: 10px 0 2px; min-width: 0; }
+.tv-scope .tv-addrow .inp { flex: 1; min-width: 0; }
+.tv-addrow .btn { flex: none; }
+.tv-scope .tv-typesel { width: auto; flex: none; max-width: 86px; padding: 8px 6px; }
+.tv-packrow { min-width: 0; }
+.tv-scope .tv-cb { width: 16px; height: 16px; flex: none; accent-color: #111; }
+.tv-packname { flex: 1; min-width: 0; font-size: 13.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tv-packname.done { color: #999; text-decoration: line-through; }
+.tv-packrow .tv-thumbs { flex: none; }
+.tv-packrow .tv-thumb { width: 34px; height: 34px; border-radius: 6px; }
+
+/* D6 途中记录（每条自带评分） */
+.tv-noterow { align-items: flex-start; }
+.tv-notemain { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.tv-noteline { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.tv-noteline b { flex: 1; min-width: 0; font-size: 13.5px; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tv-noteline .tv-sub { flex: none; font-size: 11.5px; color: #999; }
+.tv-noterate { display: flex; }
+.tv-noterow .tv-thumb { width: 46px; height: 46px; }
+
+/* D5 预设 vs 实际 */
+.tv-bgrow { display: grid; grid-template-columns: 50px 1fr 1fr 54px; gap: 6px; align-items: center; margin-bottom: 6px; min-width: 0; }
+.tv-bgrow > * { min-width: 0; }
+.tv-bghead { font-size: 11.5px; color: #999; text-align: center; margin-bottom: 8px; }
+.tv-bglb { font-size: 12.5px; color: #666; text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tv-scope .tv-bgin { padding: 7px 8px; font-size: 13px; text-align: right; }
+.tv-bgdf { font-size: 12px; color: #666; text-align: right; }
+.tv-bgdf.over { color: #c0392b; }
+.tv-bgsum { margin-top: 4px; padding-top: 8px; border-top: 1px solid #e5e5e5; font-weight: 600; }
+.tv-bgsum > span { font-size: 13px; text-align: right; }
+.tv-bgsum .tv-bglb { text-align: left; color: #111; }
+
+/* D7 问答向导 */
+.tv-wzfoot { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 14px; }
+.tv-wzfoot .tv-mbtns { margin-top: 0; }
+
+/* ---------- 半星三态评分 ---------- */
+.tv-stars { display: inline-flex; gap: 2px; line-height: 1; }
+.tv-star {
+  position: relative;
+  display: inline-block;
+  font-size: 16px;
+  line-height: 1;
+  color: #e5e5e5;
+  cursor: pointer;
+  -webkit-user-select: none;
+  user-select: none;
+}
+.tv-star i {
+  position: absolute;
+  left: 0; top: 0;
+  display: inline-block;
+  overflow: hidden;
+  white-space: nowrap;
+  font-style: normal;
+  color: #111;
+}
+
+/* ---------- 窄屏 ---------- */
+@media (max-width: 360px) {
+  .tv-grid2 { grid-template-columns: 1fr; }
+  .tv-bgrow { grid-template-columns: 44px 1fr 1fr 46px; gap: 4px; }
+  .tv-recs { grid-template-columns: repeat(auto-fill, minmax(92px, 1fr)); }
+  .tv-thumb { width: 58px; height: 58px; }
+}
+
+/* ---------- 省份照片：单击选中（再单取消）+ 长按看大图 ---------- */
+.tv-flex-photos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 10px 0;
+  touch-action: pan-y;
+  user-select: none;
+}
+.tv-flex-photos .pg {
+  flex: 0 0 76px;
+  width: 76px;
+  height: 76px;
+  border-radius: 8px;
+  position: relative;
+  background: #f0f0f0;
+  border: 2px solid transparent;  /* 占位，避免选中时布局抖动 */
+  box-sizing: border-box;
+  cursor: pointer;
+  transition: border-color .12s, transform .12s;
+}
+.tv-flex-photos .pg:hover {
+  border-color: #ccc;
+}
+.tv-flex-photos .pg.pg-selected {
+  border-color: #111;
+}
+.tv-flex-photos .pg.pg-cover .tv-pgcover {
+  background: #111;
+  color: #fff;
+}
+.tv-flex-photos .pg .tv-pgcover {
+  position: absolute;
+  left: 4px; bottom: 4px;
+  font-size: 10.5px;
+  background: rgba(255, 255, 255, .92);
+  color: #111;
+  padding: 1px 6px;
+  border-radius: 4px;
+  pointer-events: none;
+  line-height: 1.5;
+}
+
+/* 大图查看 */
+.pv-view {
+  display: block;
+  max-width: 92vw;
+  max-height: 70vh;
+  margin: 8px auto 0;
+  border-radius: 6px;
+  background: #111;
+  object-fit: contain;
+  cursor: zoom-out;  /* 提示点图关闭 */
+}
+
+/* 底部按钮：禁用态 + 危险态（删除时） */
+.btn:disabled,
+.btn[disabled] {
+  opacity: .35;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+.btn.ghost.danger {
+  color: #c0392b;
+  border-color: rgba(192, 57, 43, .35);
+}
+.btn.ghost.danger:hover {
+  background: rgba(192, 57, 43, .08);
+  border-color: #c0392b;
+}
