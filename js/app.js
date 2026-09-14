@@ -554,7 +554,7 @@ const App = {
         const f = inp.files[0]; if (!f) return;
         const r = new FileReader();
         r.onload = async () => {
-          try { const obj = JSON.parse(r.result); await importData(obj); toast('已合并导入（保留现有数据并补齐备份内容）：' + Object.keys(obj.localStorage || {}).length + ' 项数据，' + (obj.photos ? obj.photos.length : 0) + ' 张照片，刷新中…'); setTimeout(() => location.reload(), 600); }
+          try { const obj = JSON.parse(r.result); const st = await importData(obj); let msg = '已导入 ' + st.keys + ' 项，新增照片 ' + st.photosAdded + ' 张'; if (st.skipped > 0) msg += '，' + st.skipped + ' 项因空间不足跳过'; toast(msg); setTimeout(() => location.reload(), 1200); }
           catch (e) { toast('导入失败：' + e.message); }
         }; r.readAsText(f);
       }; inp.click();
@@ -564,10 +564,10 @@ const App = {
       btnRepair.disabled = true; btnRepair.textContent = '修复中…';
       try {
         const n1 = (window.Daily && Daily.reconcileAllOrphans) ? Daily.reconcileAllOrphans() : 0;
-        try { if (window.repairAll) repairAll(); } catch (e) {}
+        const removed = (window.repairAll ? repairAll() : 0);
         try { if (window.menstrualReconcile) menstrualReconcile(); } catch (e) {}
-        toast('自检完成：清理孤儿任务 ' + n1 + ' 条，并修复重复数据 / 月经假对账，刷新中…');
-        setTimeout(() => location.reload(), 600);
+        toast('自检完成：清理 ' + removed + ' 条重复' + (n1 ? '，孤儿任务 ' + n1 + ' 条' : '') + '，刷新中…');
+        setTimeout(() => location.reload(), 1200);
       } catch (e) { toast('修复失败：' + e.message); }
       btnRepair.disabled = false; btnRepair.textContent = '修复';
     };

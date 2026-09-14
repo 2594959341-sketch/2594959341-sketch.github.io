@@ -350,14 +350,23 @@ async function exportData() {
     photos: photos
   };
 }
-// 稳定身份签名：优先 id，否则用关键字段组合（解决同源两份 id 不同导致翻倍）
-function _sig(o) {
-  if (o && o.id != null) return 'id:' + o.id;
-  if (!o || typeof o !== 'object') return '__' + JSON.stringify(o);
-  const parts = [];
-  ['title', 'name', 'text', 'date', 'ds', 'type', 'cat', 'link', 'mode', 'createdAt', 'created'].forEach(function (k) { if (o[k] != null) parts.push(k + '=' + o[k]); });
-  return parts.length ? parts.join('|') : 'rand:' + Math.random();
+// 稳定内容签名：键排序后稳定序列化，排除易变字段（id/时间戳等），再做 djb2 短哈希。
+// 绝不依赖 Math.random —— 同一份数据无论何时算都得到同一签名，这是去重幂等的根基。
+var _VOLATILE = new Set(['id','_rid','uid','createdAt','updatedAt','doneAt','ts','at','syncedAt','addedAt','restAt','givenUpAt','synced','modifiedAt','editAt','t','nonce','_v']);
+function _stableStr(o) {
+  if (o === null || typeof o !== 'object') return '__' + JSON.stringify(o);
+  if (Array.isArray(o)) return '[' + o.map(_stableStr).join(',') + ']';
+  var keys = Object.keys(o).filter(function (k) { return !_VOLATILE.has(k); }).sort();
+  return '{' + keys.map(function (k) { return JSON.stringify(k) + ':' + _stableStr(o[k]); }).join(',') + '}';
 }
+function _hash(s) {
+  var h = 5381; // djb2
+  for (var i = 0; i < s.length; i++) h = (((h << 5) + h) + s.charCodeAt(i)) >>> 0;
+  return 'h' + h.toString(36);
+}
+function _sig(o) { return _hash(_stableStr(o)); }
+// 身份键：仅当对象确有 id 时返回 'id:...'，否则 null（用于「id 相同也合并」通道）
+function _idOf(o) { return (o && typeof o === 'object' && o.id != null) ? 'id:' + o.id : null; }
 var _BOOL_OR = new Set(['done', 'manualDone', 'restDay', 'abandoned', 'moved', 'settled', 'checked', '_done', 'synced', 'auto', 'reached']);
 var _MAX_SET = new Set(['doneAt', 'createdAt', 'updatedAt', 'at', 'ts', 'syncedAt']);
 // 合并两个对象：状态布尔取 OR，时间戳取较大，其余现有优先、空缺补入
@@ -375,16 +384,35 @@ function _mergeObjs(a, b) {
   });
   return out;
 }
-// 合并两个数组并按签名去重（匹配项用 _mergeObjs 合并，避免翻倍且保留完成态）
-function _dedupMerge(a, b) {
-  var all = (a || []).concat(b || []);
-  var map = new Map();
-  all.forEach(function (x) {
-    if (x && typeof x === 'object') { var s = _sig(x); map.set(s, map.has(s) ? _mergeObjs(map.get(s), x) : x); }
-    else { var sk = '__' + JSON.stringify(x); if (!map.has(sk)) map.set(sk, x); }
+// 数组去重（双通道匹配）：对每个条目算「内容签名」+「id 键」，任一命中已有分组就并入该组，
+// 都不命中才新开组。这样「id 不同但内容相同」能去重，「id 相同」也保留合并能力。
+// 返回去重后的数组，并通过全局计数器累加被合并掉的重复条数（供 repairAll 统计清理量）。
+var _dedupDropped = 0;
+function dedupArr(arr) {
+  var groups = [];                 // 每个分组：{sig, idKey, val}
+  var bySig = Object.create(null);
+  var byId = Object.create(null);
+  function findIdx(sig, idKey) {
+    if (sig != null && bySig[sig] != null) return bySig[sig];
+    if (idKey != null && byId[idKey] != null) return byId[idKey];
+    return -1;
+  }
+  var dropped = 0;
+  (arr || []).forEach(function (x) {
+    if (x && typeof x === 'object') {
+      var sig = _sig(x), idKey = _idOf(x), gi = findIdx(sig, idKey);
+      if (gi >= 0) { groups[gi].val = _mergeObjs(groups[gi].val, x); dropped++; }
+      else { var g = { sig: sig, idKey: idKey, val: x }; groups.push(g); var n = groups.length - 1; if (sig != null) bySig[sig] = n; if (idKey != null) byId[idKey] = n; }
+    } else {
+      var sk = '__' + JSON.stringify(x);
+      if (bySig[sk] == null) { bySig[sk] = groups.length; groups.push({ sig: sk, idKey: null, val: x }); }
+    }
   });
-  return Array.from(map.values());
+  _dedupDropped += dropped;
+  return groups.map(function (g) { return g.val; });
 }
+// 合并两个数组并按分组索引去重（匹配项用 _mergeObjs 合并，避免翻倍且保留完成态）
+function _dedupMerge(a, b) { return dedupArr((a || []).concat(b || [])); }
 // 通用智能合并（替代旧 deepMerge）：对象递归、数组去重合并
 function smartMerge(a, b) {
   if (b == null) return a;
@@ -398,21 +426,15 @@ function smartMerge(a, b) {
   if (a !== undefined && a !== null && a !== '') return a;
   return b;
 }
-// 就地去重修复：递归把数组里的重复对象按签名合并（清理已翻倍的数据）
+// 就地去重修复：递归把数组里的重复对象按分组索引合并（清理已翻倍的数据）
 function repairValue(v) {
-  if (Array.isArray(v)) {
-    var map = new Map();
-    v.forEach(function (x) {
-      if (x && typeof x === 'object') { var s = _sig(x); map.set(s, map.has(s) ? _mergeObjs(map.get(s), x) : x); }
-      else { var sk = '__' + JSON.stringify(x); if (!map.has(sk)) map.set(sk, x); }
-    });
-    return Array.from(map.values()).map(repairValue);
-  }
+  if (Array.isArray(v)) return dedupArr(v.map(repairValue));
   if (v && typeof v === 'object') { var o = {}; Object.keys(v).forEach(function (k) { o[k] = repairValue(v[k]); }); return o; }
   return v;
 }
-// 全量修复：清理当前存储里所有翻倍的数组（localStorage 小键 + BIG_KEYS 内存）
+// 全量修复：清理当前存储里所有翻倍的数组（localStorage 小键 + BIG_KEYS 内存）。返回清理掉的重复条数。
 function repairAll() {
+  var before = _dedupDropped;
   for (var i = 0; i < localStorage.length; i++) {
     var k = localStorage.key(i);
     if (k && k.startsWith('mumu_')) {
@@ -420,41 +442,70 @@ function repairAll() {
     }
   }
   if (typeof BIG_KEYS !== 'undefined') BIG_KEYS.forEach(function (k) { if (Store.mem[k] != null) { Store.mem[k] = repairValue(Store.mem[k]); try { _persist(k, JSON.stringify(Store.mem[k])); } catch (e) {} } });
-  return true;
+  var removed = _dedupDropped - before;
+  repairAll._last = removed;
+  return removed;
 }
 async function importData(obj, opts) {
   if (!obj || obj.app !== 'mumu-workbench' || !obj.localStorage) throw new Error('文件格式不对，不是木木的工作台备份');
   const merge = !opts || opts.merge !== false; // 默认合并（非破坏性），除非显式 merge:false
+  const stats = { keys: 0, skipped: 0, errors: 0, photosAdded: 0 };
   for (const k of Object.keys(obj.localStorage)) {
     const key = k.startsWith('mumu_') ? k.slice(5) : k;
     const incRaw = obj.localStorage[k];
-    if (BIG_KEYS.has(key)) {
-      let inc; try { inc = JSON.parse(incRaw); } catch (e) { inc = undefined; }
-      if (inc === undefined) continue;
-      if (!merge) { Store.mem[key] = inc; await _persist(key, incRaw); continue; }
-      const merged = smartMerge(Store.mem[key], inc); // 现有优先、按签名去重并合并属性（修复翻倍+丢完成态）
-      Store.mem[key] = merged; await _persist(key, JSON.stringify(merged));
-    } else {
-      // 小配置 key：写回 localStorage
-      if (!merge) { localStorage.setItem(k, incRaw); continue; }
-      let cur, inc;
-      try { cur = localStorage.getItem(k) != null ? JSON.parse(localStorage.getItem(k)) : undefined; } catch (e) { cur = undefined; }
-      try { inc = JSON.parse(incRaw); } catch (e) { inc = undefined; }
-      localStorage.setItem(k, JSON.stringify(smartMerge(cur, inc)));
-    }
+    stats.keys++;
+    try {
+      if (BIG_KEYS.has(key)) {
+        let inc; try { inc = JSON.parse(incRaw); } catch (e) { inc = undefined; }
+        if (inc === undefined) continue;
+        if (!merge) { Store.mem[key] = inc; try { await _persist(key, incRaw); } catch (e) {} continue; }
+        const merged = smartMerge(Store.mem[key], inc); // 现有优先、按内容签名去重并合并属性（修复翻倍+丢完成态）
+        Store.mem[key] = merged;
+        try { await _persist(key, JSON.stringify(merged)); }
+        catch (e) {
+          // 配额不足：先删后写，仍失败则降级写回 localStorage 并标记跳过
+          try { await IDB2.del(key); await _persist(key, JSON.stringify(merged)); }
+          catch (e2) { try { localStorage.setItem('mumu_' + key, JSON.stringify(merged)); } catch (e3) { stats.skipped++; stats.errors++; } }
+        }
+      } else {
+        // 小配置 key：写回 localStorage
+        if (!merge) { try { localStorage.setItem(k, incRaw); } catch (e) { stats.skipped++; stats.errors++; } continue; }
+        let cur, inc;
+        try { cur = localStorage.getItem(k) != null ? JSON.parse(localStorage.getItem(k)) : undefined; } catch (e) { cur = undefined; }
+        try { inc = JSON.parse(incRaw); } catch (e) { inc = undefined; }
+        try { localStorage.setItem(k, JSON.stringify(smartMerge(cur, inc))); }
+        catch (e) {
+          try { localStorage.removeItem(k); localStorage.setItem(k, JSON.stringify(smartMerge(cur, inc))); }
+          catch (e2) { stats.skipped++; stats.errors++; }
+        }
+      }
+    } catch (e) { stats.errors++; }
   }
-  // 照片：按 id 合并（不清空现有，只补回备份里缺失的照片）
+  // 照片：单个 IndexedDB 事务批量 put（更快更原子），仅补回备份里缺失的照片
   if (obj.photos && obj.photos.length) {
     try {
       const db = await IDB.open();
-      const existing = await IDB.getAll();
-      const have = new Set(existing.map(p => p.id));
-      for (const rec of obj.photos) { if (!have.has(rec.id)) await IDB.put(rec); }
-    } catch (e) { /* 照片失败不致命 */ }
+      if (db) {
+        const existing = await IDB.getAll();
+        const have = new Set(existing.map(p => p.id));
+        const toAdd = obj.photos.filter(p => !have.has(p.id));
+        if (toAdd.length) {
+          await new Promise((res) => {
+            const t = db.transaction('photos', 'readwrite');
+            const store = t.objectStore('photos');
+            toAdd.forEach(rec => store.put(rec));
+            t.oncomplete = () => res();
+            t.onerror = () => res();
+          });
+        }
+        stats.photosAdded = toAdd.length;
+      }
+    } catch (e) { stats.errors++; }
   }
   // 导入后全量去重修复（清理可能已翻倍的数据）+ 月经假对账（补休息标/清重叠）
   try { repairAll(); } catch (e) { console.warn('repairAll failed', e); }
   try { menstrualReconcile(); } catch (e) { console.warn('menstrualReconcile failed', e); }
+  return stats;
 }
 function pickPhoto(cb) { // 选图并压缩为 dataURL
   const inp = document.createElement('input'); inp.type = 'file'; inp.accept = 'image/*';
