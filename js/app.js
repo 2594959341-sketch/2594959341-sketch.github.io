@@ -1,5 +1,5 @@
 /* ============ 首页 + 导航 ============ */
-window.APP_VER = 'mumu-v298'; // 当前前端版本（设置页可见，用于确认是否加载到最新代码）
+window.APP_VER = 'mumu-v299'; // 当前前端版本（设置页可见，用于确认是否加载到最新代码）
 const SR_LINKS = [
   { v: 'sport', n: '运动（任意跟练）' },
   { v: 'sport:', n: '运动（具体项目，选后填名）' },
@@ -551,6 +551,23 @@ const App = {
         URL.revokeObjectURL(url); toast('已导出全部数据（含 ' + (data.photos ? data.photos.length : 0) + ' 张照片）');
       } catch (e) { toast('导出失败：' + e.message); }
       btnExport.disabled = false; btnExport.textContent = '导出';
+    };
+    const appVerEl = root.querySelector('#appVer');
+    if (appVerEl) appVerEl.textContent = window.APP_VER || '未知';
+    const btnCheckUpdate = root.querySelector('#btnCheckUpdate');
+    if (btnCheckUpdate) btnCheckUpdate.onclick = async () => {
+      btnCheckUpdate.disabled = true; btnCheckUpdate.textContent = '更新中…';
+      try {
+        const regs = await navigator.serviceWorker.getRegistrations();
+        await Promise.all(regs.map(r => r.update()));
+        try { await fetch('index.html', { cache: 'no-store' }); } catch (e) {}
+        toast('已请求最新代码，即将刷新…');
+        setTimeout(() => location.reload(), 600);
+      } catch (e) {
+        toast('检查更新失败：' + e.message);
+      } finally {
+        btnCheckUpdate.disabled = false; btnCheckUpdate.textContent = '检查更新';
+      }
     };
     const btnImport = root.querySelector('#btnImport');
     if (btnImport) btnImport.onclick = () => {
