@@ -554,7 +554,7 @@ const App = {
         const f = inp.files[0]; if (!f) return;
         const r = new FileReader();
         r.onload = async () => {
-          try { const obj = JSON.parse(r.result); const st = await importData(obj); let msg = '已导入 ' + st.keys + ' 项；照片 备份' + st.photosInBackup + '张 → 写入' + st.photosAdded + '张'; if (st.photosFailed > 0) msg += '，' + st.photosFailed + '张写入失败(多为存储空间不足)'; if (st.skipped > 0) msg += '，' + st.skipped + ' 项因空间不足跳过'; toast(msg); setTimeout(() => location.reload(), 1600); }
+          try { const st = await importDataFromText(r.result); r.result = ''; let msg = '已导入 ' + st.keys + ' 项；照片 备份' + st.photosInBackup + '张 → 写入' + st.photosAdded + '张'; if (st.photosFailed > 0) msg += '，' + st.photosFailed + '张写入失败(多为存储空间不足)'; if (st.skipped > 0) msg += '，' + st.skipped + ' 项因空间不足跳过'; toast(msg); setTimeout(() => location.reload(), 1600); }
           catch (e) { toast('导入失败：' + e.message); }
         }; r.readAsText(f);
       }; inp.click();
