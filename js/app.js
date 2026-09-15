@@ -1,4 +1,5 @@
 /* ============ 首页 + 导航 ============ */
+window.APP_VER = 'mumu-v298'; // 当前前端版本（设置页可见，用于确认是否加载到最新代码）
 const SR_LINKS = [
   { v: 'sport', n: '运动（任意跟练）' },
   { v: 'sport:', n: '运动（具体项目，选后填名）' },
@@ -532,6 +533,10 @@ const App = {
             <button class="btn sm ghost theme-opt" data-t="cat">新版</button>
             <button class="btn sm ghost theme-opt" data-t="zhiya">旧版</button>
           </div>
+        </div>
+        <div class="setting-row">
+          <div><div class="setting-label">版本 / 检查更新</div><div class="setting-desc" style="font-size:11px">当前前端版本：<b id="appVer">检测中…</b>。若导入仍异常，点「检查更新」强制拉取最新代码后重试</div></div>
+          <div class="setting-actions"><button class="btn sm" id="btnCheckUpdate">检查更新</button></div>
         </div>
       </div>`;
     const btnExport = root.querySelector('#btnExport');
