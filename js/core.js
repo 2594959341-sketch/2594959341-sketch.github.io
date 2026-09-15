@@ -486,19 +486,20 @@ async function importData(obj, opts) {
     try {
       const db = await IDB.open();
       if (db) {
-        const existing = await IDB.getAll();
-        const have = new Set(existing.map(p => p.id));
-        const toAdd = obj.photos.filter(p => !have.has(p.id));
-        if (toAdd.length) {
+        // 按 id 直接 put：相同 id 覆盖即幂等，无需先读回全部照片，
+        // 避免手机端 IDB.getAll() 把所有 base64 读进内存导致 OOM 崩溃（"此页面存在问题"）
+        const BATCH = 25;
+        for (let i = 0; i < obj.photos.length; i += BATCH) {
+          const batch = obj.photos.slice(i, i + BATCH);
           await new Promise((res) => {
             const t = db.transaction('photos', 'readwrite');
             const store = t.objectStore('photos');
-            toAdd.forEach(rec => store.put(rec));
+            batch.forEach(rec => store.put(rec));
             t.oncomplete = () => res();
             t.onerror = () => res();
           });
         }
-        stats.photosAdded = toAdd.length;
+        stats.photosAdded = obj.photos.length;
       }
     } catch (e) { stats.errors++; }
   }
