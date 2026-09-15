@@ -546,7 +546,8 @@ const IMPORT_CHUNK = 256 * 1024;
 function createBackupScanner(opts) {
   const onProgress = (opts && opts.onProgress) || function () {};
   const stats = { keys: 0, skipped: 0, errors: 0, photosAdded: 0, photosInBackup: 0, photosFailed: 0, photosTooBig: 0 };
-  const MAX_CAP = 50 * 1024 * 1024; // 单张照片 base64 上限 50MB：照片捕获后即写盘释放，瞬时占用有界，放宽以恢复更大原图
+  const MAX_CAP = 16 * 1024 * 1024;  // 单张照片 base64 捕获上限 16MB：超过则跳过(极端原图，可重传更小)；捕获后即压缩写盘，瞬时占用恒小不崩
+  const PHOTO_MAX = 1600;             // 导入照片最长边压到 1600px（JPEG 0.82），体积降到数百 KB，既清晰又不大
   let buf = '';
   let pos = 0;                 // 跨分块持续的游标（已消费位置）
   let state = 'walk';          // walk | colon | value | capture | photos | done
@@ -699,10 +700,14 @@ function createBackupScanner(opts) {
       else if (capAction === 'photo') {
         sawPhotos = true;
         stats.photosInBackup++;          // 备份中的照片总数（含超大被跳过的）
-        if (capTooBig) { stats.photosTooBig++; } // 单张超过 12MB：跳过，保留其余照片，避免整页崩溃
+        if (capTooBig) { stats.photosTooBig++; } // 单张超过上限：跳过(极端原图)，保留其余照片，避免整页崩溃
         else {
           const ph = JSON.parse(capBuf);
-          if (ph && ph.id != null && typeof ph.data === 'string' && ph.data) await writePhoto(ph); // 写完即释放
+          // 导入即压缩：大原图缩到 PHOTO_MAX 内再写盘——内存峰值恒小、且全部保留(不丢)，导出导入都顺畅
+          if (ph && ph.id != null && typeof ph.data === 'string' && ph.data) {
+            try { ph.data = await shrinkImage(ph.data, PHOTO_MAX, 0.82); } catch (e) {}
+            await writePhoto(ph); // 写完即释放
+          }
         }
       }
     } catch (e) { /* 损坏记录跳过 */ }
@@ -825,6 +830,29 @@ function createBackupScanner(opts) {
   };
 }
 
+// 导入时把 funLogs 内嵌的封面/图标 base64 压缩到合理尺寸，避免 funLogs 体积爆炸（覆盖/图标只是缩略图，
+// 压到 1000/600px 足够清晰，体积从数 MB 降到数百 KB）。解析失败或某张解码失败则原样保留，不丢数据。
+async function shrinkFunLogsCovers(rawStr) {
+  try {
+    const obj = JSON.parse(rawStr);
+    if (!obj || typeof obj !== 'object') return rawStr;
+    for (const k of Object.keys(obj)) {
+      const arr = obj[k];
+      if (!Array.isArray(arr)) continue;
+      for (const rec of arr) {
+        if (!rec || typeof rec !== 'object') continue;
+        if (typeof rec.cover === 'string' && rec.cover.indexOf('data:image') === 0) {
+          try { rec.cover = await shrinkImage(rec.cover, 1000, 0.82); } catch (e) {}
+        }
+        if (typeof rec.icon === 'string' && rec.icon.indexOf('data:image') === 0) {
+          try { rec.icon = await shrinkImage(rec.icon, 600, 0.82); } catch (e) {}
+        }
+      }
+    }
+    return JSON.stringify(obj);
+  } catch (e) { return rawStr; }
+}
+
 // 分块读取文件并流式导入：照片逐张落盘；配置逐键即时写盘(经 onConfig)，不整段驻留内存。
 async function importFromFile(file, onProgress) {
   if (!file) throw new Error('没有选择文件');
@@ -834,7 +862,14 @@ async function importFromFile(file, onProgress) {
     // 每个配置键解析完立即落盘并释放引用：内存峰值=单个最大键，根治整段配置撑爆
     onConfig: async (key, rawStr) => {
       try {
-        const s = await importData({ app: 'mumu-workbench', localStorage: { [key]: rawStr } }, { merge: true, skipRepair: true });
+        let s;
+        if (key === 'mumu_funLogs') {
+          // 娱乐封面/图标导入时一并压缩（最长边 1000/600px），避免 funLogs 体积爆炸导致以后导出导入再崩
+          const processed = await shrinkFunLogsCovers(rawStr);
+          s = await importData({ app: 'mumu-workbench', localStorage: { [key]: processed } }, { merge: true, skipRepair: true });
+        } else {
+          s = await importData({ app: 'mumu-workbench', localStorage: { [key]: rawStr } }, { merge: true, skipRepair: true });
+        }
         cfg.keys += s.keys; cfg.skipped += s.skipped; cfg.errors += s.errors;
       } catch (e) { cfg.errors++; }
     }
