@@ -583,27 +583,30 @@ function createBackupScanner(opts) {
   }
 
   // capture 态：从 from 开始消费，遇结构闭合返回结束位置（已写入 capBuf）
-  // 内存保护：capBuf 超过 MAX_CAP 后不再存内容，仅追踪深度/字符串态找到闭合括号，
-  // 这样单张超大照片(视频/原图)最多占 MAX_CAP 内存，不会撑爆整页。
+  // 内存保护【仅限单张照片】：照片的 base64 可能数百 MB，capBuf 超过 MAX_CAP 后不再存内容，
+  // 仅追踪深度/字符串态找到闭合括号，单张超大照片最多占 MAX_CAP 内存，不撑爆整页。
+  // 配置对象(localStorage)【不做上限】：它是用户全部配置的集合，必须完整捕获与解析，
+  // 否则整体超过 12MB 会被整段丢弃，导致娱乐/计划/复盘等所有配置数据丢失（v300 回归）。
   function consumeCapture(from) {
+    const CAP = (capAction === 'photo'); // 上限只用于照片，配置对象始终完整保留
     let i = from;
     while (i < buf.length) {
       const c = buf[i];
       if (capInStr) {
         if (c === '\\') {
-          if (!capTooBig) { capBuf += c; if (i + 1 < buf.length) { capBuf += buf[i + 1]; i += 2; } else { i++; } }
+          if (!(CAP && capTooBig)) { capBuf += c; if (i + 1 < buf.length) { capBuf += buf[i + 1]; i += 2; } else { i++; } }
           else { if (i + 1 < buf.length) i += 2; else i++; }
-          if (!capTooBig && capBuf.length > MAX_CAP) capTooBig = true;
+          if (CAP && !capTooBig && capBuf.length > MAX_CAP) capTooBig = true;
           continue;
         }
-        if (c === '"') { capInStr = false; if (!capTooBig) capBuf += c; i++; continue; }
-        if (!capTooBig) { capBuf += c; if (capBuf.length > MAX_CAP) capTooBig = true; }
+        if (c === '"') { capInStr = false; if (!(CAP && capTooBig)) capBuf += c; i++; continue; }
+        if (!(CAP && capTooBig)) { capBuf += c; if (CAP && capBuf.length > MAX_CAP) capTooBig = true; }
         i++; continue;
       }
-      if (c === '"') { capInStr = true; if (!capTooBig) capBuf += c; i++; continue; }
-      if (c === '{' || c === '[') { capDepth++; if (!capTooBig) capBuf += c; i++; continue; }
-      if (c === '}' || c === ']') { capDepth--; if (!capTooBig) capBuf += c; i++; if (capDepth === 0) return i; continue; }
-      if (!capTooBig) { capBuf += c; if (capBuf.length > MAX_CAP) capTooBig = true; }
+      if (c === '"') { capInStr = true; if (!(CAP && capTooBig)) capBuf += c; i++; continue; }
+      if (c === '{' || c === '[') { capDepth++; if (!(CAP && capTooBig)) capBuf += c; i++; continue; }
+      if (c === '}' || c === ']') { capDepth--; if (!(CAP && capTooBig)) capBuf += c; i++; if (capDepth === 0) return i; continue; }
+      if (!(CAP && capTooBig)) { capBuf += c; if (CAP && capBuf.length > MAX_CAP) capTooBig = true; }
       i++;
     }
     return i;
@@ -619,7 +622,8 @@ function createBackupScanner(opts) {
   async function finishCapture() {
     try {
       if (capAction === 'ls') {
-        if (!capTooBig) { lsObj = JSON.parse(capBuf); sawLS = true; }
+        // 配置对象不做大小上限：必须完整解析，否则娱乐/计划等全部配置会丢失
+        try { lsObj = JSON.parse(capBuf); sawLS = true; } catch (e) { /* 损坏配置跳过 */ }
       }
       else if (capAction === 'photo') {
         sawPhotos = true;
