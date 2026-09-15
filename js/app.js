@@ -552,11 +552,22 @@ const App = {
       const inp = document.createElement('input'); inp.type = 'file'; inp.accept = 'application/json,.json';
       inp.onchange = () => {
         const f = inp.files[0]; if (!f) return;
-        const r = new FileReader();
-        r.onload = async () => {
-          try { const st = await importDataFromText(r.result); r.result = ''; let msg = '已导入 ' + st.keys + ' 项；照片 备份' + st.photosInBackup + '张 → 写入' + st.photosAdded + '张'; if (st.photosFailed > 0) msg += '，' + st.photosFailed + '张写入失败(多为存储空间不足)'; if (st.skipped > 0) msg += '，' + st.skipped + ' 项因空间不足跳过'; toast(msg); setTimeout(() => location.reload(), 1600); }
-          catch (e) { toast('导入失败：' + e.message); }
-        }; r.readAsText(f);
+        btnImport.disabled = true;
+        const setLabel = (t) => { btnImport.textContent = t; };
+        setLabel('导入中…');
+        importFromFile(f, (p) => {
+          if (p && p.phase === 'reading') {
+            const pct = p.total ? Math.min(99, Math.floor(p.done / p.total * 100)) : 50;
+            setLabel('导入中 ' + pct + '%');
+          }
+        }).then(st => {
+          let msg = '已导入 ' + st.keys + ' 项；照片 备份' + st.photosInBackup + '张 → 写入' + st.photosAdded + '张';
+          if (st.photosFailed > 0) msg += '，' + st.photosFailed + '张写入失败(多为存储空间不足)';
+          if (st.skipped > 0) msg += '，' + st.skipped + ' 项因空间不足跳过';
+          toast(msg);
+          setTimeout(() => location.reload(), 1800);
+        }).catch(e => { toast('导入失败：' + e.message); })
+        .finally(() => { btnImport.disabled = false; btnImport.textContent = '导入'; });
       }; inp.click();
     };
     const btnRepair = root.querySelector('#btnRepair');
