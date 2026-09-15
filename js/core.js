@@ -531,8 +531,7 @@ async function importData(obj, opts) {
     } catch (e) { stats.photosFailed = clean.length - stats.photosAdded; }
   }
   // 导入后全量去重修复（清理可能已翻倍的数据）+ 月经假对账（补休息标/清重叠）
-  try { repairAll(); } catch (e) { console.warn('repairAll failed', e); }
-  try { menstrualReconcile(); } catch (e) { console.warn('menstrualReconcile failed', e); }
+  try { if (!opts || !opts.skipRepair) { repairAll(); menstrualReconcile(); } } catch (e) { console.warn('post-import repair failed', e); }
   return stats;
 }
 
@@ -560,6 +559,27 @@ function createBackupScanner(opts) {
   let capInStr = false;
   let capTooBig = false;       // 当前 capture 已超过 MAX_CAP，仅追踪深度不再存内容（保护内存）
   let sawLS = false, sawPhotos = false;
+  // funLogs 流式剥封面状态：娱乐配置值内嵌 base64 封面可能极大，捕获时边读边置空超大封面，
+  // 内存峰值恒定有界（≈非封面文本 + 单个封面上限），与娱乐数据总量无关，根治单键撑爆。
+  let funStrip = false, funOuterPending = false, funAfterColon = false, funReadingKey = false, funCoverVal = false, funCoverTrunc = false, funPendingCover = false;
+  let funKeyBuf = '', funCoverLen = 0, funCoverStart = -1;
+  const onConfig = (opts && opts.onConfig) || null;  // 逐键流式回调：每解析完一个配置键立即写盘，避免整段配置(含娱乐 base64 封面)一次载入内存撑爆
+  let pendingLsKey = null;
+  async function deliverConfig(key, rawVal) {
+    if (onConfig) await onConfig(key, rawVal);   // 必须 await：否则配置键落盘是 fire-and-forget，reload 可能早于落盘
+    else lsObj[key] = rawVal;
+  }
+  const COVER_CAP = 300 * 1024; // 单个娱乐封面 base64 上限 300KB：封面仅为展示缩略图，保留全部文字数据，避免单键撑爆内存
+  // 递归把超阈值 cover 置空（cfgval 原始对象分支的兜底；流式分支走 consumeFunValue）
+  function stripFunCovers(obj) {
+    if (!obj || typeof obj !== 'object') return;
+    if (Array.isArray(obj)) { for (const it of obj) stripFunCovers(it); return; }
+    for (const k of Object.keys(obj)) {
+      const v = obj[k];
+      if (k === 'cover' && typeof v === 'string' && v.length > COVER_CAP) obj[k] = null;
+      else if (v && typeof v === 'object') stripFunCovers(v);
+    }
+  }
 
   function isWs(c) { return c === ' ' || c === '\n' || c === '\r' || c === '\t'; }
 
@@ -612,6 +632,66 @@ function createBackupScanner(opts) {
     return i;
   }
 
+  // 流式读取娱乐 funLogs 值：备份里它是「JSON 字符串」，内层结构字符都被转义(\{ \}" 等)。
+  // 这里边读边还原转义、边把超阈值 cover 置 null，输出写入 capBuf；绝不整段驻留内存。
+  // 遇「外层闭引号」(内层已闭合、capDepth===0 时的 ") 即返回，由调用方吃掉该引号。
+  function consumeFunValue(from) {
+    let i = from;
+    const L = buf.length;
+    while (i < L) {
+      let c = buf[i];
+      if (c === '\\') {                 // 外层字符串里的转义 → 还原成内部真实字符
+        const e = buf[i + 1];
+        if (e === 'n') c = '\n'; else if (e === 't') c = '\t'; else if (e === 'r') c = '\r';
+        else if (e === 'b') c = '\b'; else if (e === 'f') c = '\f';
+        else if (e === '"') c = '"'; else if (e === '\\') c = '\\'; else if (e === '/') c = '/';
+        else if (e === 'u') { c = String.fromCharCode(parseInt(buf.substr(i + 2, 4), 16)); i += 4; }
+        else c = e;
+        i += 2;
+      } else { i++; }
+      if (capInStr) {
+        if (c === '"') {                // 内层真实闭引号（结构）
+          capInStr = false;
+          if (funCoverVal) {
+            if (funCoverTrunc) capBuf = capBuf.slice(0, funCoverStart) + 'null';  // 超阈值封面：用 null 替换（覆盖从开引号起的全部内容）
+            else capBuf += '"';                                                     // 普通封面值：补闭引号
+            funCoverVal = false; funCoverTrunc = false;
+          } else if (funReadingKey) {
+            funReadingKey = false; funPendingCover = (funKeyBuf === 'cover'); funKeyBuf = '';
+            capBuf += '"';                                                          // 普通 key：补闭引号
+          } else {
+            capBuf += '"';                                                          // 普通字符串值：补闭引号
+          }
+          continue;
+        }
+        if (funCoverVal) {
+          if (funCoverTrunc) continue;                 // 超限：丢弃剩余 base64
+          if (funCoverLen < COVER_CAP) capBuf += c;
+          funCoverLen++; if (funCoverLen >= COVER_CAP) funCoverTrunc = true;
+          continue;
+        }
+        if (funReadingKey) { funKeyBuf += c; capBuf += c; continue; }
+        capBuf += c; continue;
+      }
+      if (capDepth === 0 && c === '"') return i;       // 外层闭引号：返回，调用方消费
+      if (c === '"') {
+        capInStr = true;
+        if (funAfterColon) {
+          if (funPendingCover) { funCoverVal = true; funCoverLen = 0; funCoverTrunc = false; funCoverStart = capBuf.length; capBuf += '"'; funPendingCover = false; }
+          else capBuf += '"';
+          funAfterColon = false;
+        } else { funReadingKey = true; funKeyBuf = ''; capBuf += '"'; }
+        continue;
+      }
+      if (c === '{' || c === '[') { capDepth++; capBuf += c; funAfterColon = false; funReadingKey = false; funPendingCover = false; continue; }
+      if (c === '}') { capDepth--; capBuf += c; if (capDepth === 0) return i; funAfterColon = false; continue; }
+      if (c === ']') { capDepth--; capBuf += c; if (capDepth === 0) return i; funAfterColon = false; continue; }
+      if (c === ':') { capBuf += c; funAfterColon = true; continue; }
+      capBuf += c; continue;
+    }
+    return i;
+  }
+
   // 每张照片解析完【立即 await 写入并释放引用】：这是根治 OOM 的关键——
   // 旧版把全部 writePhoto 的 Promise 排队却不 await，导致所有照片对象同时驻留内存→爆内存。
   async function writePhoto(ph) {
@@ -621,9 +701,19 @@ function createBackupScanner(opts) {
 
   async function finishCapture() {
     try {
-      if (capAction === 'ls') {
-        // 配置对象不做大小上限：必须完整解析，否则娱乐/计划等全部配置会丢失
-        try { lsObj = JSON.parse(capBuf); sawLS = true; } catch (e) { /* 损坏配置跳过 */ }
+      if (capAction === 'cfgval') {
+        // 单个配置键的值：完整捕获（不限 12MB，否则会丢娱乐/计划等数据），
+        // 其中 funLogs 内嵌的 base64 封面图可能极大 → 解析后把超阈值封面置空，
+        // 既保住全部文字数据，又把内存压到可控范围（封面仅为展示缩略图，可舍弃）
+        sawLS = true;
+        const key = pendingLsKey;
+        const bare = key.startsWith('mumu_') ? key.slice(5) : key;
+        let raw = capBuf;
+        if (bare === 'funLogs') {
+          try { const obj = JSON.parse(capBuf); stripFunCovers(obj); raw = JSON.stringify(obj); }
+          catch (e) { /* 解析失败则原样交付 */ }
+        }
+        await deliverConfig(key, raw);
       }
       else if (capAction === 'photo') {
         sawPhotos = true;
@@ -660,7 +750,9 @@ function createBackupScanner(opts) {
       } else if (state === 'value') {
         if (isWs(c)) { i++; continue; }
         if (pendingKey === 'localStorage') {
-          if (c === '{') { capAction = 'ls'; capBuf = '{'; capDepth = 1; capInStr = false; capTooBig = false; state = 'capture'; i++; }
+          // 进入配置对象：逐键流式解析，每个键的值单独捕获→立即交付→释放，
+          // 内存峰值≈单个最大配置键（而非整段配置），根治整段配置(含娱乐 base64 封面)一次载入撑爆的崩溃
+          if (c === '{') { state = 'config'; i++; }
           else i++;
         } else if (pendingKey === 'photos') {
           if (c === '[') { state = 'photos'; i++; }
@@ -672,13 +764,59 @@ function createBackupScanner(opts) {
           else { while (i < L && buf[i] !== ',' && buf[i] !== '}' && buf[i] !== ']') i++; state = 'walk'; }
         }
         continue;
+      } else if (state === 'config') {
+        if (isWs(c)) { i++; continue; }
+        if (c === '}') { state = 'walk'; i++; continue; }   // 配置对象结束 → 回到顶层
+        if (c === ',') { i++; continue; }
+        if (c === '"') { const r = readString(i); if (!r) { buf = buf.slice(i); pos = 0; return; } pendingLsKey = r.value; i = r.next; state = 'colonc'; continue; }
+        i++;
+      } else if (state === 'colonc') {
+        if (isWs(c)) { i++; continue; }
+        if (c === ':') { i++; state = 'cval'; continue; }
+        i++;
+      } else if (state === 'cval') {
+        if (isWs(c)) { i++; continue; }
+        if (c === '{' || c === '[') { capAction = 'cfgval'; capBuf = c; capDepth = 1; capInStr = false; capTooBig = false; state = 'capture'; i++; continue; }
+        if (c === '"') {
+          const bare = pendingLsKey.startsWith('mumu_') ? pendingLsKey.slice(5) : pendingLsKey;
+          if (bare === 'funLogs') {
+            // 娱乐值体量可能极大（内嵌 base64 封面）：进入流式剥封面模式，边读边置空超大封面，绝不整段载入内存
+            funStrip = true; funOuterPending = false; capBuf = ''; capDepth = 0; capInStr = false;
+            funAfterColon = false; funReadingKey = false; funKeyBuf = ''; funCoverVal = false; funCoverLen = 0; funCoverTrunc = false; funCoverStart = -1; funPendingCover = false;
+            state = 'funval'; i++; continue;   // 吃掉外层开引号，从内层 JSON 开始流式读
+          }
+          const r = readString(i); if (!r) { buf = buf.slice(i); pos = 0; return; }
+          // r.value 已是该配置值的「原始 JSON 文本」（字符串值自带引号；funLogs 的 JSON 串值即对象文本）。
+          // 直接交付给 importData（其内部会 JSON.parse）→ 得到正确对象；切勿再 JSON.stringify 二次编码。
+          await deliverConfig(pendingLsKey, r.value);
+          i = r.next; state = 'config'; continue;
+        }
+        let j = i; while (j < L && buf[j] !== ',' && buf[j] !== '}') j++;
+        await deliverConfig(pendingLsKey, buf.slice(i, j).trim()); i = j; state = 'config'; continue;
+      } else if (state === 'funval') {
+        if (funOuterPending) {
+          // 内层 JSON 已读完，只差外层闭引号（可能跨分块）
+          if (i < buf.length && buf[i] === '"') i++;
+          buf = buf.slice(i); pos = 0; i = 0;
+          await deliverConfig(pendingLsKey, capBuf);
+          funStrip = false; funOuterPending = false;
+          state = 'config'; continue;
+        }
+        const end = consumeFunValue(i);
+        if (capDepth === 0) {
+          buf = buf.slice(end); pos = 0; i = 0;
+          if (i < buf.length && buf[i] === '"') { i++; buf = buf.slice(i); pos = 0; i = 0; await deliverConfig(pendingLsKey, capBuf); funStrip = false; state = 'config'; continue; }
+          funOuterPending = true; return; // 外层闭引号未到，等下一块
+        }
+        buf = buf.slice(end); pos = 0;
+        return; // 内层未完成，等下一块
       } else if (state === 'capture') {
         const start = i;
         const end = consumeCapture(i);
         if (capDepth === 0) {
           buf = buf.slice(end); pos = 0; i = 0;
           await finishCapture();
-          state = (capAction === 'photo') ? 'photos' : 'walk';
+          state = (capAction === 'photo') ? 'photos' : (capAction === 'cfgval' ? 'config' : 'walk');
           capAction = null;
           continue;
         } else {
@@ -706,10 +844,20 @@ function createBackupScanner(opts) {
   };
 }
 
-// 分块读取文件并流式导入：照片逐张落盘，非照片数据交给 importData。
+// 分块读取文件并流式导入：照片逐张落盘；配置逐键即时写盘(经 onConfig)，不整段驻留内存。
 async function importFromFile(file, onProgress) {
   if (!file) throw new Error('没有选择文件');
-  const scanner = createBackupScanner({ onProgress: onProgress });
+  const cfg = { keys: 0, skipped: 0, errors: 0 };
+  const scanner = createBackupScanner({
+    onProgress: onProgress,
+    // 每个配置键解析完立即落盘并释放引用：内存峰值=单个最大键，根治整段配置撑爆
+    onConfig: async (key, rawStr) => {
+      try {
+        const s = await importData({ app: 'mumu-workbench', localStorage: { [key]: rawStr } }, { merge: true, skipRepair: true });
+        cfg.keys += s.keys; cfg.skipped += s.skipped; cfg.errors += s.errors;
+      } catch (e) { cfg.errors++; }
+    }
+  });
   const total = file.size || 0;
   let offset = 0;
   const decoder = new TextDecoder('utf-8');
@@ -729,11 +877,11 @@ async function importFromFile(file, onProgress) {
     throw new Error('文件读取失败：' + (e && e.message ? e.message : e));
   }
   if (!scanner.hasStructure()) throw new Error('文件格式不对，不是木木的工作台备份');
-  // 非照片数据
-  const lsObj = scanner.getLocalStorage();
-  const s2 = await importData({ app: 'mumu-workbench', localStorage: lsObj });
+  // 全量去重修复 + 月经假对账：逐键导入时跳过，这里统一做一次
+  try { repairAll(); } catch (e) { console.warn('repairAll failed', e); }
+  try { menstrualReconcile(); } catch (e) { console.warn('menstrualReconcile failed', e); }
   const st = await scanner.flush();
-  Object.assign(st, { keys: s2.keys, skipped: s2.skipped, errors: s2.errors });
+  Object.assign(st, { keys: cfg.keys, skipped: cfg.skipped, errors: cfg.errors });
   return st;
 }
 
