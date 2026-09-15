@@ -558,7 +558,6 @@ function createBackupScanner(opts) {
   let capDepth = 0;
   let capInStr = false;
   let sawLS = false, sawPhotos = false;
-  const photoWrites = [];
 
   function isWs(c) { return c === ' ' || c === '\n' || c === '\r' || c === '\t'; }
 
@@ -600,32 +599,27 @@ function createBackupScanner(opts) {
     return i;
   }
 
-  function writePhoto(ph) {
+  // 每张照片解析完【立即 await 写入并释放引用】：这是根治 OOM 的关键——
+  // 旧版把全部 writePhoto 的 Promise 排队却不 await，导致所有照片对象同时驻留内存→爆内存。
+  async function writePhoto(ph) {
     stats.photosInBackup++;
-    const p = IDB.open().then(db => new Promise((res) => {
-      if (!db) { stats.photosFailed++; return res(); }
-      const t = db.transaction('photos', 'readwrite');
-      t.objectStore('photos').put(ph);
-      t.oncomplete = () => { stats.photosAdded++; res(); };
-      t.onerror = () => { stats.photosFailed++; res(); };
-      t.onabort = () => { stats.photosFailed++; res(); };
-    })).catch(() => { stats.photosFailed++; });
-    photoWrites.push(p);
+    try { await IDB.put(ph); stats.photosAdded++; }
+    catch (e) { stats.photosFailed++; }
   }
 
-  function finishCapture() {
+  async function finishCapture() {
     try {
       if (capAction === 'ls') { lsObj = JSON.parse(capBuf); sawLS = true; }
       else if (capAction === 'photo') {
         sawPhotos = true;
         const ph = JSON.parse(capBuf);
-        if (ph && ph.id != null && typeof ph.data === 'string' && ph.data) writePhoto(ph);
+        if (ph && ph.id != null && typeof ph.data === 'string' && ph.data) await writePhoto(ph); // 写完即释放
       }
     } catch (e) { /* 损坏记录跳过 */ }
     capBuf = '';
   }
 
-  function process() {
+  async function process() {
     let i = pos;
     const L = buf.length;
     while (i < L) {
@@ -664,7 +658,7 @@ function createBackupScanner(opts) {
         const end = consumeCapture(i);
         if (capDepth === 0) {
           buf = buf.slice(end); pos = 0; i = 0;
-          finishCapture();
+          await finishCapture();
           state = (capAction === 'photo') ? 'photos' : 'walk';
           capAction = null;
           continue;
@@ -684,11 +678,11 @@ function createBackupScanner(opts) {
   }
 
   return {
-    feed(text) { buf += text; process(); },
-    end() { process(); },         // 末尾再跑一次
+    feed(text) { buf += text; return process(); },
+    end() { return process(); },         // 末尾再跑一次
     getLocalStorage() { return lsObj || {}; },
     hasStructure() { return sawLS || sawPhotos; },
-    async flush() { await Promise.all(photoWrites); return stats; },
+    async flush() { return stats; },
     stats() { return stats; }
   };
 }
@@ -706,12 +700,12 @@ async function importFromFile(file, onProgress) {
       const slice = file.slice(offset, end);
       const ab = await slice.arrayBuffer();
       const text = decoder.decode(ab, { stream: true });
-      scanner.feed(text);
+      await scanner.feed(text);
       offset = end;
       if (onProgress) onProgress({ phase: 'reading', done: offset, total: total });
     }
-    scanner.feed(decoder.decode()); // flush 多字节残尾
-    scanner.end();
+    await scanner.feed(decoder.decode()); // flush 多字节残尾
+    await scanner.end();
   } catch (e) {
     throw new Error('文件读取失败：' + (e && e.message ? e.message : e));
   }
