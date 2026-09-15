@@ -49,7 +49,7 @@ textarea{resize:vertical}
 .nav-branch-item.active{color:var(--ink);font-weight:600}
 .nav-item.has-branch::after{content:'▸';margin-left:auto;font-size:10px;color:var(--sub);transition:transform .2s}
 .nav-item.has-branch.open::after{transform:rotate(90deg)}
-.main{padding:62px 16px 80px;max-width:700px;margin:0 auto;width:100%;overflow-x:clip}
+.main{padding:62px 16px calc(80px + env(safe-area-inset-bottom,0px));max-width:700px;margin:0 auto;width:100%;overflow-x:clip}
 /* 分支页面标题（纯文字无框） */
 .branch-title{font-size:26px;font-weight:800;color:var(--ink);margin:8px 0 18px;padding-top:4px;letter-spacing:1px}
 .meals-main-title{font-size:34px;font-weight:800;color:var(--ink);margin:8px 0 20px;padding-top:4px;letter-spacing:2px}
@@ -80,7 +80,7 @@ textarea{resize:vertical}
 .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;align-items:stretch}
 .grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;align-items:stretch}
 .grid2>*,.grid3>*,.grid4>*{min-width:0;overflow-wrap:break-word;word-break:break-word}
-@media(max-width:980px){.grid3,.grid4{grid-template-columns:1fr 1fr}.grid2{grid-template-columns:1fr}.main{padding:62px 14px 80px}.sidebar{width:260px}}
+@media(max-width:980px){.grid3,.grid4{grid-template-columns:1fr 1fr}.grid2{grid-template-columns:1fr}.main{padding:62px 14px calc(80px + env(safe-area-inset-bottom,0px))}.sidebar{width:260px}}
 
 .btn{display:inline-flex;align-items:center;gap:5px;padding:8px 16px;border-radius:999px;background:#111;color:#fff;font-weight:600;transition:.15s}
 .btn:hover{filter:brightness(1.1)}
@@ -664,7 +664,7 @@ textarea{resize:vertical}
 .cat-edit-row .del-cat{padding:5px 10px;font-size:12px}
 
 /* ===== v68 首页两列正方形卡片+问候不换行 ===== */
-.home-greeting{display:flex;align-items:flex-end;justify-content:space-between;margin:18px 2px 14px;padding:6px 2px}
+.home-greeting{display:flex;align-items:flex-end;justify-content:space-between;flex-wrap:wrap;gap:6px 10px;margin:8px 2px 12px;padding:6px 2px}
 .home-hello{font-size:30px;font-weight:800;color:var(--ink);line-height:1.4;letter-spacing:1px;white-space:nowrap}
 .home-datetime{font-size:12px;color:var(--sub);text-align:right;white-space:nowrap;line-height:1.6}
 .home-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:20px}
@@ -677,7 +677,7 @@ textarea{resize:vertical}
 .home-card .hc-name{font-size:15px;font-weight:700;color:var(--ink);line-height:1.3;margin-bottom:2px}
 .home-card .hc-stat{font-size:12px;color:var(--sub);line-height:1.4}
 .home-card .hc-progress{height:4px;margin-top:8px}
-@media(max-width:380px){.home-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:380px){.home-grid{grid-template-columns:repeat(2,1fr)}.home-hello{font-size:25px}.home-greeting{margin:6px 2px 10px}}
 
 /* ===== v67 周总结圆圈马卡龙色（按分类） ===== */
 .wk-dot.cat-meals{background:#EFC15A;border-color:#EFC15A;color:#fff}
