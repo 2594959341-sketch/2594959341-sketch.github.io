@@ -546,7 +546,7 @@ const IMPORT_CHUNK = 256 * 1024;
 function createBackupScanner(opts) {
   const onProgress = (opts && opts.onProgress) || function () {};
   const stats = { keys: 0, skipped: 0, errors: 0, photosAdded: 0, photosInBackup: 0, photosFailed: 0, photosTooBig: 0 };
-  const MAX_CAP = 12 * 1024 * 1024; // 单条记录 base64 上限 12MB：超过则跳过，避免单张超大照片(视频/原图)撑爆内存导致整页崩溃
+  const MAX_CAP = 50 * 1024 * 1024; // 单张照片 base64 上限 50MB：照片捕获后即写盘释放，瞬时占用有界，放宽以恢复更大原图
   let buf = '';
   let pos = 0;                 // 跨分块持续的游标（已消费位置）
   let state = 'walk';          // walk | colon | value | capture | photos | done
@@ -559,9 +559,9 @@ function createBackupScanner(opts) {
   let capInStr = false;
   let capTooBig = false;       // 当前 capture 已超过 MAX_CAP，仅追踪深度不再存内容（保护内存）
   let sawLS = false, sawPhotos = false;
-  // funLogs 流式剥封面状态：娱乐配置值内嵌 base64 封面可能极大，捕获时边读边置空超大封面，
-  // 内存峰值恒定有界（≈非封面文本 + 单个封面上限），与娱乐数据总量无关，根治单键撑爆。
-  let funStrip = false, funOuterPending = false, funAfterColon = false, funReadingKey = false, funCoverVal = false, funCoverTrunc = false, funPendingCover = false;
+  // funLogs 流式状态：娱乐配置值内嵌 base64 封面，捕获时完整保留（不剥离），确保封面全部恢复；
+  // 仅当整段 funLogs 超过 FUN_CAP_CEILING 时才对后续封面兜底置空，避免超大 funLogs 整段驻留撑爆内存。
+  let funStrip = false, funOuterPending = false, funAfterColon = false, funReadingKey = false, funCoverVal = false, funCoverStrip = false, funPendingCover = false;
   let funKeyBuf = '', funCoverLen = 0, funCoverStart = -1;
   const onConfig = (opts && opts.onConfig) || null;  // 逐键流式回调：每解析完一个配置键立即写盘，避免整段配置(含娱乐 base64 封面)一次载入内存撑爆
   let pendingLsKey = null;
@@ -569,17 +569,7 @@ function createBackupScanner(opts) {
     if (onConfig) await onConfig(key, rawVal);   // 必须 await：否则配置键落盘是 fire-and-forget，reload 可能早于落盘
     else lsObj[key] = rawVal;
   }
-  const COVER_CAP = 300 * 1024; // 单个娱乐封面 base64 上限 300KB：封面仅为展示缩略图，保留全部文字数据，避免单键撑爆内存
-  // 递归把超阈值 cover 置空（cfgval 原始对象分支的兜底；流式分支走 consumeFunValue）
-  function stripFunCovers(obj) {
-    if (!obj || typeof obj !== 'object') return;
-    if (Array.isArray(obj)) { for (const it of obj) stripFunCovers(it); return; }
-    for (const k of Object.keys(obj)) {
-      const v = obj[k];
-      if (k === 'cover' && typeof v === 'string' && v.length > COVER_CAP) obj[k] = null;
-      else if (v && typeof v === 'object') stripFunCovers(v);
-    }
-  }
+  const FUN_CAP_CEILING = 512 * 1024 * 1024; // funLogs 流式捕获内存上限：超过则后续封面置空（极端兜底，正常不会触发），避免超大 funLogs 整段驻留撑爆内存
 
   function isWs(c) { return c === ' ' || c === '\n' || c === '\r' || c === '\t'; }
 
@@ -653,9 +643,9 @@ function createBackupScanner(opts) {
         if (c === '"') {                // 内层真实闭引号（结构）
           capInStr = false;
           if (funCoverVal) {
-            if (funCoverTrunc) capBuf = capBuf.slice(0, funCoverStart) + 'null';  // 超阈值封面：用 null 替换（覆盖从开引号起的全部内容）
-            else capBuf += '"';                                                     // 普通封面值：补闭引号
-            funCoverVal = false; funCoverTrunc = false;
+          if (funCoverStrip) capBuf = capBuf.slice(0, funCoverStart) + 'null';  // 已达上限：该封面置空（极端兜底）
+          else capBuf += '"';                                                     // 普通封面值：补闭引号
+          funCoverVal = false; funCoverStrip = false;
           } else if (funReadingKey) {
             funReadingKey = false; funPendingCover = (funKeyBuf === 'cover'); funKeyBuf = '';
             capBuf += '"';                                                          // 普通 key：补闭引号
@@ -665,9 +655,7 @@ function createBackupScanner(opts) {
           continue;
         }
         if (funCoverVal) {
-          if (funCoverTrunc) continue;                 // 超限：丢弃剩余 base64
-          if (funCoverLen < COVER_CAP) capBuf += c;
-          funCoverLen++; if (funCoverLen >= COVER_CAP) funCoverTrunc = true;
+          if (!funCoverStrip) capBuf += c;             // 保留封面 base64（不再剥离，确保娱乐封面全部恢复）
           continue;
         }
         if (funReadingKey) { funKeyBuf += c; capBuf += c; continue; }
@@ -677,7 +665,7 @@ function createBackupScanner(opts) {
       if (c === '"') {
         capInStr = true;
         if (funAfterColon) {
-          if (funPendingCover) { funCoverVal = true; funCoverLen = 0; funCoverTrunc = false; funCoverStart = capBuf.length; capBuf += '"'; funPendingCover = false; }
+          if (funPendingCover) { funCoverVal = true; funCoverStart = capBuf.length; funCoverStrip = (capBuf.length > FUN_CAP_CEILING); capBuf += '"'; funPendingCover = false; }
           else capBuf += '"';
           funAfterColon = false;
         } else { funReadingKey = true; funKeyBuf = ''; capBuf += '"'; }
@@ -703,17 +691,10 @@ function createBackupScanner(opts) {
     try {
       if (capAction === 'cfgval') {
         // 单个配置键的值：完整捕获（不限 12MB，否则会丢娱乐/计划等数据），
-        // 其中 funLogs 内嵌的 base64 封面图可能极大 → 解析后把超阈值封面置空，
-        // 既保住全部文字数据，又把内存压到可控范围（封面仅为展示缩略图，可舍弃）
+        // 内嵌封面 base64 完整保留（不剥离），娱乐封面等全部恢复；仅当整段 funLogs 超 FUN_CAP_CEILING 时后续封面兜底置空。
         sawLS = true;
         const key = pendingLsKey;
-        const bare = key.startsWith('mumu_') ? key.slice(5) : key;
-        let raw = capBuf;
-        if (bare === 'funLogs') {
-          try { const obj = JSON.parse(capBuf); stripFunCovers(obj); raw = JSON.stringify(obj); }
-          catch (e) { /* 解析失败则原样交付 */ }
-        }
-        await deliverConfig(key, raw);
+        await deliverConfig(key, capBuf);
       }
       else if (capAction === 'photo') {
         sawPhotos = true;
@@ -782,7 +763,7 @@ function createBackupScanner(opts) {
           if (bare === 'funLogs') {
             // 娱乐值体量可能极大（内嵌 base64 封面）：进入流式剥封面模式，边读边置空超大封面，绝不整段载入内存
             funStrip = true; funOuterPending = false; capBuf = ''; capDepth = 0; capInStr = false;
-            funAfterColon = false; funReadingKey = false; funKeyBuf = ''; funCoverVal = false; funCoverLen = 0; funCoverTrunc = false; funCoverStart = -1; funPendingCover = false;
+            funAfterColon = false; funReadingKey = false; funKeyBuf = ''; funCoverVal = false; funCoverStart = -1; funCoverStrip = false; funPendingCover = false;
             state = 'funval'; i++; continue;   // 吃掉外层开引号，从内层 JSON 开始流式读
           }
           const r = readString(i); if (!r) { buf = buf.slice(i); pos = 0; return; }
