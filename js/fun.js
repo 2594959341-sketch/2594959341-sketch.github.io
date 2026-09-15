@@ -1419,13 +1419,13 @@ const Entertainment = {
     if (fUp) {
       const cover = document.getElementById('fCover'), prev = document.getElementById('fCoverPrev'), file = document.getElementById('fFile');
       fUp.onclick = () => file.click();
-      file.onchange = () => { const f = file.files[0]; if (!f) return; const fr = new FileReader(); fr.onload = () => { cover.value = fr.result; prev.innerHTML = `<img src="${fr.result}" style="max-height:90px;border-radius:8px">`; }; fr.readAsDataURL(f); };
+      file.onchange = () => { const f = file.files[0]; if (!f) return; const fr = new FileReader(); fr.onload = () => { const raw = fr.result; if (typeof shrinkImage === 'function') { shrinkImage(raw, 1000, 0.82).then(small => { const v = small || raw; cover.value = v; prev.innerHTML = `<img src="${v}" style="max-height:90px;border-radius:8px">`; }).catch(() => { cover.value = raw; prev.innerHTML = `<img src="${raw}" style="max-height:90px;border-radius:8px">`; }); } else { cover.value = raw; prev.innerHTML = `<img src="${raw}" style="max-height:90px;border-radius:8px">`; } }; fr.readAsDataURL(f); };
     }
     const fIconUp = document.getElementById('fIconUp');
     if (fIconUp) {
       const iconIn = document.getElementById('fIcon'), iconPrev = document.getElementById('fIconPrev'), iconFile = document.getElementById('fIconFile');
       fIconUp.onclick = () => iconFile.click();
-      iconFile.onchange = () => { const f = iconFile.files[0]; if (!f) return; const fr = new FileReader(); fr.onload = () => { iconIn.value = fr.result; iconPrev.innerHTML = `<img src="${fr.result}" style="max-height:64px;border-radius:8px">`; }; fr.readAsDataURL(f); };
+      iconFile.onchange = () => { const f = iconFile.files[0]; if (!f) return; const fr = new FileReader(); fr.onload = () => { const raw = fr.result; if (typeof shrinkImage === 'function') { shrinkImage(raw, 600, 0.82).then(small => { const v = small || raw; iconIn.value = v; iconPrev.innerHTML = `<img src="${v}" style="max-height:64px;border-radius:8px">`; }).catch(() => { iconIn.value = raw; iconPrev.innerHTML = `<img src="${raw}" style="max-height:64px;border-radius:8px">`; }); } else { iconIn.value = raw; iconPrev.innerHTML = `<img src="${raw}" style="max-height:64px;border-radius:8px">`; } }; fr.readAsDataURL(f); };
     }
     // 半星评分通用绑定：点左半=半星、点右半=全星、再点同位=清零；和阅读打分同一套逻辑
     const renderStars = (box, v) => {
