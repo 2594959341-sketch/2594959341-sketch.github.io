@@ -544,8 +544,8 @@ const IMPORT_CHUNK = 256 * 1024;
 function createBackupScanner(opts) {
   const onProgress = (opts && opts.onProgress) || function () {};
   const stats = { keys: 0, skipped: 0, errors: 0, photosAdded: 0, photosInBackup: 0, photosFailed: 0, photosTooBig: 0 };
-  const MAX_CAP = 32 * 1024 * 1024;  // 单张照片 base64 捕获上限 32MB：超过则跳过(极端原图，可重传更小)；捕获后即压缩写盘(解码到目标尺寸，内存恒有界)，正常照片全部保留
-  const PHOTO_MAX = 1600;             // 导入照片最长边压到 1600px（JPEG 0.82），体积降到数百 KB，既清晰又不大
+  const MAX_CAP = 20 * 1024 * 1024;  // 单张照片 base64 捕获上限 20MB：超过则跳过(极端原图，可重传更小)；导入不解码、原样落盘，内存峰值=单张字符串(≤20MB)有界，正常照片全部保留
+  const COVER_KEEP = 1500 * 1024;     // 娱乐封面/图标 base64 超过此值且压缩未生效时，导入阶段剥离(置空)，避免超大封面让 funLogs 驻留撑爆内存
   let buf = '';
   let pos = 0;                 // 跨分块持续的游标（已消费位置）
   let state = 'walk';          // walk | colon | value | capture | photos | done
@@ -698,14 +698,15 @@ function createBackupScanner(opts) {
       else if (capAction === 'photo') {
         sawPhotos = true;
         stats.photosInBackup++;          // 备份中的照片总数（含超大被跳过的）
-        if (capTooBig) { stats.photosTooBig++; } // 单张超过上限：跳过(极端原图)，保留其余照片，避免整页崩溃
+        if (capTooBig) { stats.photosTooBig++; } // 单张超过捕获上限(20MB)：跳过(极端原图)，可后续单张重传更小版本
         else {
           const ph = JSON.parse(capBuf);
-          // 导入即压缩：大原图缩到 PHOTO_MAX 内再写盘——内存峰值恒小、且全部保留(不丢)，导出导入都顺畅
+          // 导入「不解码」原图：直接原样落盘。内存峰值=单张 base64 字符串(≤20MB)，有界，
+          // 彻底规避「大原图解码(createImageBitmap/new Image)撑爆渲染进程→此页存在问题」。其余照片全部保留、不丢。
           if (ph && ph.id != null && typeof ph.data === 'string' && ph.data) {
-            try { ph.data = await shrinkImage(ph.data, PHOTO_MAX, 0.82); } catch (e) {}
-            await writePhoto(ph); // 写完即释放
+            await writePhoto(ph); // 写完即释放(不解码)
           }
+          await new Promise(r => setTimeout(r, 0)); // 让出主线程，GC 收一下，连续大图也不堆内存
         }
       }
     } catch (e) { /* 损坏记录跳过 */ }
@@ -830,7 +831,7 @@ function createBackupScanner(opts) {
 
 // 导入时把 funLogs 内嵌的封面/图标 base64 压缩到合理尺寸，避免 funLogs 体积爆炸（覆盖/图标只是缩略图，
 // 压到 1000/600px 足够清晰，体积从数 MB 降到数百 KB）。解析失败或某张解码失败则原样保留，不丢数据。
-async function shrinkFunLogsCovers(rawStr) {
+async function shrinkFunLogsCovers(rawStr, st) {
   try {
     const obj = JSON.parse(rawStr);
     if (!obj || typeof obj !== 'object') return rawStr;
@@ -840,13 +841,17 @@ async function shrinkFunLogsCovers(rawStr) {
       for (const rec of arr) {
         if (!rec || typeof rec !== 'object') continue;
         if (typeof rec.cover === 'string' && rec.cover.indexOf('data:image') === 0) {
-          try { rec.cover = await shrinkImage(rec.cover, 1000, 0.82); } catch (e) {}
+          const orig = rec.cover; let out = orig;
+          try { out = await shrinkImage(orig, 1000, 0.82); } catch (e) {}
+          // 压缩未生效(环境不支持/解码失败→原样返回)且仍过大：剥离封面(置空)，避免超大封面让 funLogs 整段驻留撑爆内存
+          if (out.length >= orig.length && orig.length > COVER_KEEP) { out = null; if (st) st.coversStripped = (st.coversStripped || 0) + 1; }
+          rec.cover = out;
         }
         if (typeof rec.icon === 'string' && rec.icon.indexOf('data:image') === 0) {
-          try { rec.icon = await shrinkImage(rec.icon, 600, 0.82); } catch (e) {}
-        }
-        if (typeof rec.icon === 'string' && rec.icon.indexOf('data:image') === 0) {
-          try { rec.icon = await shrinkImage(rec.icon, 600, 0.82); } catch (e) {}
+          const orig = rec.icon; let out = orig;
+          try { out = await shrinkImage(orig, 600, 0.82); } catch (e) {}
+          if (out.length >= orig.length && orig.length > COVER_KEEP) { out = null; if (st) st.coversStripped = (st.coversStripped || 0) + 1; }
+          rec.icon = out;
         }
       }
     }
@@ -866,7 +871,7 @@ async function importFromFile(file, onProgress) {
         let s;
         if (key === 'mumu_funLogs') {
           // 娱乐封面/图标导入时一并压缩（最长边 1000/600px），避免 funLogs 体积爆炸导致以后导出导入再崩
-          const processed = await shrinkFunLogsCovers(rawStr);
+          const processed = await shrinkFunLogsCovers(rawStr, cfg);
           s = await importData({ app: 'mumu-workbench', localStorage: { [key]: processed } }, { merge: true, skipRepair: true });
         } else {
           s = await importData({ app: 'mumu-workbench', localStorage: { [key]: rawStr } }, { merge: true, skipRepair: true });
