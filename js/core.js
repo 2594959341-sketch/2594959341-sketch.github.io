@@ -263,29 +263,27 @@ function shrinkImage(dataURL, max, quality) {
   return new Promise(resolve => {
     let done = false;
     const res = v => { if (done) return; done = true; clearTimeout(t); resolve(v); };
-    // 图片解码万一不回调，也必须让保存流程继续走下去
-    const t = setTimeout(() => res(dataURL), 4000);
+    // 解码/缩放万一卡死也必须让保存流程继续（保留原图，绝不挂起、绝不崩页）
+    const t = setTimeout(() => res(dataURL), 8000);
+    if (typeof dataURL !== 'string' || dataURL.indexOf('data:image') !== 0) return res(dataURL);
+    if (typeof createImageBitmap !== 'function') return res(dataURL); // 环境不支持则保留原图
     try {
-      const img = new Image();
-      img.onload = () => {
-        try {
-          let w = img.naturalWidth || img.width, h = img.naturalHeight || img.height;
-          if (!w || !h) return res(dataURL);
-          const scale = Math.min(1, max / Math.max(w, h));
-          w = Math.max(1, Math.round(w * scale)); h = Math.max(1, Math.round(h * scale));
-          const cv = document.createElement('canvas');
-          cv.width = w; cv.height = h;
-          const ctx = cv.getContext('2d');
-          if (!ctx) return res(dataURL);
-          ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, w, h);
-          ctx.drawImage(img, 0, 0, w, h);
-          const out = cv.toDataURL('image/jpeg', quality);
-          // 输出过短说明 canvas 没真正工作（如空白 data:,），宁可保留原图
-          res(out && out.length > 1000 && out.length < dataURL.length ? out : dataURL);
-        } catch (e) { res(dataURL); }
-      };
-      img.onerror = () => res(dataURL);
-      img.src = dataURL;
+      // 关键：createImageBitmap(blob,{resizeWidth}) 在「解码阶段」直接缩到目标尺寸，
+      // 绝不分配整图位图——内存峰值恒为输出尺寸(数百 KB 级)，根治「大原图解码撑爆渲染进程→此页存在问题」。
+      fetch(dataURL).then(r => r.blob()).then(blob => {
+        if (!blob || !blob.size) return res(dataURL);
+        createImageBitmap(blob, { resizeWidth: max, resizeQuality: 'medium' }).then(bmp => {
+          try {
+            const cv = document.createElement('canvas'); cv.width = bmp.width; cv.height = bmp.height;
+            const ctx = cv.getContext('2d'); if (!ctx) { try { bmp.close(); } catch (e) {} return res(dataURL); }
+            ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, bmp.width, bmp.height);
+            ctx.drawImage(bmp, 0, 0); try { bmp.close(); } catch (e) {}
+            const out = cv.toDataURL('image/jpeg', quality);
+            // 输出异常(过短/未变小)则宁可保留原图，不丢数据
+            res(out && out.length > 1000 && out.length < dataURL.length ? out : dataURL);
+          } catch (e) { res(dataURL); }
+        }).catch(() => res(dataURL));
+      }).catch(() => res(dataURL));
     } catch (e) { res(dataURL); }
   });
 }
@@ -546,7 +544,7 @@ const IMPORT_CHUNK = 256 * 1024;
 function createBackupScanner(opts) {
   const onProgress = (opts && opts.onProgress) || function () {};
   const stats = { keys: 0, skipped: 0, errors: 0, photosAdded: 0, photosInBackup: 0, photosFailed: 0, photosTooBig: 0 };
-  const MAX_CAP = 16 * 1024 * 1024;  // 单张照片 base64 捕获上限 16MB：超过则跳过(极端原图，可重传更小)；捕获后即压缩写盘，瞬时占用恒小不崩
+  const MAX_CAP = 32 * 1024 * 1024;  // 单张照片 base64 捕获上限 32MB：超过则跳过(极端原图，可重传更小)；捕获后即压缩写盘(解码到目标尺寸，内存恒有界)，正常照片全部保留
   const PHOTO_MAX = 1600;             // 导入照片最长边压到 1600px（JPEG 0.82），体积降到数百 KB，既清晰又不大
   let buf = '';
   let pos = 0;                 // 跨分块持续的游标（已消费位置）
@@ -843,6 +841,9 @@ async function shrinkFunLogsCovers(rawStr) {
         if (!rec || typeof rec !== 'object') continue;
         if (typeof rec.cover === 'string' && rec.cover.indexOf('data:image') === 0) {
           try { rec.cover = await shrinkImage(rec.cover, 1000, 0.82); } catch (e) {}
+        }
+        if (typeof rec.icon === 'string' && rec.icon.indexOf('data:image') === 0) {
+          try { rec.icon = await shrinkImage(rec.icon, 600, 0.82); } catch (e) {}
         }
         if (typeof rec.icon === 'string' && rec.icon.indexOf('data:image') === 0) {
           try { rec.icon = await shrinkImage(rec.icon, 600, 0.82); } catch (e) {}
