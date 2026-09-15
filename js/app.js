@@ -1,5 +1,5 @@
 /* ============ 首页 + 导航 ============ */
-window.APP_VER = 'mumu-v299'; // 当前前端版本（设置页可见，用于确认是否加载到最新代码）
+window.APP_VER = 'mumu-v300'; // 当前前端版本（设置页可见，用于确认是否加载到最新代码）
 const SR_LINKS = [
   { v: 'sport', n: '运动（任意跟练）' },
   { v: 'sport:', n: '运动（具体项目，选后填名）' },
@@ -585,6 +585,7 @@ const App = {
         }).then(st => {
           let msg = '已导入 ' + st.keys + ' 项；照片 备份' + st.photosInBackup + '张 → 写入' + st.photosAdded + '张';
           if (st.photosFailed > 0) msg += '，' + st.photosFailed + '张写入失败(多为存储空间不足)';
+          if (st.photosTooBig > 0) msg += '，' + st.photosTooBig + ' 张因体积过大(>12MB)已跳过';
           if (st.skipped > 0) msg += '，' + st.skipped + ' 项因空间不足跳过';
           toast(msg);
           setTimeout(() => location.reload(), 1800);
