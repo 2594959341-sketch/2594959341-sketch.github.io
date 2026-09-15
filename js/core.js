@@ -536,130 +536,192 @@ async function importData(obj, opts) {
   return stats;
 }
 
-/* 流式解析备份文本：localStorage 正常解析（通常较小），photos 数组逐条回调 onPhoto，
-   避免一次性把全部 base64 照片载入内存——这是手机端导入 OOM（“此页面存在问题”）崩溃的根因。
-   自写最小 JSON 解析器，正确处理字符串内嵌的括号/逗号（app 数据里常见），不会误判结构。 */
-function parseBackupStreaming(text, onPhoto) {
-  let i = 0; const n = text.length;
-  const ws = c => c === ' ' || c === '\n' || c === '\r' || c === '\t';
-  function skipWs() { while (i < n && ws(text[i])) i++; }
-  function parseStr() {
-    i++; let s = '';
-    while (i < n) {
-      const c = text[i];
+/* 真·分块流式导入（根治新手机 OOM“此页面存在问题”崩溃）
+   根因：旧逻辑用 FileReader.readAsText 把整份备份（含全部 base64 照片，可达上百 MB）一次性读成字符串，
+   解析时整串 + 解析对象同时驻留内存 → 内存受限手机直接 OOM 杀进程。
+   本方案：按 256KB 一块读取文件，增量扫描 JSON，照片逐张解析 → 立即写入 IndexedDB → 立即丢弃，
+   内存峰值仅「一张照片 + 一个分块」，无论备份多大都不会爆内存。同时回调进度，解决“导入没有任何显示”。 */
+const IMPORT_CHUNK = 256 * 1024;
+
+// 增量备份扫描器：边喂分块文本边抽取 localStorage 对象与每张照片，照片即时经 writePhoto 写出。
+function createBackupScanner(opts) {
+  const onProgress = (opts && opts.onProgress) || function () {};
+  const stats = { keys: 0, skipped: 0, errors: 0, photosAdded: 0, photosInBackup: 0, photosFailed: 0 };
+  let buf = '';
+  let pos = 0;                 // 跨分块持续的游标（已消费位置）
+  let state = 'walk';          // walk | colon | value | capture | photos | done
+  let pendingKey = '';
+  let lsObj = null;
+  // capture 态
+  let capAction = null;        // 'ls' | 'photo' | 'skip'
+  let capBuf = '';
+  let capDepth = 0;
+  let capInStr = false;
+  let sawLS = false, sawPhotos = false;
+  const photoWrites = [];
+
+  function isWs(c) { return c === ' ' || c === '\n' || c === '\r' || c === '\t'; }
+
+  // 从 buf 的 p 处读 JSON 字符串；未闭合返回 null（需更多数据）
+  function readString(p) {
+    let i = p + 1, s = '';
+    while (i < buf.length) {
+      const c = buf[i];
       if (c === '\\') {
-        i++; const e = text[i];
+        i++;
+        const e = buf[i];
         if (e === 'n') s += '\n'; else if (e === 't') s += '\t'; else if (e === 'r') s += '\r';
         else if (e === '"') s += '"'; else if (e === '\\') s += '\\'; else if (e === '/') s += '/';
         else if (e === 'b') s += '\b'; else if (e === 'f') s += '\f';
-        else if (e === 'u') { s += String.fromCharCode(parseInt(text.substr(i + 1, 4), 16)); i += 4; }
+        else if (e === 'u') { s += String.fromCharCode(parseInt(buf.substr(i + 1, 4), 16)); i += 4; }
         i++;
-      } else if (c === '"') { i++; break; }
+      } else if (c === '"') { return { value: s, next: i + 1 }; }
       else { s += c; i++; }
     }
-    return s;
+    return null;
   }
-  function parseVal() {
-    skipWs(); const c = text[i];
-    if (c === '"') return parseStr();
-    if (c === '{') return parseObj();
-    if (c === '[') return parseArr();
-    if (c === 't') { i += 4; return true; }
-    if (c === 'f') { i += 5; return false; }
-    if (c === 'n') { i += 4; return null; }
-    let s = ''; while (i < n && /[0-9eE.\-+]/.test(text[i])) { s += text[i]; i++; }
-    return s === '' ? undefined : parseFloat(s);
-  }
-  function parseArr() {
-    i++; skipWs(); const a = [];
-    if (text[i] === ']') { i++; return a; }
-    while (true) {
-      a.push(parseVal()); skipWs();
-      if (text[i] === ',') { i++; continue; }
-      if (text[i] === ']') { i++; break; }
-      break;
-    }
-    return a;
-  }
-  function parseObj() {
-    i++; skipWs(); const o = {};
-    if (text[i] === '}') { i++; return o; }
-    while (true) {
-      skipWs(); const key = parseStr(); skipWs(); i++; // 跳过 ':'
-      if (key === 'photos') {
-        skipWs();
-        if (text[i] === '[') {
-          i++; skipWs();
-          if (text[i] !== ']') {
-            while (true) {
-              const pv = parseVal(); onPhoto(pv); skipWs();
-              if (text[i] === ',') { i++; continue; }
-              if (text[i] === ']') { i++; break; }
-              break;
-            }
-          } else { i++; }
-        }
-      } else {
-        o[key] = parseVal();
+
+  // capture 态：从 from 开始消费，遇结构闭合返回结束位置（已写入 capBuf）
+  function consumeCapture(from) {
+    let i = from;
+    while (i < buf.length) {
+      const c = buf[i];
+      if (capInStr) {
+        if (c === '\\') { capBuf += c; if (i + 1 < buf.length) { capBuf += buf[i + 1]; i += 2; } else { i++; return i; } }
+        else if (c === '"') { capInStr = false; capBuf += c; i++; }
+        else { capBuf += c; i++; }
+        continue;
       }
-      skipWs();
-      if (text[i] === ',') { i++; continue; }
-      if (text[i] === '}') { i++; break; }
-      break;
+      if (c === '"') { capInStr = true; capBuf += c; i++; continue; }
+      if (c === '{' || c === '[') { capDepth++; capBuf += c; i++; continue; }
+      if (c === '}' || c === ']') { capDepth--; capBuf += c; i++; if (capDepth === 0) return i; continue; }
+      capBuf += c; i++;
     }
-    return o;
+    return i;
   }
-  skipWs();
-  return parseObj();
+
+  function writePhoto(ph) {
+    stats.photosInBackup++;
+    const p = IDB.open().then(db => new Promise((res) => {
+      if (!db) { stats.photosFailed++; return res(); }
+      const t = db.transaction('photos', 'readwrite');
+      t.objectStore('photos').put(ph);
+      t.oncomplete = () => { stats.photosAdded++; res(); };
+      t.onerror = () => { stats.photosFailed++; res(); };
+      t.onabort = () => { stats.photosFailed++; res(); };
+    })).catch(() => { stats.photosFailed++; });
+    photoWrites.push(p);
+  }
+
+  function finishCapture() {
+    try {
+      if (capAction === 'ls') { lsObj = JSON.parse(capBuf); sawLS = true; }
+      else if (capAction === 'photo') {
+        sawPhotos = true;
+        const ph = JSON.parse(capBuf);
+        if (ph && ph.id != null && typeof ph.data === 'string' && ph.data) writePhoto(ph);
+      }
+    } catch (e) { /* 损坏记录跳过 */ }
+    capBuf = '';
+  }
+
+  function process() {
+    let i = pos;
+    const L = buf.length;
+    while (i < L) {
+      const c = buf[i];
+      if (state === 'done') { i++; break; }
+      if (state === 'walk') {
+        if (isWs(c)) { i++; continue; }
+        if (c === '}') { state = 'done'; i++; break; }
+        if (c === '"') {
+          const r = readString(i);
+          if (!r) { buf = buf.slice(i); pos = 0; return; } // 需更多数据
+          pendingKey = r.value; i = r.next; state = 'colon'; continue;
+        }
+        i++;
+      } else if (state === 'colon') {
+        if (isWs(c)) { i++; continue; }
+        if (c === ':') { i++; state = 'value'; continue; }
+        i++;
+      } else if (state === 'value') {
+        if (isWs(c)) { i++; continue; }
+        if (pendingKey === 'localStorage') {
+          if (c === '{') { capAction = 'ls'; capBuf = '{'; capDepth = 1; capInStr = false; state = 'capture'; i++; }
+          else i++;
+        } else if (pendingKey === 'photos') {
+          if (c === '[') { state = 'photos'; i++; }
+          else i++;
+        } else {
+          // 跳过其它键的值
+          if (c === '{' || c === '[') { capAction = 'skip'; capBuf = c; capDepth = 1; capInStr = false; state = 'capture'; i++; }
+          else if (c === '"') { const r = readString(i); if (!r) { buf = buf.slice(i); pos = 0; return; } i = r.next; state = 'walk'; }
+          else { while (i < L && buf[i] !== ',' && buf[i] !== '}' && buf[i] !== ']') i++; state = 'walk'; }
+        }
+        continue;
+      } else if (state === 'capture') {
+        const start = i;
+        const end = consumeCapture(i);
+        if (capDepth === 0) {
+          buf = buf.slice(end); pos = 0; i = 0;
+          finishCapture();
+          state = (capAction === 'photo') ? 'photos' : 'walk';
+          capAction = null;
+          continue;
+        } else {
+          buf = buf.slice(end); pos = 0;
+          return; // 不完整，等下一块
+        }
+      } else if (state === 'photos') {
+        if (isWs(c)) { i++; continue; }
+        if (c === ']') { state = 'walk'; i++; continue; }
+        if (c === '{') { capAction = 'photo'; capBuf = '{'; capDepth = 1; capInStr = false; state = 'capture'; i++; continue; }
+        if (c === ',') { i++; continue; }
+        i++;
+      } else { i++; }
+    }
+    buf = buf.slice(i); pos = 0;
+  }
+
+  return {
+    feed(text) { buf += text; process(); },
+    end() { process(); },         // 末尾再跑一次
+    getLocalStorage() { return lsObj || {}; },
+    hasStructure() { return sawLS || sawPhotos; },
+    async flush() { await Promise.all(photoWrites); return stats; },
+    stats() { return stats; }
+  };
 }
 
-/* 从备份【文本】导入：照片走流式、分批（约 15 张/批）写入 IndexedDB，
-   内存只保留极少照片，彻底规避大体积备份在内存受限手机上解析即崩溃的问题。
-   非照片数据走原 importData（localStorage / IndexedDB kv）。 */
-async function importDataFromText(text) {
-  const stats = { keys: 0, skipped: 0, errors: 0, photosAdded: 0, photosInBackup: 0, photosFailed: 0 };
-  let photoBuf = [];
-  let photoChain = Promise.resolve();
-  let dbCache = null;
-  const getDB = async () => { if (!dbCache) dbCache = await IDB.open(); return dbCache; };
-  function flushBuf() {
-    if (!photoBuf.length) return;
-    const batch = photoBuf; photoBuf = [];
-    const p = getDB().then(db => new Promise((res) => {
-      if (!db) { stats.photosFailed += batch.length; return res(); }
-      const t = db.transaction('photos', 'readwrite');
-      const st = t.objectStore('photos');
-      batch.forEach(r => st.put(r));
-      t.oncomplete = () => { stats.photosAdded += batch.length; res(); };
-      t.onerror = () => { stats.photosFailed += batch.length; res(); };
-      t.onabort = () => { stats.photosFailed += batch.length; res(); };
-    })).catch(() => { stats.photosFailed += batch.length; });
-    photoChain = photoChain.then(() => p);
-  }
-  const onPhoto = (rec) => {
-    if (!rec || typeof rec !== 'object' || rec.id == null || typeof rec.data !== 'string' || !rec.data) return;
-    if (rec.id == null) rec.id = 'imp' + Date.now().toString(36) + '_' + stats.photosInBackup;
-    stats.photosInBackup++;
-    photoBuf.push(rec);
-    if (photoBuf.length >= 15) flushBuf();
-  };
-  let parsed;
+// 分块读取文件并流式导入：照片逐张落盘，非照片数据交给 importData。
+async function importFromFile(file, onProgress) {
+  if (!file) throw new Error('没有选择文件');
+  const scanner = createBackupScanner({ onProgress: onProgress });
+  const total = file.size || 0;
+  let offset = 0;
+  const decoder = new TextDecoder('utf-8');
   try {
-    parsed = parseBackupStreaming(text, onPhoto);
-    flushBuf();
+    while (offset < total) {
+      const end = Math.min(offset + IMPORT_CHUNK, total);
+      const slice = file.slice(offset, end);
+      const ab = await slice.arrayBuffer();
+      const text = decoder.decode(ab, { stream: true });
+      scanner.feed(text);
+      offset = end;
+      if (onProgress) onProgress({ phase: 'reading', done: offset, total: total });
+    }
+    scanner.feed(decoder.decode()); // flush 多字节残尾
+    scanner.end();
   } catch (e) {
-    console.warn('streaming parse failed, fallback to JSON.parse', e);
-    try { parsed = JSON.parse(text); } catch (e2) { throw new Error('备份文件解析失败，可能不是有效的工作台备份'); }
-    // fallback：用原逻辑逐条喂给 onPhoto
-    if (parsed && Array.isArray(parsed.photos)) parsed.photos.forEach(onPhoto);
-    flushBuf();
+    throw new Error('文件读取失败：' + (e && e.message ? e.message : e));
   }
+  if (!scanner.hasStructure()) throw new Error('文件格式不对，不是木木的工作台备份');
   // 非照片数据
-  const obj = { app: 'mumu-workbench', localStorage: (parsed && parsed.localStorage) || {} };
-  const s2 = await importData(obj);
-  Object.assign(stats, { keys: s2.keys, skipped: s2.skipped, errors: s2.errors });
-  await photoChain; // 等所有照片写盘
-  return stats;
+  const lsObj = scanner.getLocalStorage();
+  const s2 = await importData({ app: 'mumu-workbench', localStorage: lsObj });
+  const st = await scanner.flush();
+  Object.assign(st, { keys: s2.keys, skipped: s2.skipped, errors: s2.errors });
+  return st;
 }
 
 function pickPhoto(cb) { // 选图并压缩为 dataURL
