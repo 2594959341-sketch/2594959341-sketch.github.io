@@ -546,7 +546,8 @@ const IMPORT_CHUNK = 256 * 1024;
 // 增量备份扫描器：边喂分块文本边抽取 localStorage 对象与每张照片，照片即时经 writePhoto 写出。
 function createBackupScanner(opts) {
   const onProgress = (opts && opts.onProgress) || function () {};
-  const stats = { keys: 0, skipped: 0, errors: 0, photosAdded: 0, photosInBackup: 0, photosFailed: 0 };
+  const stats = { keys: 0, skipped: 0, errors: 0, photosAdded: 0, photosInBackup: 0, photosFailed: 0, photosTooBig: 0 };
+  const MAX_CAP = 12 * 1024 * 1024; // 单条记录 base64 上限 12MB：超过则跳过，避免单张超大照片(视频/原图)撑爆内存导致整页崩溃
   let buf = '';
   let pos = 0;                 // 跨分块持续的游标（已消费位置）
   let state = 'walk';          // walk | colon | value | capture | photos | done
@@ -557,6 +558,7 @@ function createBackupScanner(opts) {
   let capBuf = '';
   let capDepth = 0;
   let capInStr = false;
+  let capTooBig = false;       // 当前 capture 已超过 MAX_CAP，仅追踪深度不再存内容（保护内存）
   let sawLS = false, sawPhotos = false;
 
   function isWs(c) { return c === ' ' || c === '\n' || c === '\r' || c === '\t'; }
@@ -581,20 +583,28 @@ function createBackupScanner(opts) {
   }
 
   // capture 态：从 from 开始消费，遇结构闭合返回结束位置（已写入 capBuf）
+  // 内存保护：capBuf 超过 MAX_CAP 后不再存内容，仅追踪深度/字符串态找到闭合括号，
+  // 这样单张超大照片(视频/原图)最多占 MAX_CAP 内存，不会撑爆整页。
   function consumeCapture(from) {
     let i = from;
     while (i < buf.length) {
       const c = buf[i];
       if (capInStr) {
-        if (c === '\\') { capBuf += c; if (i + 1 < buf.length) { capBuf += buf[i + 1]; i += 2; } else { i++; return i; } }
-        else if (c === '"') { capInStr = false; capBuf += c; i++; }
-        else { capBuf += c; i++; }
-        continue;
+        if (c === '\\') {
+          if (!capTooBig) { capBuf += c; if (i + 1 < buf.length) { capBuf += buf[i + 1]; i += 2; } else { i++; } }
+          else { if (i + 1 < buf.length) i += 2; else i++; }
+          if (!capTooBig && capBuf.length > MAX_CAP) capTooBig = true;
+          continue;
+        }
+        if (c === '"') { capInStr = false; if (!capTooBig) capBuf += c; i++; continue; }
+        if (!capTooBig) { capBuf += c; if (capBuf.length > MAX_CAP) capTooBig = true; }
+        i++; continue;
       }
-      if (c === '"') { capInStr = true; capBuf += c; i++; continue; }
-      if (c === '{' || c === '[') { capDepth++; capBuf += c; i++; continue; }
-      if (c === '}' || c === ']') { capDepth--; capBuf += c; i++; if (capDepth === 0) return i; continue; }
-      capBuf += c; i++;
+      if (c === '"') { capInStr = true; if (!capTooBig) capBuf += c; i++; continue; }
+      if (c === '{' || c === '[') { capDepth++; if (!capTooBig) capBuf += c; i++; continue; }
+      if (c === '}' || c === ']') { capDepth--; if (!capTooBig) capBuf += c; i++; if (capDepth === 0) return i; continue; }
+      if (!capTooBig) { capBuf += c; if (capBuf.length > MAX_CAP) capTooBig = true; }
+      i++;
     }
     return i;
   }
@@ -602,21 +612,26 @@ function createBackupScanner(opts) {
   // 每张照片解析完【立即 await 写入并释放引用】：这是根治 OOM 的关键——
   // 旧版把全部 writePhoto 的 Promise 排队却不 await，导致所有照片对象同时驻留内存→爆内存。
   async function writePhoto(ph) {
-    stats.photosInBackup++;
     try { await IDB.put(ph); stats.photosAdded++; }
     catch (e) { stats.photosFailed++; }
   }
 
   async function finishCapture() {
     try {
-      if (capAction === 'ls') { lsObj = JSON.parse(capBuf); sawLS = true; }
+      if (capAction === 'ls') {
+        if (!capTooBig) { lsObj = JSON.parse(capBuf); sawLS = true; }
+      }
       else if (capAction === 'photo') {
         sawPhotos = true;
-        const ph = JSON.parse(capBuf);
-        if (ph && ph.id != null && typeof ph.data === 'string' && ph.data) await writePhoto(ph); // 写完即释放
+        stats.photosInBackup++;          // 备份中的照片总数（含超大被跳过的）
+        if (capTooBig) { stats.photosTooBig++; } // 单张超过 12MB：跳过，保留其余照片，避免整页崩溃
+        else {
+          const ph = JSON.parse(capBuf);
+          if (ph && ph.id != null && typeof ph.data === 'string' && ph.data) await writePhoto(ph); // 写完即释放
+        }
       }
     } catch (e) { /* 损坏记录跳过 */ }
-    capBuf = '';
+    capBuf = ''; capTooBig = false;
   }
 
   async function process() {
@@ -641,14 +656,14 @@ function createBackupScanner(opts) {
       } else if (state === 'value') {
         if (isWs(c)) { i++; continue; }
         if (pendingKey === 'localStorage') {
-          if (c === '{') { capAction = 'ls'; capBuf = '{'; capDepth = 1; capInStr = false; state = 'capture'; i++; }
+          if (c === '{') { capAction = 'ls'; capBuf = '{'; capDepth = 1; capInStr = false; capTooBig = false; state = 'capture'; i++; }
           else i++;
         } else if (pendingKey === 'photos') {
           if (c === '[') { state = 'photos'; i++; }
           else i++;
         } else {
           // 跳过其它键的值
-          if (c === '{' || c === '[') { capAction = 'skip'; capBuf = c; capDepth = 1; capInStr = false; state = 'capture'; i++; }
+          if (c === '{' || c === '[') { capAction = 'skip'; capBuf = c; capDepth = 1; capInStr = false; capTooBig = false; state = 'capture'; i++; }
           else if (c === '"') { const r = readString(i); if (!r) { buf = buf.slice(i); pos = 0; return; } i = r.next; state = 'walk'; }
           else { while (i < L && buf[i] !== ',' && buf[i] !== '}' && buf[i] !== ']') i++; state = 'walk'; }
         }
@@ -669,7 +684,7 @@ function createBackupScanner(opts) {
       } else if (state === 'photos') {
         if (isWs(c)) { i++; continue; }
         if (c === ']') { state = 'walk'; i++; continue; }
-        if (c === '{') { capAction = 'photo'; capBuf = '{'; capDepth = 1; capInStr = false; state = 'capture'; i++; continue; }
+        if (c === '{') { capAction = 'photo'; capBuf = '{'; capDepth = 1; capInStr = false; capTooBig = false; state = 'capture'; i++; continue; }
         if (c === ',') { i++; continue; }
         i++;
       } else { i++; }
