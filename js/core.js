@@ -535,6 +535,133 @@ async function importData(obj, opts) {
   try { menstrualReconcile(); } catch (e) { console.warn('menstrualReconcile failed', e); }
   return stats;
 }
+
+/* 流式解析备份文本：localStorage 正常解析（通常较小），photos 数组逐条回调 onPhoto，
+   避免一次性把全部 base64 照片载入内存——这是手机端导入 OOM（“此页面存在问题”）崩溃的根因。
+   自写最小 JSON 解析器，正确处理字符串内嵌的括号/逗号（app 数据里常见），不会误判结构。 */
+function parseBackupStreaming(text, onPhoto) {
+  let i = 0; const n = text.length;
+  const ws = c => c === ' ' || c === '\n' || c === '\r' || c === '\t';
+  function skipWs() { while (i < n && ws(text[i])) i++; }
+  function parseStr() {
+    i++; let s = '';
+    while (i < n) {
+      const c = text[i];
+      if (c === '\\') {
+        i++; const e = text[i];
+        if (e === 'n') s += '\n'; else if (e === 't') s += '\t'; else if (e === 'r') s += '\r';
+        else if (e === '"') s += '"'; else if (e === '\\') s += '\\'; else if (e === '/') s += '/';
+        else if (e === 'b') s += '\b'; else if (e === 'f') s += '\f';
+        else if (e === 'u') { s += String.fromCharCode(parseInt(text.substr(i + 1, 4), 16)); i += 4; }
+        i++;
+      } else if (c === '"') { i++; break; }
+      else { s += c; i++; }
+    }
+    return s;
+  }
+  function parseVal() {
+    skipWs(); const c = text[i];
+    if (c === '"') return parseStr();
+    if (c === '{') return parseObj();
+    if (c === '[') return parseArr();
+    if (c === 't') { i += 4; return true; }
+    if (c === 'f') { i += 5; return false; }
+    if (c === 'n') { i += 4; return null; }
+    let s = ''; while (i < n && /[0-9eE.\-+]/.test(text[i])) { s += text[i]; i++; }
+    return s === '' ? undefined : parseFloat(s);
+  }
+  function parseArr() {
+    i++; skipWs(); const a = [];
+    if (text[i] === ']') { i++; return a; }
+    while (true) {
+      a.push(parseVal()); skipWs();
+      if (text[i] === ',') { i++; continue; }
+      if (text[i] === ']') { i++; break; }
+      break;
+    }
+    return a;
+  }
+  function parseObj() {
+    i++; skipWs(); const o = {};
+    if (text[i] === '}') { i++; return o; }
+    while (true) {
+      skipWs(); const key = parseStr(); skipWs(); i++; // 跳过 ':'
+      if (key === 'photos') {
+        skipWs();
+        if (text[i] === '[') {
+          i++; skipWs();
+          if (text[i] !== ']') {
+            while (true) {
+              const pv = parseVal(); onPhoto(pv); skipWs();
+              if (text[i] === ',') { i++; continue; }
+              if (text[i] === ']') { i++; break; }
+              break;
+            }
+          } else { i++; }
+        }
+      } else {
+        o[key] = parseVal();
+      }
+      skipWs();
+      if (text[i] === ',') { i++; continue; }
+      if (text[i] === '}') { i++; break; }
+      break;
+    }
+    return o;
+  }
+  skipWs();
+  return parseObj();
+}
+
+/* 从备份【文本】导入：照片走流式、分批（约 15 张/批）写入 IndexedDB，
+   内存只保留极少照片，彻底规避大体积备份在内存受限手机上解析即崩溃的问题。
+   非照片数据走原 importData（localStorage / IndexedDB kv）。 */
+async function importDataFromText(text) {
+  const stats = { keys: 0, skipped: 0, errors: 0, photosAdded: 0, photosInBackup: 0, photosFailed: 0 };
+  let photoBuf = [];
+  let photoChain = Promise.resolve();
+  let dbCache = null;
+  const getDB = async () => { if (!dbCache) dbCache = await IDB.open(); return dbCache; };
+  function flushBuf() {
+    if (!photoBuf.length) return;
+    const batch = photoBuf; photoBuf = [];
+    const p = getDB().then(db => new Promise((res) => {
+      if (!db) { stats.photosFailed += batch.length; return res(); }
+      const t = db.transaction('photos', 'readwrite');
+      const st = t.objectStore('photos');
+      batch.forEach(r => st.put(r));
+      t.oncomplete = () => { stats.photosAdded += batch.length; res(); };
+      t.onerror = () => { stats.photosFailed += batch.length; res(); };
+      t.onabort = () => { stats.photosFailed += batch.length; res(); };
+    })).catch(() => { stats.photosFailed += batch.length; });
+    photoChain = photoChain.then(() => p);
+  }
+  const onPhoto = (rec) => {
+    if (!rec || typeof rec !== 'object' || rec.id == null || typeof rec.data !== 'string' || !rec.data) return;
+    if (rec.id == null) rec.id = 'imp' + Date.now().toString(36) + '_' + stats.photosInBackup;
+    stats.photosInBackup++;
+    photoBuf.push(rec);
+    if (photoBuf.length >= 15) flushBuf();
+  };
+  let parsed;
+  try {
+    parsed = parseBackupStreaming(text, onPhoto);
+    flushBuf();
+  } catch (e) {
+    console.warn('streaming parse failed, fallback to JSON.parse', e);
+    try { parsed = JSON.parse(text); } catch (e2) { throw new Error('备份文件解析失败，可能不是有效的工作台备份'); }
+    // fallback：用原逻辑逐条喂给 onPhoto
+    if (parsed && Array.isArray(parsed.photos)) parsed.photos.forEach(onPhoto);
+    flushBuf();
+  }
+  // 非照片数据
+  const obj = { app: 'mumu-workbench', localStorage: (parsed && parsed.localStorage) || {} };
+  const s2 = await importData(obj);
+  Object.assign(stats, { keys: s2.keys, skipped: s2.skipped, errors: s2.errors });
+  await photoChain; // 等所有照片写盘
+  return stats;
+}
+
 function pickPhoto(cb) { // 选图并压缩为 dataURL
   const inp = document.createElement('input'); inp.type = 'file'; inp.accept = 'image/*';
   inp.onchange = () => {
