@@ -832,6 +832,9 @@ function createBackupScanner(opts) {
 // 导入时把 funLogs 内嵌的封面/图标 base64 压缩到合理尺寸，避免 funLogs 体积爆炸（覆盖/图标只是缩略图，
 // 压到 1000/600px 足够清晰，体积从数 MB 降到数百 KB）。解析失败或某张解码失败则原样保留，不丢数据。
 async function shrinkFunLogsCovers(rawStr, st) {
+  // 导入阶段「绝不解码图片」：实测在木木手机(小米17Pro/Edge)上，对娱乐封面/图标做任何解码(createImageBitmap/new Image)
+  // 都会把大原图整张解成位图撑爆渲染进程→「此页存在问题」。故仅按 base64 长度判断：过大的封面/图标直接剥离(置空)，
+  // 既不解码(不崩)、又避免超大封面让 funLogs 整段驻留 OOM。保留 ≤COVER_KEEP 的小封面/图标 + 全部文字数据。
   try {
     const obj = JSON.parse(rawStr);
     if (!obj || typeof obj !== 'object') return rawStr;
@@ -840,19 +843,8 @@ async function shrinkFunLogsCovers(rawStr, st) {
       if (!Array.isArray(arr)) continue;
       for (const rec of arr) {
         if (!rec || typeof rec !== 'object') continue;
-        if (typeof rec.cover === 'string' && rec.cover.indexOf('data:image') === 0) {
-          const orig = rec.cover; let out = orig;
-          try { out = await shrinkImage(orig, 1000, 0.82); } catch (e) {}
-          // 压缩未生效(环境不支持/解码失败→原样返回)且仍过大：剥离封面(置空)，避免超大封面让 funLogs 整段驻留撑爆内存
-          if (out.length >= orig.length && orig.length > COVER_KEEP) { out = null; if (st) st.coversStripped = (st.coversStripped || 0) + 1; }
-          rec.cover = out;
-        }
-        if (typeof rec.icon === 'string' && rec.icon.indexOf('data:image') === 0) {
-          const orig = rec.icon; let out = orig;
-          try { out = await shrinkImage(orig, 600, 0.82); } catch (e) {}
-          if (out.length >= orig.length && orig.length > COVER_KEEP) { out = null; if (st) st.coversStripped = (st.coversStripped || 0) + 1; }
-          rec.icon = out;
-        }
+        if (typeof rec.cover === 'string' && rec.cover.indexOf('data:image') === 0 && rec.cover.length > COVER_KEEP) { rec.cover = null; if (st) st.coversStripped = (st.coversStripped || 0) + 1; }
+        if (typeof rec.icon === 'string' && rec.icon.indexOf('data:image') === 0 && rec.icon.length > COVER_KEEP) { rec.icon = null; if (st) st.coversStripped = (st.coversStripped || 0) + 1; }
       }
     }
     return JSON.stringify(obj);
@@ -863,6 +855,8 @@ async function shrinkFunLogsCovers(rawStr, st) {
 async function importFromFile(file, onProgress) {
   if (!file) throw new Error('没有选择文件');
   const cfg = { keys: 0, skipped: 0, errors: 0 };
+  // 崩溃追踪点：导入过程中持续写入进度到 localStorage，渲染进程崩溃后该值仍在，下次打开可读出「卡在百分之几」
+  try { localStorage.setItem('mumu_import_ckpt', JSON.stringify({ t: Date.now(), pct: 0, phase: 'start' })); } catch (e) {}
   const scanner = createBackupScanner({
     onProgress: onProgress,
     // 每个配置键解析完立即落盘并释放引用：内存峰值=单个最大键，根治整段配置撑爆
@@ -892,6 +886,7 @@ async function importFromFile(file, onProgress) {
       await scanner.feed(text);
       offset = end;
       if (onProgress) onProgress({ phase: 'reading', done: offset, total: total });
+      try { localStorage.setItem('mumu_import_ckpt', JSON.stringify({ t: Date.now(), pct: Math.round(offset / total * 100), phase: 'reading' })); } catch (e) {}
     }
     await scanner.feed(decoder.decode()); // flush 多字节残尾
     await scanner.end();
@@ -904,6 +899,7 @@ async function importFromFile(file, onProgress) {
   try { menstrualReconcile(); } catch (e) { console.warn('menstrualReconcile failed', e); }
   const st = await scanner.flush();
   Object.assign(st, { keys: cfg.keys, skipped: cfg.skipped, errors: cfg.errors });
+  try { localStorage.removeItem('mumu_import_ckpt'); } catch (e) {} // 成功完成：清除追踪点
   return st;
 }
 
