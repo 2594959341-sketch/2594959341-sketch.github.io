@@ -449,7 +449,7 @@ function repairAll() {
 async function importData(obj, opts) {
   if (!obj || obj.app !== 'mumu-workbench' || !obj.localStorage) throw new Error('文件格式不对，不是木木的工作台备份');
   const merge = !opts || opts.merge !== false; // 默认合并（非破坏性），除非显式 merge:false
-  const stats = { keys: 0, skipped: 0, errors: 0, photosAdded: 0 };
+  const stats = { keys: 0, skipped: 0, errors: 0, photosAdded: 0, photosInBackup: 0, photosFailed: 0 };
   for (const k of Object.keys(obj.localStorage)) {
     const key = k.startsWith('mumu_') ? k.slice(5) : k;
     const incRaw = obj.localStorage[k];
@@ -481,27 +481,54 @@ async function importData(obj, opts) {
       }
     } catch (e) { stats.errors++; }
   }
-  // 照片：单个 IndexedDB 事务批量 put（更快更原子），仅补回备份里缺失的照片
+  // 照片：按 id 幂等写入 IndexedDB（mumu_photos）。
+  // 关键修复：不再静默吞掉写入失败——手机端 IndexedDB 配额超限时，
+  // 旧代码 t.onerror 直接 res() 导致照片「导不进去」却无任何提示。
+  // 现在逐批写入、整批失败则逐张重试，并精确统计 备份数/写入数/失败数。
   if (obj.photos && obj.photos.length) {
+    // 规整：确保每条有 id 与 data（缺失 id 自动补，无 data 视为废记录跳过）
+    const clean = [];
+    obj.photos.forEach((rec, i) => {
+      if (!rec || typeof rec !== 'object') return;
+      if (rec.id == null) rec.id = 'imp' + Date.now().toString(36) + '_' + i;
+      if (typeof rec.data !== 'string' || !rec.data) return;
+      clean.push(rec);
+    });
+    stats.photosInBackup = clean.length;
     try {
       const db = await IDB.open();
-      if (db) {
-        // 按 id 直接 put：相同 id 覆盖即幂等，无需先读回全部照片，
-        // 避免手机端 IDB.getAll() 把所有 base64 读进内存导致 OOM 崩溃（"此页面存在问题"）
-        const BATCH = 25;
-        for (let i = 0; i < obj.photos.length; i += BATCH) {
-          const batch = obj.photos.slice(i, i + BATCH);
-          await new Promise((res) => {
+      if (!db) {
+        stats.photosFailed = clean.length;
+      } else {
+        const BATCH = 20;
+        for (let i = 0; i < clean.length; i += BATCH) {
+          const batch = clean.slice(i, i + BATCH);
+          const ok = await new Promise((res) => {
             const t = db.transaction('photos', 'readwrite');
             const store = t.objectStore('photos');
             batch.forEach(rec => store.put(rec));
-            t.oncomplete = () => res();
-            t.onerror = () => res();
+            t.oncomplete = () => res(true);
+            t.onerror = () => res(false);
+            t.onabort = () => res(false);
           });
+          if (ok) {
+            stats.photosAdded += batch.length;
+          } else {
+            // 整批失败（多半是配额）：逐张重试，尽量多存，记录写不进的张数
+            for (const rec of batch) {
+              const one = await new Promise((res) => {
+                const t = db.transaction('photos', 'readwrite');
+                t.objectStore('photos').put(rec);
+                t.oncomplete = () => res(true);
+                t.onerror = () => res(false);
+                t.onabort = () => res(false);
+              });
+              if (one) stats.photosAdded++; else stats.photosFailed++;
+            }
+          }
         }
-        stats.photosAdded = obj.photos.length;
       }
-    } catch (e) { stats.errors++; }
+    } catch (e) { stats.photosFailed = clean.length - stats.photosAdded; }
   }
   // 导入后全量去重修复（清理可能已翻倍的数据）+ 月经假对账（补休息标/清重叠）
   try { repairAll(); } catch (e) { console.warn('repairAll failed', e); }
