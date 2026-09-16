@@ -403,7 +403,7 @@ const Daily = {
         S.set('sportLogs', logs);
       } else if (mod === 'kaogong') {
         const logs = S.get('kgLogs', {}); logs[date] = logs[date] || [];
-        const km = (extra && extra.subject) || '行测-言语';
+        const km = (extra && extra.subject) || '言语';
         if (logs[date].some(l => l.subject === km && (l.srcId === srcId || l.id === srcId))) return;
         const kmode = (extra && extra.mode) || '网课';
         const kqt = (extra && extra.qTotal != null) ? extra.qTotal : 0;
@@ -1107,7 +1107,7 @@ const Daily = {
   // 学习任务（cat=kaogong）完成任务/移到明天前，必须先填实际学习时长；其余任务直接继续
   // 刷题错题题型（v282 修订）：题型按「科目」细分（言语→中心理解/逻辑填空…，判断→图形推理…），
   // 不再拿科目当题型；按错题数 N 动态渲染 N 个下拉；换科目清空已选（不同科目题型不同）。
-  _kgSubjects() { return (window.KG && window.KG.SUBJECTS) || ['行测-言语', '行测-判断', '行测-资料', '行测-数量', '常识/公基', '申论', '综合应用能力', '时政', '面试']; },
+  _kgSubjects() { return (window.KG && window.KG.SUBJECTS) || ['言语', '判断', '资料', '数量', '常识', '申论', '综合应用能力', '时政', '面试']; },
   _kgQTypes(subj) { return (window.KG && window.KG.subjQTypes) ? window.KG.subjQTypes(subj) : []; },
   _taskSubject(t) { return (t && (t.kgSubject || (t.extra && t.extra.subject))) || ''; },
   _qtWrongOpts(sel, subj) { return '<option value="">错题题型</option>' + this._kgQTypes(subj).map(tp => `<option ${tp === sel ? 'selected' : ''}>${tp}</option>`).join(''); },
@@ -1129,7 +1129,7 @@ const Daily = {
     // 科目（决定错题题型选项）：优先任务自带，未记过则默认言语
     const subjRaw = this._taskSubject(t);
     const _sl = this._kgSubjects();
-    const subjDef = subjRaw || '行测-言语';
+    const subjDef = subjRaw || '言语';
     const subjOpts = ((subjRaw && _sl.indexOf(subjRaw) < 0) ? [subjRaw] : []).concat(_sl)
       .map(s => `<option ${s === subjDef ? 'selected' : ''}>${esc(s)}</option>`).join('');
     openModal(`<button class="close-x" onclick="closeModal()">×</button><h3>${icon('book',18)} 记录实际学习时长</h3>
@@ -1520,7 +1520,7 @@ const Daily = {
         <div class="form-row"><label>感受</label><select id="npSFeel"><option>轻松</option><option>一般</option><option>吃力</option></select></div>`;
     }
     if (mod === 'kaogong') {
-      return `<div class="form-row"><label>科目</label><input id="npKSubj" value="行测-言语"></div>
+      return `<div class="form-row"><label>科目</label><input id="npKSubj" value="言语"></div>
         <div class="muted" style="margin:-4px 0 12px">学习时长请在上方「预估时长」填写；完成任务时会被问实际学了多久</div>`;
     }
     if (mod === 'growth') {
@@ -1755,7 +1755,7 @@ const Daily = {
         const ww = document.getElementById('npWWords'); extra.words = ww ? (Number(ww.value) || 0) : 0;
       } else if (link.startsWith('work:')) { extra.type = wType; if (linkAppArr.length) extra.app = linkAppArr; }
       else if (link.startsWith('sport:')) { extra.minutes = Number(document.getElementById('npSMin').value) || 10; extra.feel = document.getElementById('npSFeel').value; }
-      else if (link.startsWith('kaogong:')) { extra.subject = (document.getElementById('npKSubj').value || '').trim() || '行测-言语'; extra.minutes = estMin || 25; }
+      else if (link.startsWith('kaogong:')) { extra.subject = (document.getElementById('npKSubj').value || '').trim() || '言语'; extra.minutes = estMin || 25; }
       else if (link.startsWith('growth:')) { extra.minutes = Number(document.getElementById('npGMin').value) || 20; }
       // 关联目标：选中「新建今日目标」则先建一个日目标，否则用选中的目标 id
       const gsel = document.getElementById('npGoal');
