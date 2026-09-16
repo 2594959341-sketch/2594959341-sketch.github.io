@@ -222,7 +222,7 @@ function openRestMenu(ds, boardKey, render, restToggleFn) {
   var mset = menstrualSet();
   var isRest = restSet.has(ds), isMens = mset.has(ds);
   if (isRest && isMens) {
-    openModal('<button class="close-x" onclick="closeModal()">×</button><h3>' + fmtCN(ds) + ' · 休息 / 月经假</h3><div style="display:flex;flex-direction:column;gap:10px;margin-top:8px"><button class="btn" id="mRest">取消今日休息</button><button class="btn" id="mMens" style="color:#ff7eb6">取消月经假（连续两天）</button><button class="btn ghost" onclick="closeModal()">关闭</button></div>');
+    openModal('<button class="close-x" onclick="closeModal()">×</button><h3>' + fmtCN(ds) + ' · 休息 / 月经假</h3><div style="display:flex;flex-direction:column;gap:10px;margin-top:8px"><button class="btn" id="mRest">取消今日休息</button><button class="btn" id="mMens" style="color:#E26D8B">取消月经假（连续两天）</button><button class="btn ghost" onclick="closeModal()">关闭</button></div>');
     var br = document.querySelector('#mRest'); if (br) br.onclick = function () { closeModal(); restToggleFn(ds); };
     var bm = document.querySelector('#mMens'); if (bm) bm.onclick = function () { closeModal(); var r = menstrualToggle(ds); if (r.msg) toast(r.msg); render(); };
     return;
@@ -233,11 +233,11 @@ function openRestMenu(ds, boardKey, render, restToggleFn) {
     return;
   }
   if (isMens) {
-    openModal('<button class="close-x" onclick="closeModal()">×</button><h3>' + fmtCN(ds) + ' · 月经假</h3><div style="display:flex;flex-direction:column;gap:10px;margin-top:8px"><button class="btn" id="mMens" style="color:#ff7eb6">取消月经假（连续两天）</button><button class="btn ghost" onclick="closeModal()">关闭</button></div>');
+    openModal('<button class="close-x" onclick="closeModal()">×</button><h3>' + fmtCN(ds) + ' · 月经假</h3><div style="display:flex;flex-direction:column;gap:10px;margin-top:8px"><button class="btn" id="mMens" style="color:#E26D8B">取消月经假（连续两天）</button><button class="btn ghost" onclick="closeModal()">关闭</button></div>');
     var bm2 = document.querySelector('#mMens'); if (bm2) bm2.onclick = function () { closeModal(); var r = menstrualToggle(ds); if (r.msg) toast(r.msg); render(); };
     return;
   }
-  openModal('<button class="close-x" onclick="closeModal()">×</button><h3>' + fmtCN(ds) + ' · 设为休息</h3><div style="display:flex;flex-direction:column;gap:10px;margin-top:8px"><button class="btn" id="mRest">今日休息</button><button class="btn" id="mMens" style="color:#ff7eb6">月经假（连续两天）</button><button class="btn ghost" onclick="closeModal()">关闭</button></div>');
+  openModal('<button class="close-x" onclick="closeModal()">×</button><h3>' + fmtCN(ds) + ' · 设为休息</h3><div style="display:flex;flex-direction:column;gap:10px;margin-top:8px"><button class="btn" id="mRest">今日休息</button><button class="btn" id="mMens" style="color:#E26D8B">月经假（连续两天）</button><button class="btn ghost" onclick="closeModal()">关闭</button></div>');
   var br3 = document.querySelector('#mRest'); if (br3) br3.onclick = function () { closeModal(); restToggleFn(ds); };
   var bm3 = document.querySelector('#mMens'); if (bm3) bm3.onclick = function () { closeModal(); var r = menstrualToggle(ds); if (r.msg) toast(r.msg); render(); };
 }
