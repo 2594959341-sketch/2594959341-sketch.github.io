@@ -1358,7 +1358,7 @@ const Review = {
       + this.block('总览', 'stats', overviewInner)
       + safe('plan', () => this.planBlockHTML(days, scope))
       + this.block('创作', 'creation', createInner)
-      + this.block('考公', 'book', studyInner)
+      + this.block('备考', 'book', studyInner)
       + safe('growth', () => this.growthBlockHTML(days))
       + safe('sport', () => this.sportBlockHTML(days))
       + this.block('三餐', 'meal', mealsInner)
