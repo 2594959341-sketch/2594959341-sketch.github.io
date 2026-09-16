@@ -1277,7 +1277,7 @@ const Work = {
     const paint = () => {
       rowsBox.innerHTML = rows.map((r, i) => {
         const fields = `<label style="font-size:13px">视频+图文 合计<input type="number" class="ac-t" data-i="${i}" value="${r.total || 0}" min="0" style="width:70px;margin-left:4px"> 篇</label>
-          <input class="ac-req" data-i="${i}" value="${esc(r.req || '')}" placeholder="达标要求，如：播放1000+ / 上首页 / 10赞以上" style="flex:1;min-width:160px">`;
+          <input class="ac-req" data-i="${i}" value="${esc(r.req || '')}" placeholder="达标要求，如：播放1000+ / 上首页 / 10赞以上" style="flex:1;min-width:120px;font-size:13px">`;
         return `<div class="ac-row" data-i="${i}" style="display:flex;gap:8px;align-items:center;margin:6px 0;flex-wrap:wrap">
           <select class="ac-app" data-i="${i}" style="min-width:110px">${this.PLATS.map(p => `<option value="${p}" ${p === r.app ? 'selected' : ''}>${p}</option>`).join('')}</select>
           ${fields}
