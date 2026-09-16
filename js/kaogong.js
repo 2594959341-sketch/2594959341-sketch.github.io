@@ -145,7 +145,7 @@ const KG = {
   },
   // 生成阶段规划（D类 用职测D类+综应D类+教综，其它类别用通用文案）
   buildPhases(type, hpd, today, days) {
-    const isD = type.includes('事业编') || type.includes('D类');
+    const isD = type.includes('D类');
     const isSL = type.includes('申论');
     const sub1 = isD ? '职测(D类)' : type.includes('教师') ? '教基' : isSL ? '行测' : '职测';
     const sub2 = isD ? '综应(D类)' : type.includes('教师') ? '学科知识' : isSL ? '申论' : '综合应用能力';
