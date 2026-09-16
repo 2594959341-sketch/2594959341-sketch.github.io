@@ -35,7 +35,7 @@ textarea{resize:vertical}
 .sidebar-header b{font-size:17px;display:block}
 .sidebar-header small{display:block;color:var(--sub);font-size:11.5px;font-weight:400;margin-top:1px}
 /* 侧边栏底部设置 */
-.sidebar-footer{padding:8px 10px;margin-top:12px;border-top:1px solid var(--line)}
+.sidebar-footer{padding:8px 0;margin-top:12px;border-top:1px solid var(--line)}
 .nav-item{display:flex;align-items:center;gap:10px;padding:12px 16px;color:var(--ink);width:100%;text-align:left;margin-bottom:2px;font-size:14.5px;border:none;background:none;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:.1s}
 .nav-item .ic{font-size:18px;width:24px;text-align:center;flex-shrink:0;display:inline-flex;align-items:center;justify-content:center}
 .nav-item .txt{flex:1}
@@ -171,14 +171,15 @@ textarea{resize:vertical}
 .cal-cell .d{font-weight:600;font-size:12px;color:var(--sub);line-height:1.2}
 .cal-cell.today{border-color:#111;background:var(--light)}
 .cal-cell.other{opacity:.35}
-.cal-cell.rest{background:#e74c3c;border-color:#e74c3c}
-.cal-cell.rest .d{color:#fff}
-.cal-cell.rest .dots .dot{background:#fff}
+/* 请假/休息：马卡龙薄荷绿（柔和，不再刺眼红） */
+.cal-cell.rest{background:#B5EAD7;border-color:#9FD9C2}
+.cal-cell.rest .d{color:#2c5e4a}
+.cal-cell.rest .dots .dot{background:#2c5e4a}
 .cal-cell.rest.today{box-shadow:0 0 0 2px #111 inset}
-/* 月经假：桃红/粉色方块，独立于红色「休息」以区分（不与其他假重叠） */
-.cal-cell.mens{background:#ff7eb6;border-color:#ff7eb6}
-.cal-cell.mens .d{color:#fff}
-.cal-cell.mens .dots .dot{background:#fff}
+/* 月经假：马卡龙粉（独立于薄荷绿，不与其他假重叠） */
+.cal-cell.mens{background:#FFB7C5;border-color:#ff9bb0}
+.cal-cell.mens .d{color:#7a2e44}
+.cal-cell.mens .dots .dot{background:#7a2e44}
 .cal-cell.mens.today{box-shadow:0 0 0 2px #111 inset}
 .cal-cell .dots{display:flex;gap:2px;flex-wrap:wrap;margin-top:2px}
 .dot{width:6px;height:6px;border-radius:50%;background:#111}
@@ -405,7 +406,7 @@ textarea{resize:vertical}
 .sp-rest-note{display:flex;align-items:center;font-size:12px;color:#666;margin:8px 0 4px}
 .sp-rest-sq{display:inline-block;width:12px;height:12px;background:#e74c3c;border-radius:3px;margin-right:6px;flex:none}
 .sp-mens-note{display:flex;align-items:center;font-size:12px;color:#666;margin:4px 0}
-.sp-mens-sq{display:inline-block;width:12px;height:12px;background:#ff7eb6;border-radius:3px;margin-right:6px;flex:none}
+.sp-mens-sq{display:inline-block;width:12px;height:12px;background:#FFB7C5;border-radius:3px;margin-right:6px;flex:none}
 /* 运动首页·两个正方形统计 */
 .sp-squares{display:flex;gap:12px;margin-bottom:16px}
 .sp-square{flex:1;aspect-ratio:1/1;border:1px solid var(--line);border-radius:14px;background:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
@@ -1710,3 +1711,28 @@ details[open] > summary .car{transform:rotate(180deg)}
 .qt-wfill{display:block;height:100%;background:#e74c3c;border-radius:4px}
 .qt-wcnt{width:22px;text-align:right;color:var(--sub);flex:none}
 .qt-wrong-row label{font-size:13px}
+
+/* v310：活动规划「平台目标」单行（不再两行） */
+#acRows{overflow-x:auto}
+.ac-row{flex-wrap:nowrap!important;gap:6px;align-items:center}
+.ac-row .ac-app{flex:0 0 auto;min-width:92px}
+.ac-row .ac-t{width:52px}
+.ac-row label{white-space:nowrap;font-size:13px;flex:0 0 auto}
+.ac-row .ac-req{flex:1;min-width:84px;font-size:13px}
+
+/* v310：活动收集箱（原激励雷达重设计） */
+.coll-head{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.coll-back{flex:0 0 auto}
+.coll-tabs{display:flex;gap:6px;margin:10px 0}
+.coll-tabs button{flex:1;border:1px solid var(--line);background:#fff;color:var(--sub);padding:8px 0;border-radius:10px;font-size:13px;cursor:pointer}
+.coll-tabs button.on{background:#111;color:#fff;border-color:#111}
+.coll-card{border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:10px;position:relative}
+.coll-card .cc-top{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+.coll-card .cc-title{font-size:14px;font-weight:600;line-height:1.3}
+.coll-card .cc-game{font-size:12px;color:var(--sub);margin-top:2px}
+.coll-plats{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0}
+.plat-pill{display:inline-flex;align-items:center;gap:4px;border:1px solid var(--line);background:#fff;border-radius:20px;padding:3px 10px;font-size:12px;cursor:pointer;color:var(--ink)}
+.plat-pill.on{background:#111;color:#fff;border-color:#111}
+.coll-info{font-size:12px;color:var(--sub);margin:3px 0;line-height:1.5}
+.coll-acts{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+.coll-empty{color:var(--muted);text-align:center;padding:20px 0;font-size:13px}
