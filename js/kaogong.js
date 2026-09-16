@@ -8,7 +8,7 @@ const KG = {
     '判断': ['图形推理', '定义判断', '类比推理', '逻辑判断', '事件排序'],
     '资料': ['简单计算', '增长率', '增长量', '比重', '平均数', '倍数', '综合分析'],
     '数量': ['工程问题', '行程问题', '排列组合', '概率问题', '利润问题', '容斥问题', '几何问题', '最值问题', '浓度问题', '年龄问题', '日期问题', '方程问题'],
-    '常识': ['常识判断', '政治', '法律', '经济', '人文历史', '科技生活', '地理国情', '管理公文'],
+    '常识': ['常识判断', '政治', '法律', '经济', '人文历史', '科技常识', '地理国情', '管理公文'],
     '申论': ['归纳概括', '综合分析', '提出对策', '贯彻执行', '文章写作'],
     '综合应用能力': ['案例分析', '公文写作', '辨析题', '教育方案设计'],
     '时政': ['重要会议', '重要讲话', '科技成就', '重大政策', '其他时政'],
@@ -201,7 +201,10 @@ const KG = {
     const quizAcc = quizTotal > 0 ? Math.round(quizCorrect / quizTotal * 100) : 0;
     const accOf = l => (l.qTotal > 0) ? Math.round(((l.qCorrect != null ? l.qCorrect : ((l.qTotal || 0) - (l.qWrong || 0))) ) / l.qTotal * 100) : 0;
     // 连续天数（休息日不计入中断）
-    const restSet = new Set((S.get('kgRest', []) || []));
+    const _kgStData = S.get('mumu_streak', { items: [] });
+    const _kgMadeup = [];
+    (_kgStData.items || []).forEach(function(it){ if (it && it.type === 'kg' && it.madeup) Object.keys(it.madeup).forEach(function(d){ _kgMadeup.push(d); }); });
+    const restSet = new Set([].concat(S.get('kgRest', []) || [], S.get('menstrualRest', []) || [], _kgMadeup));
     const todayIsRest = restSet.has(todayStr());
     let streak = 0; let d = todayStr();
     if (!((logs[d] && logs[d].length) || restSet.has(d))) d = addDays(d, -1);
@@ -239,8 +242,8 @@ const KG = {
       <div class="card"><h3>学习热力图</h3><div id="kgHm"></div>
         <h3 class="section-gap">最近学习轨迹 <button class="icon-btn" id="kgPastTrails" title="往期备考计划学习轨迹" style="margin-left:auto">${icon('calendar',15)}</button></h3>
         ${curPlan ? `<div class="muted" style="font-size:11px;margin-bottom:6px">所属周期：${esc(curPlan.name)}（倒计时 ${daysBetween(todayStr(), curPlan.date)} 天）</div>` : ''}
-        ${trail2.length ? trail2.map(l => `<div class="list-row"><span class="tag">${l.date.slice(5)}</span><span class="tag">${esc(l.subject)}</span>${l.mode ? `<span class="tag" style="background:#eef">${esc(l.mode)}</span>` : ''}<div style="flex:1">${esc(l.content)} <span class="muted">${l.progress ? '→ ' + esc(l.progress) : ''}</span>${l.mode === '刷题' && l.qTotal ? ` · 刷题 ${l.qTotal} 题 · 正确率 ${accOf(l)}%` : ''}</div></div>`).join('') : `<div class="empty">本期计划还没有关联的学习记录。打卡时选「关联考试计划」即可归入本期轨迹；点右上角 📅 可回顾往期计划的学习轨迹。</div>`}
-        ${trailMore.length ? `<details class="kg-trail-more"><summary style="cursor:pointer;color:var(--sub);font-size:13px;margin-top:6px">展开更早的 ${trailMore.length} 条轨迹</summary>${trailMore.map(l => `<div class="list-row"><span class="tag">${l.date.slice(5)}</span><span class="tag">${esc(l.subject)}</span><div style="flex:1">${esc(l.content)} <span class="muted">${l.progress ? '→ ' + esc(l.progress) : ''}</span></div></div>`).join('')}</details>` : ''}
+        ${trail2.length ? trail2.map(l => `<div class="list-row kg-trail-row"><span class="tag">${l.date.slice(5)}</span><span class="tag">${esc(l.subject)}</span>${l.mode ? `<span class="tag" style="background:#eef">${esc(l.mode)}</span>` : ''}<div style="flex:1">${esc(l.content)} <span class="muted">${l.progress ? '→ ' + esc(l.progress) : ''}</span>${l.mode === '刷题' && l.qTotal ? ` · 刷题 ${l.qTotal} 题 · 正确率 ${accOf(l)}%` : ''}</div></div>`).join('') : `<div class="empty">本期计划还没有关联的学习记录。打卡时选「关联考试计划」即可归入本期轨迹；点右上角 📅 可回顾往期计划的学习轨迹。</div>`}
+        ${trailMore.length ? `<details class="kg-trail-more"><summary style="cursor:pointer;color:var(--sub);font-size:13px;margin-top:6px">展开更早的 ${trailMore.length} 条轨迹</summary>${trailMore.map(l => `<div class="list-row kg-trail-row"><span class="tag">${l.date.slice(5)}</span><span class="tag">${esc(l.subject)}</span><div style="flex:1">${esc(l.content)} <span class="muted">${l.progress ? '→ ' + esc(l.progress) : ''}</span></div></div>`).join('')}</details>` : ''}
         ${plans.length ? `
           <div style="margin-top:10px;padding:10px;background:#f7f7f7;border-radius:10px">
             <div class="muted" style="font-size:11px;margin-bottom:6px">备考计划：${esc(plans[0].name)}</div>
@@ -277,7 +280,7 @@ const KG = {
       openModal(`<button class="close-x" onclick="closeModal()">×</button><h3>${icon('check',18)} 学习打卡</h3>
         <div class="form-row"><label>科目</label><select id="klSub"><option>言语</option><option>判断</option><option>资料</option><option>数量</option><option>常识</option><option>申论</option><option>综合应用能力</option><option>时政</option><option>面试</option></select></div>
         <div class="form-row"><label>学习方式</label><select id="klMode"><option value="网课">网课</option><option value="刷题">刷题</option></select></div>
-        <div class="form-row"><label>学了什么</label><input id="klCon" placeholder="例如：欣说言语 第3课 中心理解题"></div>
+        <div class="form-row" id="klConWrap"><label>学了什么</label><input id="klCon" placeholder="例如：欣说言语 第3课 中心理解题"></div>
         <div class="form-row" id="klProgWrap"><label>学到哪儿了（进度标记·网课用）</label><input id="klProg" placeholder="例如：看完P3，做题30道，正确率70%"></div>
         <div class="form-row"><label>时长（分钟）</label><input type="number" id="klMin" value="60"></div>
         <div id="klQuizWrap" style="display:none">
@@ -290,7 +293,7 @@ const KG = {
       const klModeEl = document.getElementById('klMode');
       const klSubEl = document.getElementById('klSub');
       const curSub = () => (klSubEl ? klSubEl.value : '言语');
-      if (klModeEl) klModeEl.onchange = () => { const quiz = document.getElementById('klQuizWrap'); const prog = document.getElementById('klProgWrap'); const wrong = document.getElementById('klWrongWrap'); if (quiz) quiz.style.display = klModeEl.value === '刷题' ? '' : 'none'; if (prog) prog.style.display = klModeEl.value === '刷题' ? 'none' : ''; if (wrong) KG.renderWrong(wrong, klModeEl.value === '刷题' ? Math.max(0, (Number(document.getElementById('klQ').value) || 0) - (Number(document.getElementById('klC').value) || 0)) : 0, [], curSub()); };
+      if (klModeEl) klModeEl.onchange = () => { const quiz = document.getElementById('klQuizWrap'); const prog = document.getElementById('klProgWrap'); const wrong = document.getElementById('klWrongWrap'); const conWrap = document.getElementById('klConWrap'); if (quiz) quiz.style.display = klModeEl.value === '刷题' ? '' : 'none'; if (prog) prog.style.display = klModeEl.value === '刷题' ? 'none' : ''; if (conWrap) conWrap.style.display = klModeEl.value === '刷题' ? 'none' : ''; if (wrong) KG.renderWrong(wrong, klModeEl.value === '刷题' ? Math.max(0, (Number(document.getElementById('klQ').value) || 0) - (Number(document.getElementById('klC').value) || 0)) : 0, [], curSub()); };
       const klQEl = document.getElementById('klQ'), klCEl = document.getElementById('klC');
       const reRenderWrong = () => { const wrong = document.getElementById('klWrongWrap'); if (wrong) KG.renderWrong(wrong, Math.max(0, (Number(klQEl.value) || 0) - (Number(klCEl.value) || 0)), KG.readWrong(wrong, curSub()), curSub()); };
       // 换科目则清空已选题型（不同科目题型不同，保留会串）
@@ -299,13 +302,16 @@ const KG = {
       if (klCEl) klCEl.oninput = reRenderWrong;
       if (klSubEl) klSubEl.onchange = onSubChange;
       document.getElementById('klOk').onclick = () => {
-        const con = document.getElementById('klCon').value.trim(); if (!con) return toast('记一下学了什么吧');
-        const lg = S.get('kgLogs', {}); lg[todayStr()] = lg[todayStr()] || [];
         const kgSub = document.getElementById('klSub').value;
         const kgMode = document.getElementById('klMode').value;
+        const kgQ = kgMode === '刷题' ? (Number(document.getElementById('klQ').value) || 0) : 0;
+        const conRaw = document.getElementById('klCon').value.trim();
+        let con;
+        if (kgMode === '刷题') { con = conRaw || (kgQ ? '刷题 ' + kgQ + ' 题' : kgSub); }
+        else { if (!conRaw) return toast('记一下学了什么吧'); con = conRaw; }
+        const lg = S.get('kgLogs', {}); lg[todayStr()] = lg[todayStr()] || [];
         const kgProg = document.getElementById('klProg').value.trim();
         const kgMin = Number(document.getElementById('klMin').value) || 0;
-        const kgQ = kgMode === '刷题' ? (Number(document.getElementById('klQ').value) || 0) : 0;
         const kgC = kgMode === '刷题' ? (Number(document.getElementById('klC').value) || 0) : 0;
         if (kgC > kgQ) return toast('对的题数不能超过刷的总题数哦～');
         const kgWrong = kgMode === '刷题' ? KG.readWrong(document.getElementById('klWrongWrap'), kgSub) : [];
