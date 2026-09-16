@@ -448,6 +448,8 @@ async function importData(obj, opts) {
   if (!obj || obj.app !== 'mumu-workbench' || !obj.localStorage) throw new Error('文件格式不对，不是木木的工作台备份');
   const merge = !opts || opts.merge !== false; // 默认合并（非破坏性），除非显式 merge:false
   const stats = { keys: 0, skipped: 0, errors: 0, photosAdded: 0, photosInBackup: 0, photosFailed: 0 };
+  let _srLiveNames = null;
+  try { const r = (typeof S !== 'undefined') ? S.get('selfRescue') : null; if (r && Array.isArray(r.items)) _srLiveNames = new Set(r.items.map(x => x && x.name).filter(Boolean)); } catch (e) {}
   for (const k of Object.keys(obj.localStorage)) {
     const key = k.startsWith('mumu_') ? k.slice(5) : k;
     const incRaw = obj.localStorage[k];
@@ -569,7 +571,7 @@ function createBackupScanner(opts) {
     else lsObj[key] = rawVal;
   }
   const FUN_CAP_CEILING = 40 * 1024 * 1024;  // funLogs 流式捕获【聚合内存预算】：capBuf 超过 40MB 即对所有后续封面强制置空，保证整段 funLogs 驻留内存恒定有界(≤~40MB)，彻底杜绝 OOM（86% 崩溃根因）
-  const COVER_IMPORT_CAP = 256 * 1024;       // 单个封面/图标 base64 保留阈值：≤256KB 的小封面(图标/缩略图)保留；更大的(多为手机原图)在导入时流式剥离置空，避免单封面撑爆 capBuf。被剥离的封面可日后单张重传(上传已自动压缩)
+  const COVER_IMPORT_CAP = 512 * 1024;       // 单个封面/图标 base64 保留阈值：≤512KB 的小封面(图标/缩略图)保留；更大的(多为手机原图)在导入时流式剥离置空，避免单封面撑爆 capBuf。被剥离的封面可日后单张重传(上传已自动压缩)
 
   function isWs(c) { return c === ' ' || c === '\n' || c === '\r' || c === '\t'; }
 
