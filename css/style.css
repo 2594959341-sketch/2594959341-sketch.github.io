@@ -370,7 +370,7 @@ textarea{resize:vertical}
 
 /* 自救365 · 设置项 */
 .sr-item{background:#fff}
-.sr-item .srName{padding:7px 10px}
+.sr-item .srName{padding:7px 10px;min-width:0;width:auto}
 .sr-item .srBase{padding:6px 8px}
 .sr-item .srProj{padding:7px 10px}
 
