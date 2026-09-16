@@ -314,6 +314,9 @@ textarea{resize:vertical}
 .progress-bar i{display:block;height:100%;background:#111;border-radius:6px;transition:.3s}
 .list-row{display:flex;align-items:center;gap:10px;padding:10px 4px;border-bottom:1px dashed var(--line)}
 .list-row:last-child{border-bottom:none}
+.kg-trail-row{font-size:12px;line-height:1.4;padding:7px 4px}
+.kg-trail-row .muted{font-size:11.5px}
+.kg-trail-row .tag{font-size:11px;padding:1px 7px}
 .muted{color:var(--sub);font-size:12.5px}
 .empty{text-align:center;color:#999;padding:26px 0;font-size:13px}
 .photo-thumb{width:100%;aspect-ratio:1;object-fit:cover;border-radius:10px;border:1px solid var(--line);cursor:pointer;background:#f4f4f4}
