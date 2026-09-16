@@ -643,7 +643,7 @@ const Work = {
   /* ---------- 创作日历 & 活动规划 ---------- */
   logs() { return S.get('workLogs', {}); },
   normTarget(t) {
-    const r = { app: t.app, video: Number(t.video) || 0, article: Number(t.article) || 0, total: Number(t.total) || 0, req: t.req || '' };
+    const r = { app: t.app, video: Number(t.video) || 0, article: Number(t.article) || 0, total: Number(t.total) || 0, req: t.req || '', type: t.type || '' };
     if (r.total === 0) r.total = r.video + r.article;
     return r;
   },
@@ -928,15 +928,15 @@ const Work = {
           return `<div class="coll-card" data-ckey="${esc(c.title)}">
             <div class="cc-top">
               <div><div class="cc-title">${esc(c.title)}</div>${c.game ? '<div class="cc-game">' + esc(c.game) + '</div>' : ''}</div>
-              ${left === null ? '<span class="tag">长期</span>' : '<span class="tag">剩 ' + left + ' 天</span>'}
             </div>
             <div class="coll-plats">${plats || '<span class="muted">未标注平台</span>'}</div>
             <div class="coll-info">${icon('money',14)} ${esc(c.reward || '奖励未注明')}</div>
             <div class="coll-info">${icon('calendar',14)} ${esc(c.period || '周期未注明')}</div>
             <div class="coll-info">${icon('tag',14)} ${esc(c.require || '达标要求未注明')}</div>
             <div class="coll-acts">
+              ${left === null ? '<span class="tag">长期</span>' : '<span class="tag">剩 ' + left + ' 天</span>'}
               <a class="btn sm" href="${c.source || '#'}" target="_blank" ${c.source ? '' : 'style="pointer-events:none;opacity:.5"'}>官方原文 ↗</a>
-              <button class="btn sm ghost" data-plan="${esc(c.title)}|${esc(c.game || '')}|${esc((c.platforms || []).join(','))}|${esc(c.deadline || '')}|${esc(c.require || '')}">添加进活动规划</button>
+              <button class="btn sm ghost" data-plan="${esc(c.title)}">添加进活动规划</button>
             </div>
           </div>`;
         }).join('') : '<div class="coll-empty">还没有匹配的活动。换个关键词，或点「＋ 添加」把平台活动链接贴进来。</div>'}
@@ -1132,8 +1132,10 @@ const Work = {
     const ts = a.targets && a.targets.length ? a.targets : [{ app: '通用', video: a.targetVideo || 0, article: a.targetArticle || 0, total: (Number(a.targetVideo) || 0) + (Number(a.targetArticle) || 0) }];
     const done = ts.every(tg => {
       if (!tg.total) return true;
-      const v = all.filter(l => l.actId === a.id && (l.app || []).includes(tg.app) && l.type === 'video').length;
-      const ar = all.filter(l => l.actId === a.id && (l.app || []).includes(tg.app) && l.type === 'article').length;
+      const wantV = !tg.type || tg.type === '视频';
+      const wantA = !tg.type || tg.type === '图文';
+      const v = wantV ? all.filter(l => l.actId === a.id && (l.app || []).includes(tg.app) && l.type === 'video').length : 0;
+      const ar = wantA ? all.filter(l => l.actId === a.id && (l.app || []).includes(tg.app) && l.type === 'article').length : 0;
       return (v + ar) >= tg.total;
     });
     return { task: t, done };
