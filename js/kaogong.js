@@ -8,7 +8,7 @@ const KG = {
     '判断': ['图形推理', '定义判断', '类比推理', '逻辑判断', '事件排序'],
     '资料': ['简单计算', '增长率', '增长量', '比重', '平均数', '倍数', '综合分析'],
     '数量': ['工程问题', '行程问题', '排列组合', '概率问题', '利润问题', '容斥问题', '几何问题', '最值问题', '浓度问题', '年龄问题', '日期问题', '方程问题'],
-    '常识': ['常识判断', '政治', '法律', '经济', '人文历史', '科技常识', '地理国情', '管理公文'],
+    '常识': ['政治', '法律', '经济', '人文历史', '科技常识', '地理国情', '管理公文'],
     '申论': ['归纳概括', '综合分析', '提出对策', '贯彻执行', '文章写作'],
     '综合应用能力': ['案例分析', '公文写作', '辨析题', '教育方案设计'],
     '时政': ['重要会议', '重要讲话', '科技成就', '重大政策', '其他时政'],
@@ -205,6 +205,8 @@ const KG = {
     const _kgMadeup = [];
     (_kgStData.items || []).forEach(function(it){ if (it && it.type === 'kg' && it.madeup) Object.keys(it.madeup).forEach(function(d){ _kgMadeup.push(d); }); });
     const restSet = new Set([].concat(S.get('kgRest', []) || [], S.get('menstrualRest', []) || [], _kgMadeup));
+    // 日历用"不含月经假"的休息集：月经假单独走 menstrualSet 上粉色，避免被 rest 绿色覆盖（火花/连续天数仍用上面的 restSet）
+    const calRestSet = new Set([].concat(S.get('kgRest', []) || [], _kgMadeup));
     const todayIsRest = restSet.has(todayStr());
     let streak = 0; let d = todayStr();
     if (!((logs[d] && logs[d].length) || restSet.has(d))) d = addDays(d, -1);
@@ -263,7 +265,7 @@ const KG = {
       arr.forEach(l => { const c = KG.subjectColor(l.subject); if (!seen[c]) { seen[c] = 1; out.push(c); } });
       return out;
     }});
-    renderMonthCal(box.querySelector('#kgMonthCal'), { ym, marks: marksProxy, restSet, menstrualSet: menstrualSet(), onLongPress: ds => openRestMenu(ds, 'kaogong', () => this.render(root), d => this.toggleRest(root, d)) });
+    renderMonthCal(box.querySelector('#kgMonthCal'), { ym, marks: marksProxy, restSet: calRestSet, menstrualSet: menstrualSet(), onLongPress: ds => openRestMenu(ds, 'kaogong', () => this.render(root), d => this.toggleRest(root, d)) });
     const calLegendTgl = box.querySelector('#kgCalLegendToggle');
     const calLegendEl = box.querySelector('#kgCalLegend');
     if (calLegendTgl) calLegendTgl.onclick = () => { calLegendEl.classList.toggle('collapsed'); calLegendTgl.textContent = calLegendEl.classList.contains('collapsed') ? '▾' : '▸'; };
