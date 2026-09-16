@@ -776,7 +776,7 @@ const Work = {
     box.innerHTML = `
       <div class="card">
         <h3>活动规划 <span style="margin-left:auto;display:flex;gap:6px;align-items:center">
-          <button class="icon-btn" id="actColl" title="活动收集箱" style="font-size:18px">📥</button>
+          <button class="icon-btn" id="actColl" title="活动收集箱" style="font-size:18px">${icon('inbox',18)}</button>
           <button class="icon-btn" id="actHistory" title="历史活动" style="font-size:18px">${icon('clock',18)}</button>
           <button class="btn sm" id="actAdd" title="新活动计划">＋</button>
         </span></h3>
@@ -933,9 +933,9 @@ const Work = {
             <div class="coll-info">${icon('money',14)} ${esc(c.reward || '奖励未注明')}</div>
             <div class="coll-info">${icon('calendar',14)} ${esc(c.period || '周期未注明')}</div>
             <div class="coll-info">${icon('tag',14)} ${esc(c.require || '达标要求未注明')}</div>
-            <div class="coll-acts">
-              ${left === null ? '<span class="tag">长期</span>' : '<span class="tag">剩 ' + left + ' 天</span>'}
+            <div class="coll-acts" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:6px">
               <a class="btn sm" href="${c.source || '#'}" target="_blank" ${c.source ? '' : 'style="pointer-events:none;opacity:.5"'}>官方原文 ↗</a>
+              ${left === null ? '<span class="tag">长期</span>' : '<span class="tag">剩 ' + left + ' 天</span>'}
               <button class="btn sm ghost" data-plan="${esc(c.title)}">添加进活动规划</button>
             </div>
           </div>`;
@@ -959,10 +959,10 @@ const Work = {
         ${c && c.source ? '<a class="btn" href="' + c.source + '" target="_blank" style="width:100%;margin-top:10px">查看官方原文 ↗</a>' : ''}`);
     });
     box.querySelectorAll('[data-plan]').forEach(b => b.onclick = () => {
-      const [title, game, plats, dl, req] = b.dataset.plan.split('|');
-      const targets = (plats || '').split(',').filter(Boolean).map(p => ({ app: p, total: 0, video: 0, article: 0, req: req || '' }));
+      const c = all.find(x => x.title === b.dataset.plan);
+      if (!c) return;
       this._workView = null; this.render(root);
-      setTimeout(() => { const el = root.querySelector('#sec-act'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); this.activityDialog(root, { name: (game ? game + ' · ' : '') + title, deadline: /^\d{4}/.test(dl) ? dl : '', targets: targets.length ? targets : undefined }); }, 60);
+      setTimeout(() => { const el = root.querySelector('#sec-act'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); this.activityDialog(root, { name: (c.game ? c.game + ' · ' : '') + c.title, deadline: /^\d{4}/.test(c.deadline) ? c.deadline : '', platforms: (c.platforms || []).slice(), req: c.require || '' }); }, 60);
     });
   },
   addToCollection(root) {
@@ -1102,10 +1102,12 @@ const Work = {
   /* ---------- 活动进度计算（供活动规划复用） ---------- */
   finOf(a, all) {
     all = all || this.allLogs();
-    const ts = a.targets && a.targets.length ? a.targets : [{ app: '通用', video: a.targetVideo || 0, article: a.targetArticle || 0 }];
+    const ts = a.targets && a.targets.length ? a.targets : [{ app: '通用', video: a.targetVideo || 0, article: a.targetArticle || 0, total: (Number(a.targetVideo) || 0) + (Number(a.targetArticle) || 0) }];
     return ts.every(t => {
-      const vD = all.filter(l => l.actId === a.id && (l.app || []).includes(t.app) && l.type === 'video').length;
-      const aD = all.filter(l => l.actId === a.id && (l.app || []).includes(t.app) && l.type === 'article').length;
+      const wantV = !t.type || t.type === '视频';
+      const wantA = !t.type || t.type === '图文';
+      const vD = wantV ? all.filter(l => l.actId === a.id && (l.app || []).includes(t.app) && l.type === 'video').length : 0;
+      const aD = wantA ? all.filter(l => l.actId === a.id && (l.app || []).includes(t.app) && l.type === 'article').length : 0;
       const done = vD + aD;
       return t.total > 0 && done >= t.total;
     });
@@ -1113,11 +1115,13 @@ const Work = {
   tplTargets(a, targets) {
     const all = this.allLogs();
     return targets.map(t => {
-      const vDone = all.filter(l => l.actId === a.id && (l.app || []).includes(t.app) && l.type === 'video').length;
-      const aDone = all.filter(l => l.actId === a.id && (l.app || []).includes(t.app) && l.type === 'article').length;
+      const wantV = !t.type || t.type === '视频';
+      const wantA = !t.type || t.type === '图文';
+      const vDone = wantV ? all.filter(l => l.actId === a.id && (l.app || []).includes(t.app) && l.type === 'video').length : 0;
+      const aDone = wantA ? all.filter(l => l.actId === a.id && (l.app || []).includes(t.app) && l.type === 'article').length : 0;
       const done = vDone + aDone;
       return `<div style="margin-top:8px">
-        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:4px"><b>${esc(t.app)}</b>${t.req ? ` <span class="tag">达标：${esc(t.req)}</span>` : ''}<span style="flex:1"></span>${t.total > 0 ? (done >= t.total ? ` <span class="tag">已完成</span>` : ` <span class="tag">还差 ${t.total - done}</span>`) : ''}</div>
+        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:4px"><b>${esc(t.app)}</b>${t.type ? ` <span class="tag">${esc(t.type)}</span>` : ''}${t.req ? ` <span class="tag">达标：${esc(t.req)}</span>` : ''}<span style="flex:1"></span>${t.total > 0 ? (done >= t.total ? ` <span class="tag">已完成</span>` : ` <span class="tag">还差 ${t.total - done}</span>`) : ''}</div>
         ${t.total > 0 ? `<div class="progress-bar"><i style="width:${Math.min(100, done / t.total * 100)}%"></i></div>` : ''}
       </div>`;
     }).join('');
@@ -1340,7 +1344,7 @@ const Work = {
             <div style="display:flex;align-items:center;gap:6px;font-weight:600;flex-wrap:wrap">
               <span>${esc(t.app)}</span>
               <span class="muted" style="font-weight:400">（要求 ${total} 篇）</span>
-              ${t.req ? `<span class="tag">达标要求：${esc(t.req)}</span>` : ''}
+              ${t.type ? `<span class="tag">${esc(t.type)}</span>` : ''}${t.req ? `<span class="tag">达标要求：${esc(t.req)}</span>` : ''}
               ${done ? '<span class="tag" style="background:#7CB390;color:#fff;border:none">已结算</span>' : ''}
             </div>
             <div style="display:flex;align-items:center;gap:10px;margin-top:8px;flex-wrap:wrap">
@@ -1395,43 +1399,70 @@ const Work = {
       if (closeBtn) closeBtn.onclick = () => closeModal();
       return;
     }
-    // 未完成 / 未截止 → 原编辑弹窗（内容不变）
-    let rows = (pre.targets && pre.targets.length) ? pre.targets.map(t => this.normTarget(t)) : [{ app: '小红书', total: 1 }];
+    // 未完成 / 未截止 → 编辑弹窗（4 行：名称 / 截止日期 / 发布平台 / 达标要求；平台目标按所选平台自动生成，含视频/图文）
+    const src = existing || pre;
+    const initReq = src.req || (src.targets && src.targets[0] && src.targets[0].req) || '';
+    const initPlats = (src.platforms && src.platforms.length) ? src.platforms.slice() : ((src.targets && src.targets.length) ? src.targets.map(t => t.app) : ['小红书']);
+    let selPlats = initPlats.slice();
+    let rows = selPlats.map(p => { const ex = (src.targets || []).find(t => t.app === p); return ex ? this.normTarget(ex) : { app: p, total: 1, type: '', req: initReq }; });
+    const acReqVal = () => (document.getElementById('acReq') ? document.getElementById('acReq').value.trim() : initReq);
     openModal(`<button class="close-x" onclick="closeModal()">×</button><h3>${icon('target',18)} 新活动创作计划</h3>
-      <div class="form-row"><label>活动/计划名称</label><input id="acName" value="${esc(pre.name || '')}" placeholder="例如：造梦西游4十周年激励"></div>
+      <div class="form-row"><label>活动名称</label><input id="acName" value="${esc(pre.name || '')}" placeholder="例如：造梦西游4十周年激励"></div>
       <div class="form-row"><label>截止日期</label><input type="date" id="acDl" value="${esc(pre.deadline || '')}"></div>
-      <div class="muted" style="margin:8px 0 4px">各平台目标（同一活动可参加多个平台，逐个添加）：每个平台填「视频+图文 合计发几篇」+「达标要求」（如 播放1000+ / 上首页 / 10赞以上）。打卡与结算都以这里填的达标要求为准，打卡时再区分视频/图文。</div>
+      <div class="form-row"><label>发布平台</label><div id="acPlats" style="display:flex;flex-wrap:wrap;gap:2px">${this.PLATS.map(p => `<button type="button" class="chip" data-p="${esc(p)}" style="border:1px solid var(--line);background:${selPlats.includes(p) ? 'var(--accent)' : 'transparent'};color:${selPlats.includes(p) ? '#fff' : 'inherit'};border-radius:999px;padding:4px 12px;font-size:13px;cursor:pointer;margin:3px">${esc(p)}</button>`).join('')}</div></div>
+      <div class="form-row"><label>达标要求</label><input id="acReq" value="${esc(initReq)}" placeholder="如：播放1000+ / 上首页 / 10赞以上"></div>
+      <div class="muted" style="margin:6px 0 4px">各平台目标（按所选平台自动生成）：选「视频」或「图文」决定该平台交哪种产出、填几篇；打卡与结算都按这里来。</div>
       <div id="acRows"></div>
-      <button class="btn sm ghost" id="acAddRow" style="margin:4px 0 10px">＋ 加一个平台目标</button>
-      <button class="btn" id="acOk" style="width:100%">创建计划</button>`);
+      <button class="btn" id="acOk" style="width:100%;margin-top:6px">创建计划</button>`);
     const rowsBox = document.getElementById('acRows');
+    const syncRows = () => {
+      const seen = new Set(selPlats);
+      rows = rows.filter(r => seen.has(r.app));
+      const reqV = acReqVal();
+      selPlats.forEach(p => { if (!rows.find(r => r.app === p)) rows.push({ app: p, total: 1, type: '', req: reqV }); });
+      paint();
+    };
     const paint = () => {
       rowsBox.innerHTML = rows.map((r, i) => `
         <div class="ac-row" data-i="${i}" style="display:flex;gap:6px;align-items:center;margin:6px 0">
-          <select class="ac-app" data-i="${i}" style="min-width:92px">${this.PLATS.map(p => `<option value="${p}" ${p === r.app ? 'selected' : ''}>${p}</option>`).join('')}</select>
+          <b style="min-width:60px">${esc(r.app)}</b>
+          <select class="ac-type" data-i="${i}" style="min-width:72px">
+            <option value="" ${!r.type ? 'selected' : ''}>不限</option>
+            <option value="视频" ${r.type === '视频' ? 'selected' : ''}>视频</option>
+            <option value="图文" ${r.type === '图文' ? 'selected' : ''}>图文</option>
+          </select>
           <label style="font-size:13px;white-space:nowrap">几篇<input type="number" class="ac-t" data-i="${i}" value="${r.total || 0}" min="0" style="width:52px;margin:0 3px">篇</label>
-          <input class="ac-req" data-i="${i}" value="${esc(r.req || '')}" placeholder="达标要求，如：播放1000+/上首页/10赞以上" style="flex:1;min-width:84px;font-size:13px">
-          <button class="del ac-del" data-i="${i}" title="删除该平台目标">✕</button>
+          <button class="del ac-del" data-i="${i}" title="移除该平台">✕</button>
         </div>`).join('');
-      rowsBox.querySelectorAll('.ac-app').forEach(s => s.onchange = e => { const i = +e.target.dataset.i; rows[i].app = e.target.value; paint(); });
+      rowsBox.querySelectorAll('.ac-type').forEach(s => s.onchange = e => { rows[+e.target.dataset.i].type = e.target.value; });
       rowsBox.querySelectorAll('.ac-t').forEach(s => s.oninput = e => rows[+e.target.dataset.i].total = Number(e.target.value) || 0);
-      rowsBox.querySelectorAll('.ac-req').forEach(s => s.oninput = e => rows[+e.target.dataset.i].req = e.target.value);
       rowsBox.querySelectorAll('.ac-del').forEach(b => b.onclick = () => {
-        if (rows.length <= 1) return toast('至少保留一个平台目标');
-        rows.splice(+b.dataset.i, 1); paint();
+        const p = rows[+b.dataset.i].app;
+        selPlats = selPlats.filter(x => x !== p);
+        const chip = document.querySelector('#acPlats .chip[data-p="' + p.replace(/"/g, '\\"') + '"]');
+        if (chip) { chip.classList.remove('on'); chip.style.background = 'transparent'; chip.style.color = 'inherit'; }
+        syncRows();
       });
-      // 平时隐形，长按整行才出现 ✕
       rowsBox.querySelectorAll('.ac-row').forEach(row => this._longPress(row, () => {
         rowsBox.querySelectorAll('.ac-row').forEach(o => o.classList.remove('lp-revealed'));
         row.classList.add('lp-revealed');
         setTimeout(() => row.classList.remove('lp-revealed'), 4000);
       }));
     };
+    document.querySelectorAll('#acPlats .chip').forEach(c => c.onclick = () => {
+      const p = c.dataset.p;
+      if (selPlats.includes(p)) { selPlats = selPlats.filter(x => x !== p); c.classList.remove('on'); c.style.background = 'transparent'; c.style.color = 'inherit'; }
+      else { selPlats.push(p); c.classList.add('on'); c.style.background = 'var(--accent)'; c.style.color = '#fff'; }
+      syncRows();
+    });
+    const reqInp = document.getElementById('acReq');
+    if (reqInp) reqInp.oninput = () => { const v = reqInp.value.trim(); rows.forEach(r => r.req = v); };
     paint();
-    document.getElementById('acAddRow').onclick = () => { rows.push({ app: '小红书', total: 1, req: '' }); paint(); };
     document.getElementById('acOk').onclick = () => {
       const name = document.getElementById('acName').value.trim(); if (!name) return toast('给计划起个名字');
-      const targets = rows.map(r => ({ app: r.app, total: Number(r.total) || 0, video: 0, article: 0, req: (r.req || '').trim() }));
+      if (!selPlats.length) return toast('至少选一个发布平台');
+      const req = document.getElementById('acReq').value.trim();
+      const targets = rows.map(r => ({ app: r.app, total: Number(r.total) || 0, video: 0, article: 0, type: r.type || '', req }));
       if (existing) { existing.name = name; existing.deadline = document.getElementById('acDl').value; existing.targets = targets; S.set('workActs', raw); }
       else { raw.unshift({ id: uid(), name, deadline: document.getElementById('acDl').value, targets }); S.set('workActs', raw); }
       closeModal(); this.tool = null; this.render(root); toast(existing ? '计划已更新' : '计划已创建，打卡时记得选对平台');
