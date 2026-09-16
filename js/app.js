@@ -1,5 +1,5 @@
 /* ============ 首页 + 导航 ============ */
-window.APP_VER = 'mumu-v308'; // 当前前端版本（设置页可见，用于确认是否加载到最新代码）
+window.APP_VER = 'mumu-v309'; // 当前前端版本（设置页可见，用于确认是否加载到最新代码）
 const SR_LINKS = [
   { v: 'sport', n: '运动（任意跟练）' },
   { v: 'sport:', n: '运动（具体项目，选后填名）' },
@@ -10,6 +10,13 @@ const SR_LINKS = [
   { v: 'study', n: '备考学习' },
   { v: 'review', n: '复盘' }
 ];
+// 365天自救默认专项（稳定名称识别；用户删除后记入 selfRescue.delDef 墓碑，重导入也不复活）
+const SR_DEFA = [
+  { name: '改善大小脸', days: 9, start: '2026-07-13', link: 'sport' },
+  { name: '天鹅颈跟练', days: 2, start: '2026-07-26', link: 'sport' },
+  { name: '创作产出', mode: 'output', link: 'work', goal: 365, start: '2026-07-13' }
+];
+window.SR_DEFA = SR_DEFA;
 const DAILY_QUOTES = [
   '行动是治愈焦虑的良药。',
   '每天进步一点点，坚持带来大改变。',
