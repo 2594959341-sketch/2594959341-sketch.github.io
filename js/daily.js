@@ -922,17 +922,7 @@ const Daily = {
         </div>
         <div class="todo-card-body"><div id="taskList"></div></div>
       </div>
-      <!-- 时间轴 -->
-      <div class="card" style="margin-top:14px">
-        <h3 id="tlHead" style="cursor:pointer;display:flex;justify-content:space-between;align-items:center;margin-bottom:${this._tlOpen ? '10px' : '0'};font-size:14px">${icon('clock',16)} 时间轴 · ${fmtCN(d)} <span class="muted" style="font-weight:400">${this._tlOpen ? '▾' : '▸'}</span></h3>
-        <div id="tlBody" ${this._tlOpen ? '' : 'style="display:none"'}>
-          ${doneN ? `<div class="timeline">${tasks.filter(t => (this.effDone(t, d) || t.restDay) && !t.abandoned && !this._mealSkipped(t, d)).sort((a, b) => this._effTime(a, d) - this._effTime(b, d)).map(t => {
-            const brief = this._briefInfo(t, d);
-            return `<div class="tl-item"><span class="tl-dot"></span><span class="tl-time">${this.taskTime(t, d) || '—'}</span><span class="tl-text">${esc(t.title)}${brief ? `<span class="tl-brief">${esc(brief)}</span>` : ''}</span></div>`;
-          }).join('')}</div>` : '<div class="empty" style="padding:16px;text-align:center">今天还没完成任何计划</div>'}
-        </div>
-      </div>
-      ${this.todayGoalsHTML(d)}`;
+      ${this.todayGoalsHTML(d)}${this.goalQuickHTML(d)}`;
 
     root.querySelector('#dAdd').onclick = () => this.addDialog(root);
     const rcBtn = root.querySelector('#rechargeBtn');
@@ -947,16 +937,13 @@ const Daily = {
     if (gad) gad.onclick = () => this.openGoalAdd(null, { scope: 'day', period: d });
     const gcal = root.querySelector('#goalCal');
     if (gcal) gcal.onclick = () => { this._sub = 'goalYear'; this.render(this._root); };
+    root.querySelectorAll('[data-goaladd]').forEach(b => b.onclick = () => {
+      const g = S.get('mumu_goals', []).find(x => x.id === b.dataset.goaladd);
+      if (g) this.addDialog(this._root, { title: g.title, link: g.link, goalId: g.id });
+    });
     root.querySelectorAll('#todayGoalsCard [data-gtoggle]').forEach(b => b.onclick = e => { e.stopPropagation(); this.toggleGoal(b.dataset.gtoggle); this.goalRerender(); });
     const ob = root.querySelector('#dealOverdue');
     if (ob) ob.onclick = () => this.overdueDialog(root, overdue);
-    const tlHead = root.querySelector('#tlHead');
-    tlHead.onclick = () => {
-      this._tlOpen = !this._tlOpen;
-      root.querySelector('#tlBody').style.display = this._tlOpen ? '' : 'none';
-      tlHead.querySelector('span').textContent = this._tlOpen ? '▾' : '▸';
-      tlHead.style.marginBottom = this._tlOpen ? '10px' : '0';
-    };
     // 进度条解释折叠：点击进度条展开/收起说明（默认隐藏，更美观）
     const lbBar = root.querySelector('#loadCard .load-bar');
     if (lbBar) lbBar.onclick = () => root.querySelector('#loadCard').classList.toggle('show-explain');
@@ -1558,7 +1545,7 @@ const Daily = {
       </div>`).join('')}`;
   },
 
-  addDialog(root) {
+  addDialog(root, preset) {
     const ideaRecHTML = this._ideaRecHTML();
     openModal(`<button class="close-x" onclick="closeModal()">×</button><h3>新任务</h3>
       ${ideaRecHTML ? `<div class="idea-rec" id="ideaRecBox" style="display:none">${ideaRecHTML}</div>` : ''}
@@ -1718,7 +1705,12 @@ const Daily = {
       });
     };
     bindIdeaRec();
+    if (preset) {
+      const pt = document.getElementById('npTitle'); if (pt) pt.value = preset.title || '';
+      if (preset.link) { const pl = document.getElementById('npLink'); if (pl) pl.value = preset.link; }
+    }
     setDefaultLink();
+    if (preset && preset.goalId) { const pg = document.getElementById('npGoal'); if (pg) pg.value = preset.goalId; }
 
     document.getElementById('npOk').onclick = () => {
       const link = document.getElementById('npLink') ? document.getElementById('npLink').value : '';
@@ -2229,6 +2221,7 @@ const Daily = {
     h += '<div class="gt-main"><div class="gt-title">' + esc(g.title) + '</div><div class="gt-meta">'
       + '<span class="gt-per">' + this.goalPeriodLabel(g) + '</span>'
       + (g.link ? '<span class="gt-tag">' + this.goalLinkName(g.link) + '</span>' : '')
+      + (g.cadence ? '<span class="gt-tag">节奏·' + g.cadence + '</span>' : '')
       + (treeKids.length ? '<span class="gt-sub">' + kidsDone + '/' + kids.length + '</span>' : '')
       + (dayKids.length ? '<span class="gt-sub day">日 ' + dayKids.filter(k => this.goalDone(k)).length + '/' + dayKids.length + '</span>' : '')
       + '</div></div>';
@@ -2296,6 +2289,20 @@ const Daily = {
     }
     return h + '</div>';
   },
+  // v310：从目标拉取——把进行中的月/周目标一键变成今天的计划（目标引导计划）
+  goalQuickHTML(d) {
+    const goals = S.get('mumu_goals', []);
+    const rel = goals.filter(g => !g.done && (g.scope === 'month' || g.scope === 'week') && g.link && g.link !== 'custom' && g.link !== '');
+    if (!rel.length) return '';
+    const cur = d;
+    return '<div class="card today-goals" style="margin-top:14px">'
+      + '<div class="tg-head"><h3>从目标拉取</h3><span class="muted" style="font-size:12px">点 ＋ 把目标变成计划</span></div>'
+      + '<div class="tg-list">' + rel.map(g => {
+        const scoped = g.scope === 'week' ? '周' : '月';
+        return '<div class="goal-row"><button class="chip" data-goaladd="' + g.id + '" style="border:none;background:var(--light);font-size:15px;line-height:1;padding:2px 9px">＋</button>'
+          + '<div class="tg-title"><b>' + esc(g.title) + '</b> <span class="muted">· ' + scoped + (g.cadence ? '·' + g.cadence : '') + '·' + this.goalLinkName(g.link) + '</span></div></div>';
+      }).join('') + '</div></div>';
+  },
   goalRerender() { if (this._root) this.render(this._root); },
   syncGoalsFromPlan(date) {
     const gs = S.get('mumu_goals', []);
@@ -2344,25 +2351,41 @@ const Daily = {
   },
   openGoalAdd(parent, preset) {
     const defScope = preset ? preset.scope : (parent ? this.goalChildScope(parent.scope) : 'year');
-    const defPeriod = preset ? preset.period : (parent ? this.goalChildPeriod(defScope, parent.period) : '');
+    const defPeriod = preset ? preset.period : (parent ? this.goalChildPeriod(defScope, parent.period) : this.goalKey(defScope));
     const linkOpts = ['', 'sport', 'kaogong', 'work', 'growth', 'read', 'travel', 'fun', 'meals', 'custom'];
     const linkSel = '<div class="form-row"><label>关联每日计划（选填）</label><select id="gLink">' + linkOpts.map(l => '<option value="' + l + '">' + (l ? this.goalLinkName(l) : '不关联') + '</option>').join('') + '</select></div>';
+    const cadenceOpts = ['', '每天', '每周', '每月', '每季度', '每年', '一次'];
+    const yr = new Date().getFullYear();
+    const yearOpts = []; for (let y = yr - 2; y <= yr + 3; y++) yearOpts.push(y);
+    const monthOpts = []; for (let m = 1; m <= 12; m++) monthOpts.push(String(m).padStart(2, '0'));
+    // 周期选择器：年/月可任选（含过去与未来），周/日用日期选择器（可任选任意一天，周自动对齐到周一）
+    const periodCtl = (scope, period) => {
+      if (scope === 'year') return '<select id="gPeriodY">' + yearOpts.map(y => '<option value="' + y + '"' + (String(y) === String(period || yr) ? ' selected' : '') + '>' + y + ' 年</option>').join('') + '</select>';
+      if (scope === 'month') { const [py, pm] = (period || this.goalKey('month')).split('-'); return '<select id="gPeriodY">' + yearOpts.map(y => '<option value="' + y + '"' + (String(y) === String(py || yr) ? ' selected' : '') + '>' + y + '</option>').join('') + '</select> 年 <select id="gPeriodM">' + monthOpts.map(m => '<option value="' + m + '"' + (m === (pm || '01') ? ' selected' : '') + '>' + m + ' 月</option>').join('') + '</select>'; }
+      return '<input type="date" id="gPeriodD" value="' + (period || todayStr()) + '">';
+    };
     openModal('<button class="close-x" onclick="closeModal()">×</button><h3>🎯 添加目标</h3>'
       + '<div class="form-row"><label>类型</label><select id="gScope">' + ['year', 'month', 'week', 'day'].map(s => '<option value="' + s + '"' + (s === defScope ? ' selected' : '') + '>' + ({ year: '年目标', month: '月目标', week: '周目标', day: '日目标' }[s]) + '</option>').join('') + '</select></div>'
       + '<div class="form-row"><label>目标内容</label><input id="gTitle" placeholder="例如：读完 2 本书 / 存下 3000 元"></div>'
-      + '<div class="form-row"><label>归属期间</label><input id="gPeriod" value="' + defPeriod + '"></div>'
+      + '<div class="form-row"><label>归属期间</label><div id="gPeriodBox">' + periodCtl(defScope, defPeriod) + '</div><div class="muted" style="font-size:12px;margin-top:-4px">可任选过去或未来的任意年/月/周/日</div></div>'
+      + '<div class="form-row"><label>节奏（选填）</label><select id="gCadence">' + cadenceOpts.map(c => '<option value="' + c + '">' + (c || '不设定') + '</option>').join('') + '</select></div>'
       + linkSel
       + '<div class="form-row"><label style="display:flex;gap:6px;align-items:center"><input type="checkbox" id="gRoll" checked> 到期未做可顺延到下一期</label></div>'
       + '<button class="btn" id="gOk">添加</button>');
     setTimeout(() => {
+      const scopeSel = document.getElementById('gScope');
+      if (scopeSel) scopeSel.onchange = () => { const pb = document.getElementById('gPeriodBox'); if (pb) pb.innerHTML = periodCtl(scopeSel.value, ''); };
       const ok = document.getElementById('gOk');
       if (ok) ok.onclick = () => {
-        const scope = document.getElementById('gScope').value;
+        const scope = scopeSel.value;
         const title = document.getElementById('gTitle').value.trim();
         if (!title) return toast('写点目标内容吧');
-        const period = document.getElementById('gPeriod').value.trim() || this.goalKey(scope);
+        let period;
+        if (scope === 'year') period = document.getElementById('gPeriodY').value;
+        else if (scope === 'month') period = document.getElementById('gPeriodY').value + '-' + document.getElementById('gPeriodM').value;
+        else { let ds = document.getElementById('gPeriodD') ? document.getElementById('gPeriodD').value : todayStr(); if (scope === 'week') ds = weekDates(ds)[0]; period = ds; }
         const gs = S.get('mumu_goals', []);
-        gs.push({ id: uid(), scope, period, title, done: false, doneDate: null, roll: document.getElementById('gRoll').checked, link: document.getElementById('gLink').value || null, created: todayStr(), parent: parent ? parent.id : null });
+        gs.push({ id: uid(), scope, period, title, done: false, doneDate: null, roll: document.getElementById('gRoll').checked, link: document.getElementById('gLink').value || null, cadence: document.getElementById('gCadence').value || null, created: todayStr(), parent: parent ? parent.id : null });
         S.set('mumu_goals', gs); closeModal();
         this.goalRerender();
       };
