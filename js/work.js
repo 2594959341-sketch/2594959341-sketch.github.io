@@ -45,6 +45,12 @@ const Work = {
       if (bk) bk.onclick = () => { this._actHistory = false; this.render(root); };
       return;
     }
+    if (this._workView === 'collection') {
+      root.innerHTML = `<div style="padding:4px 0 8px;display:flex;align-items:center;gap:8px"><button class="icon-btn coll-back" title="返回活动规划">${icon('chevronLeft',18)}</button><b style="font-size:16px">活动收集箱</b></div><div id="workBody"></div>`;
+      const body = root.querySelector('#workBody');
+      this.render_collection(body, root);
+      return;
+    }
     // 创作打卡（默认竖排总览）：无 tabs
     if (!this.tool) {
       root.innerHTML = `<div id="workBody"></div>`;
@@ -88,9 +94,7 @@ const Work = {
       <div class="sec" id="sec-cal"></div>
       <div class="sec" id="sec-earn"></div>
       <div class="sec" id="sec-hm"></div>
-      <details class="wcoll"><summary>🎬 激励雷达（创作活动激励）</summary><div id="sec-radar"></div></details>
       <details class="wcoll"><summary>✂️ 剪辑灵感</summary><div id="sec-clip"></div></details>`;
-    this.render_radar(box.querySelector('#sec-radar'), root);
     this.render_clip(box.querySelector('#sec-clip'));
     this.render_chk(box.querySelector('#sec-chk'), root);
     this.render_act(box.querySelector('#sec-act'), root);
@@ -670,6 +674,12 @@ const Work = {
     } else {
       ts.forEach(t => { miss[t.app] = 0; });
     }
+    // v310：分平台结算优先——platformSettle 覆盖聚合 review
+    if (a && a.platformSettle && Object.keys(a.platformSettle).length) {
+      const ps = a.platformSettle; const m2 = {}, e2 = {}; let rd = '';
+      Object.keys(ps).forEach(p => { const s = ps[p]; m2[p] = Number(s.miss) || 0; e2[p] = Number(s.earn) || 0; if (s.reviewDate > rd) rd = s.reviewDate; });
+      return { miss: m2, earn: e2, reviewDate: rd, reasons: (rv.reasons && typeof rv.reasons === 'object') ? rv.reasons : {} };
+    }
     return { miss, earn, reviewDate: rv.reviewDate || '', reasons: (rv.reasons && typeof rv.reasons === 'object') ? rv.reasons : {} };
   },
   /* 结算篇数汇总：达标 ok 篇 / 要求 req 篇 / zero = 完全没达标的平台 */
@@ -766,6 +776,7 @@ const Work = {
     box.innerHTML = `
       <div class="card">
         <h3>活动规划 <span style="margin-left:auto;display:flex;gap:6px;align-items:center">
+          <button class="icon-btn" id="actColl" title="活动收集箱" style="font-size:18px">📥</button>
           <button class="icon-btn" id="actHistory" title="历史活动" style="font-size:18px">${icon('clock',18)}</button>
           <button class="btn sm" id="actAdd" title="新活动计划">＋</button>
         </span></h3>
@@ -775,6 +786,8 @@ const Work = {
           const collapsed = fin && !this._actOpen.has(a.id);
           const targets = a.targets && a.targets.length ? a.targets : [{ app: '通用', video: a.targetVideo || 0, article: a.targetArticle || 0 }];
           const left = a.deadline ? daysBetween(todayStr(), a.deadline) : null;
+          const psCount = (a.platformSettle && targets.length) ? targets.filter(t => a.platformSettle[t.app]).length : 0;
+          const settledTag = (fin && psCount > 0 && psCount < targets.length) ? `<span class="tag" style="background:#e0a458;color:#fff;border:none">结算中 ${psCount}/${targets.length}</span>` : '';
           return `<div class="card act-card" data-actid="${a.id}" style="margin-bottom:10px;position:relative">
             <button class="del act-del-btn" data-delact="${a.id}" title="长按此卡片显示删除">✕</button>
             <div class="act-head">
@@ -783,6 +796,7 @@ const Work = {
                 <b class="act-name">${fin ? icon('check',14) + ' ' : ''}${esc(a.name)}</b>
                 <div class="act-meta">
                   ${left === null ? '' : left < 0 ? '<span class="tag">已截止</span>' : `<span class="tag">${a.deadline} 截止 · 剩 ${left} 天</span>`}
+                  ${settledTag}
                   <button class="act-edit-inline" data-editact="${a.id}" title="编辑">${icon('edit',12)}</button>
                 </div>
               </div>
@@ -794,6 +808,8 @@ const Work = {
     box.querySelector('#actAdd').onclick = () => this.activityDialog(root, {});
     const histBtn = box.querySelector('#actHistory');
     if (histBtn) histBtn.onclick = () => { this._actHistory = true; this.render(root); };
+    const collBtn = box.querySelector('#actColl');
+    if (collBtn) collBtn.onclick = () => { this._workView = 'collection'; this.render(root); };
     const toggleAllBtn = box.querySelector('#actToggleAll');
     if (toggleAllBtn) toggleAllBtn.onclick = () => { this._actExpanded = !this._actExpanded; this.render(root); };
     // 活动删除：长按卡片显示右上角 ✕，点击 ✕ 删除（含未结算活动）
@@ -821,33 +837,45 @@ const Work = {
 
   render_act_history(box, root) {
     const settled = this.acts().filter(a => a.settled);
-    // 以「最新结算」在上排序（按结算日期 reviewDate 倒序，无则兜底截止日/插入序）
-    const settledSorted = settled.slice().sort((a, b) => {
+    const matchFilter = a => {
+      const f = this._histFilter; if (!f) return true;
+      const st = this.reviewStats(a);
+      const okAll = st.req === 0 ? true : st.ok >= st.req;
+      if (f === 'ok') return okAll;
+      if (f === 'miss') return !okAll;
+      return true;
+    };
+    const settledSorted = settled.filter(matchFilter).slice().sort((a, b) => {
       const da = (a.review && a.review.reviewDate) || a.deadline || '';
       const db = (b.review && b.review.reviewDate) || b.deadline || '';
       return db.localeCompare(da);
     });
     box.innerHTML = `<div class="card">
+      <div class="coll-tabs" style="margin:0 0 12px">
+        <button class="${!this._histFilter || this._histFilter === 'all' ? 'on' : ''}" data-hf="all">全部 ${settled.length}</button>
+        <button class="${this._histFilter === 'ok' ? 'on' : ''}" data-hf="ok">达标</button>
+        <button class="${this._histFilter === 'miss' ? 'on' : ''}" data-hf="miss">没达标</button>
+      </div>
       ${settledSorted.length ? settledSorted.map(a => {
-        // v283：结算按「篇数」统计（达标篇数 / 要求篇数），兼容旧的 reached 布尔结构
         const st = this.reviewStats(a);
         const targets = this.targetsOf(a);
         const totalEarn = st.earn;
         const reasonTxt = Object.entries(st.reasons || {}).filter(([, v]) => v).map(([k, v]) => k + '：' + v).join('；');
+        const platTags = targets.map(t => { const total = Number(t.total) || 0; const miss = Number((st.miss && st.miss[t.app]) || 0); const okN = Math.max(0, total - miss); const cls = total === 0 ? '#9aa' : (okN >= total ? '#7CB390' : (okN === 0 ? '#c0392b' : '#e0a458')); return `<span class="tag" style="background:${cls};color:#fff;border:none">${esc(t.app)} ${okN}/${total}</span>`; }).join('');
       return `<div class="card act-card act-card-hist" data-actid="${a.id}" style="margin-bottom:10px;position:relative">
         <button class="del act-edit-btn" data-editact-hist="${a.id}" title="编辑结算（改未达标篇数/收益）">✎</button>
         <button class="del act-del-btn" data-delact="${a.id}" title="长按此卡片显示编辑/删除">✕</button>
         <div style="display:flex;align-items:center;gap:8px;padding-right:70px"><b>${esc(a.name)}</b>${a.deadline ? `<span class="tag">${a.deadline} 截止</span>` : ''}</div>
-          <div class="muted" style="font-size:12px;margin-top:4px">${targets.map(t => `${esc(t.app)} ${t.total} 篇`).join(' · ')}</div>
+          <div style="display:flex;gap:6px;margin-top:6px;align-items:center;flex-wrap:wrap">${platTags}</div>
           <div style="display:flex;gap:8px;margin-top:6px;align-items:center;flex-wrap:wrap">
-            <span class="tag" style="background:#7CB390;color:#fff;border:none">达标 ${st.ok}/${st.req} 篇</span>
-            ${st.zero.length ? `<span class="tag" style="background:#c0392b;color:#fff;border:none">${esc(st.zero.join('、'))} 全未达标</span>` : ''}
+            <span class="tag" style="background:#111;color:#fff;border:none">达标 ${st.ok}/${st.req} 篇</span>
             ${totalEarn > 0 ? `<span class="tag" style="background:#F6C56E;color:#fff;border:none">收入 ¥${totalEarn}</span>` : ''}
           </div>
           ${reasonTxt ? `<div class="muted" style="font-size:12px;margin-top:6px">${esc(reasonTxt)}</div>` : ''}
         </div>`;
-    }).join('') : '<div class="empty">还没有结算完结的活动。在活动规划里给已完成/已截止的活动点开「保存结算」，就会自动归集到这里。</div>'}
+      }).join('') : '<div class="empty">这个筛选下还没有活动。在活动规划里给已完成/已截止的活动结算后，会归集到这里。</div>'}
   </div>`;
+    box.querySelectorAll('[data-hf]').forEach(b => b.onclick = () => { this._histFilter = b.dataset.hf === 'all' ? null : b.dataset.hf; this.render(root); });
   box.querySelectorAll('.act-card').forEach(card => {
     const btn = card.querySelector('.act-del-btn'); if (!btn) return;
     let timer = null, revealed = false;
@@ -868,6 +896,103 @@ const Work = {
   });
   box.querySelectorAll('[data-editact-hist]').forEach(b => b.onclick = () => { const a = this.acts().find(x => x.id === b.dataset.editactHist); if (a) this.activityDialog(root, a); });
 },
+
+  /* ---------- 活动收集箱（原激励雷达重设计 · v310） ---------- */
+  render_collection(box, root) {
+    const D = window.MUMU_INCENTIVES || { updated: '-', campaigns: [], platforms: [], note: '' };
+    const kw = this._collKw || '';
+    const auto = (D.campaigns || [])
+      .filter(c => c.deadline !== '长期')
+      .filter(c => { if (!/^\d{4}-\d{2}-\d{2}/.test(c.deadline)) return true; return daysBetween(todayStr(), c.deadline) >= 0; })
+      .map(c => ({ ...c, src: 'auto' }));
+    let mine = S.get('actCollection', []) || [];
+    const before = mine.length;
+    mine = mine.filter(c => { if (!c.deadline || !/^\d{4}-\d{2}-\d{2}/.test(c.deadline)) return true; return daysBetween(todayStr(), c.deadline) >= 0; });
+    if (mine.length !== before) S.set('actCollection', mine);
+    const all = [...auto, ...mine];
+    const list = kw ? all.filter(c => (c.game || '').includes(kw) || (c.title || '').includes(kw)) : all;
+    const platInfo = k => (D.platforms || []).find(x => x.name === k) || null;
+    box.innerHTML = `
+      <div class="card">
+        <h3>${icon('search',16)} 搜已收集的活动</h3>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <input id="collKw" class="search" placeholder="输入游戏名，如：遗忘之海" style="flex:1;min-width:170px" value="${esc(kw)}">
+          <button class="btn" id="collSearch">搜索</button>
+          <button class="btn ghost" id="collAdd">＋ 添加</button>
+        </div>
+        <div class="muted" style="margin-top:8px;font-size:12px">${esc(D.note) || '以下活动均来自公开可验证的官方渠道，投稿前请点开来源链接二次确认。'}</div>
+        ${mine.length && !kw ? '<div class="muted" style="margin-top:6px;font-size:12px">📥 你手动收集的活动 ' + mine.length + ' 个（链接粘贴添加，真实有效）</div>' : ''}
+        ${list.length ? list.map(c => {
+          const left = /^\d{4}/.test(c.deadline) ? daysBetween(todayStr(), c.deadline) : null;
+          const plats = (c.platforms || []).map(p => `<button class="plat-pill" data-plat="${esc(p)}" data-ckey="${esc(c.title)}">${esc(p)}</button>`).join('');
+          return `<div class="coll-card" data-ckey="${esc(c.title)}">
+            <div class="cc-top">
+              <div><div class="cc-title">${esc(c.title)}</div>${c.game ? '<div class="cc-game">' + esc(c.game) + '</div>' : ''}</div>
+              ${left === null ? '<span class="tag">长期</span>' : '<span class="tag">剩 ' + left + ' 天</span>'}
+            </div>
+            <div class="coll-plats">${plats || '<span class="muted">未标注平台</span>'}</div>
+            <div class="coll-info">${icon('money',14)} ${esc(c.reward || '奖励未注明')}</div>
+            <div class="coll-info">${icon('calendar',14)} ${esc(c.period || '周期未注明')}</div>
+            <div class="coll-info">${icon('tag',14)} ${esc(c.require || '达标要求未注明')}</div>
+            <div class="coll-acts">
+              <a class="btn sm" href="${c.source || '#'}" target="_blank" ${c.source ? '' : 'style="pointer-events:none;opacity:.5"'}>官方原文 ↗</a>
+              <button class="btn sm ghost" data-plan="${esc(c.title)}|${esc(c.game || '')}|${esc((c.platforms || []).join(','))}|${esc(c.deadline || '')}|${esc(c.require || '')}">添加进活动规划</button>
+            </div>
+          </div>`;
+        }).join('') : '<div class="coll-empty">还没有匹配的活动。换个关键词，或点「＋ 添加」把平台活动链接贴进来。</div>'}
+      </div>`;
+    const doS = () => { this._collKw = box.querySelector('#collKw').value.trim(); this.render_collection(box, root); };
+    box.querySelector('#collSearch').onclick = doS;
+    box.querySelector('#collKw').onkeydown = e => { if (e.key === 'Enter') doS(); };
+    const addBtn = box.querySelector('#collAdd'); if (addBtn) addBtn.onclick = () => this.addToCollection(root);
+    box.querySelectorAll('[data-plat]').forEach(b => b.onclick = () => {
+      const pname = b.dataset.plat; const p = platInfo(pname);
+      const c = all.find(x => x.title === b.dataset.ckey);
+      openModal(`<button class="close-x" onclick="closeModal()">×</button><h3>${esc(pname)} · 活动要求</h3>
+        <div class="card" style="box-shadow:none">
+          <div style="font-weight:600;margin-bottom:6px">${esc(c ? c.title : '')}</div>
+          <div class="coll-info">${icon('tag',14)} 达标要求：${esc(c ? (c.require || '未注明') : '未注明')}</div>
+          <div class="coll-info">${icon('money',14)} 奖励：${esc(c ? (c.reward || '未注明') : '未注明')}</div>
+          <div class="coll-info">${icon('calendar',14)} 周期：${esc(c ? (c.period || '未注明') : '未注明')}</div>
+          ${p ? '<div class="coll-info">📌 平台入口：<a href="' + p.entry + '" target="_blank">' + esc(p.entry) + ' ↗</a></div><div class="coll-info">' + esc(p.tip || '') + '</div>' : ''}
+        </div>
+        ${c && c.source ? '<a class="btn" href="' + c.source + '" target="_blank" style="width:100%;margin-top:10px">查看官方原文 ↗</a>' : ''}`);
+    });
+    box.querySelectorAll('[data-plan]').forEach(b => b.onclick = () => {
+      const [title, game, plats, dl, req] = b.dataset.plan.split('|');
+      const targets = (plats || '').split(',').filter(Boolean).map(p => ({ app: p, total: 0, video: 0, article: 0, req: req || '' }));
+      this._workView = null; this.render(root);
+      setTimeout(() => { const el = root.querySelector('#sec-act'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); this.activityDialog(root, { name: (game ? game + ' · ' : '') + title, deadline: /^\d{4}/.test(dl) ? dl : '', targets: targets.length ? targets : undefined }); }, 60);
+    });
+  },
+  addToCollection(root) {
+    const hostMap = [['xiaohongshu.com', '小红书'], ['bilibili.com', 'B站'], ['b23.tv', 'B站'], ['douyin.com', '抖音'], ['game.douyin.com', '抖音'], ['taptap.cn', 'TapTap'], ['taptap.com', 'TapTap'], ['3839.com', '好游快爆'], ['kuaibao', '好游快爆'], ['weibo.com', '微博']];
+    openModal(`<button class="close-x" onclick="closeModal()">×</button><h3>添加活动到收集箱</h3>
+      <div class="muted" style="margin-bottom:8px">粘贴平台活动链接，枝枝按域名识别平台；活动名/要求/奖励请填真实信息（不编造）。也可不贴链接，直接手动填。</div>
+      <div class="form-row"><label>活动链接（选填）</label><input id="colUrl" placeholder="https://..."></div>
+      <div class="form-row"><label>游戏 / 作品名</label><input id="colGame" placeholder="如：遗忘之海"></div>
+      <div class="form-row"><label>活动名称</label><input id="colTitle" placeholder="如：XX 创作激励"></div>
+      <div class="form-row"><label>参与平台</label><select id="colPlat">${this.PLATS.map(p => '<option value="' + p + '">' + p + '</option>').join('')}</select></div>
+      <div class="form-row"><label>截止日期</label><input type="date" id="colDl"></div>
+      <div class="form-row"><label>达标要求</label><input id="colReq" placeholder="如：播放1000+ / 上首页 / 10赞以上"></div>
+      <div class="form-row"><label>奖励</label><input id="colReward" placeholder="如：现金 / 流量扶持"></div>
+      <div class="form-row"><label>官方原文链接</label><input id="colSrc" placeholder="来源链接（选填）"></div>
+      <button class="btn" id="colOk">加入收集箱</button>`);
+    setTimeout(() => {
+      const urlEl = document.getElementById('colUrl');
+      if (urlEl) urlEl.oninput = () => { const u = (urlEl.value || '').toLowerCase(); const hit = hostMap.find(([h]) => u.indexOf(h) >= 0); if (hit) { const sel = document.getElementById('colPlat'); if (sel) sel.value = hit[1]; } };
+      const ok = document.getElementById('colOk');
+      if (ok) ok.onclick = () => {
+        const title = document.getElementById('colTitle').value.trim();
+        const game = document.getElementById('colGame').value.trim();
+        if (!title && !game) return toast('至少填活动名或游戏名');
+        const arr = S.get('actCollection', []);
+        arr.unshift({ id: uid(), game, title: title || game, platforms: [document.getElementById('colPlat').value], deadline: document.getElementById('colDl').value, require: document.getElementById('colReq').value.trim(), reward: document.getElementById('colReward').value.trim(), source: document.getElementById('colSrc').value.trim(), addedAt: todayStr(), userAdded: true });
+        S.set('actCollection', arr); closeModal(); this._workView = 'collection'; this.render(root); toast('已加入活动收集箱');
+      };
+    }, 0);
+  },
+
   /* ---------- 周 / 月 / 年 产出（方块） ---------- */
   render_wk(box, root) {
     this.prodTile(box, root, this.periodItems('wk'), '本周产出');
@@ -1194,74 +1319,78 @@ const Work = {
     const isExpired = !!(existing && existing.deadline && daysBetween(todayStr(), existing.deadline) < 0);
     // 已完成 / 已截止 → 结算弹窗（记录复审结果与收入）
     if (isDone) {
-      // v283：结算按「篇数」记 —— 每个平台填「未达标几篇」，达标篇数 = 要求篇数 − 未达标篇数
+      // v310：分平台结算——每个平台单独保存，活动在所有平台结算后才归档到历史
       const targets = this.targetsOf(existing);
-      const rv = this.reviewOf(existing);          // 归一化：旧 reached 结构折算成 miss 篇数
-      const miss = rv.miss || {}, earn = rv.earn || {};
-      const missVal = t => { const v = Number(miss[t.app]); return isNaN(v) ? 0 : Math.max(0, v); };
+      const ps = existing.platformSettle || {};
+      const settledApps = targets.filter(t => ps[t.app]).map(t => t.app);
+      const allSettled = targets.length > 0 && settledApps.length === targets.length;
       openModal(`<button class="close-x" onclick="closeModal()">×</button>
         <h3>${icon('target',16)} 活动结算 · ${esc(existing.name)}</h3>
-        <div class="muted" style="margin:0 0 10px">活动已${isExpired ? '截止' : '完成'}。每个平台填「有几篇没达到要求」，达标篇数与收益会自动算。</div>
-        <div id="rvRows">${targets.map((t, i) => {
+        <div class="muted" style="margin:0 0 6px">活动已${isExpired ? '截止' : '完成'}。每个平台单独结算：填「未达标几篇」与「达标收益」，点「结算此平台」即保存；全部平台结算后自动归档到历史。</div>
+        <div id="rvRows">${targets.map((t) => {
+          const s = ps[t.app];
           const total = Number(t.total) || 0;
-          const mv = Math.min(total, missVal(t));
+          const mv = s ? Math.min(total, Number(s.miss) || 0) : 0;
           const okN = Math.max(0, total - mv);
-          return `<div class="rv-card" data-rvi="${i}" style="border:1px solid var(--line);border-radius:10px;padding:10px;margin:8px 0">
+          const earnV = s ? (s.earn != null ? s.earn : '') : '';
+          const done = !!s;
+          return `<div class="rv-card" data-app="${esc(t.app)}" style="border:1px solid var(--line);border-radius:10px;padding:10px;margin:8px 0">
             <div style="display:flex;align-items:center;gap:6px;font-weight:600;flex-wrap:wrap">
               <span>${esc(t.app)}</span>
               <span class="muted" style="font-weight:400">（要求 ${total} 篇）</span>
               ${t.req ? `<span class="tag">达标要求：${esc(t.req)}</span>` : ''}
+              ${done ? '<span class="tag" style="background:#7CB390;color:#fff;border:none">已结算</span>' : ''}
             </div>
             <div style="display:flex;align-items:center;gap:10px;margin-top:8px;flex-wrap:wrap">
               <label style="display:flex;align-items:center;gap:6px;font-size:13px">未达标
-                <input type="number" class="rv-miss" data-app="${esc(t.app)}" data-total="${total}" value="${mv}" min="0" step="1" style="width:70px"> 篇
+                <input type="number" class="rv-miss" data-app="${esc(t.app)}" data-total="${total}" value="${mv}" min="0" step="1" style="width:64px"> 篇
               </label>
               <span class="muted rv-ok" data-app="${esc(t.app)}" style="font-size:13px">→ 达标 ${okN} 篇</span>
             </div>
             <div style="display:flex;align-items:center;gap:6px;margin-top:8px">
               <label style="display:flex;align-items:center;gap:6px;font-size:13px">达标收益
-                <input type="number" class="rv-earn" data-app="${esc(t.app)}" value="${earn[t.app] != null ? earn[t.app] : ''}" step="0.01" style="width:100px"> 元
+                <input type="number" class="rv-earn" data-app="${esc(t.app)}" value="${earnV}" step="0.01" style="width:90px"> 元
               </label>
+              <button class="btn sm rv-save" data-app="${esc(t.app)}" style="margin-left:auto">${done ? '改' : '结算此平台'}</button>
             </div>
           </div>`;
         }).join('')}</div>
-        <button class="btn" id="rvOk" style="width:100%;margin-top:6px">保存结算</button>`);
-      // 未达标篇数变化时实时刷新右侧「达标 N 篇」
+        ${allSettled ? '<div class="banner info" style="margin-top:8px">全部平台已结算，已归集到历史活动 ✓</div>' : ''}
+        <button class="btn ghost" id="rvClose" style="width:100%;margin-top:8px">关闭</button>`);
       const paintOk = () => {
         document.querySelectorAll('.rv-miss').forEach(inp => {
           const total = Number(inp.dataset.total) || 0;
-          let v = Number(inp.value);
-          if (isNaN(v) || v < 0) v = 0;
-          if (v > total) v = total;
+          let v = Number(inp.value); if (isNaN(v) || v < 0) v = 0; if (v > total) v = total;
           const span = document.querySelector('.rv-ok[data-app="' + inp.dataset.app.replace(/"/g, '\\"') + '"]');
           if (span) span.textContent = '→ 达标 ' + Math.max(0, total - v) + ' 篇';
         });
       };
       document.querySelectorAll('.rv-miss').forEach(inp => {
         inp.oninput = paintOk;
-        inp.onblur = () => {
-          const total = Number(inp.dataset.total) || 0;
-          let v = Number(inp.value);
-          if (isNaN(v) || v < 0) v = 0;
-          if (v > total) { v = total; toast('未达标篇数不能多于要求篇数（' + total + ' 篇），已帮你改回上限'); }
-          inp.value = v; paintOk();
-        };
+        inp.onblur = () => { const total = Number(inp.dataset.total) || 0; let v = Number(inp.value); if (isNaN(v) || v < 0) v = 0; if (v > total) { v = total; toast('未达标篇数不能多于要求篇数（' + total + ' 篇），已帮你改回上限'); } inp.value = v; paintOk(); };
       });
       paintOk();
-      document.getElementById('rvOk').onclick = () => {
-        const review = { miss: {}, earn: {}, reviewDate: todayStr() };
-        let bad = null;
-        document.querySelectorAll('.rv-miss').forEach(inp => {
-          const total = Number(inp.dataset.total) || 0;
-          let v = Number(inp.value);
-          if (isNaN(v) || inp.value === '' || v < 0) v = 0;
-          if (v > total) { bad = { app: inp.dataset.app, total }; v = total; }
-          review.miss[inp.dataset.app] = v;
-        });
-        if (bad) return toast('「' + bad.app + '」未达标篇数不能多于要求的 ' + bad.total + ' 篇');
-        document.querySelectorAll('.rv-earn').forEach(en => { review.earn[en.dataset.app] = en.value ? (Number(en.value) || 0) : 0; });
-        existing.review = review; existing.settled = true; S.set('workActs', raw); closeModal(); this.render(root); toast('结算已保存，已归集到历史活动');
-      };
+      document.querySelectorAll('.rv-save').forEach(btn => btn.onclick = () => {
+        const app = btn.dataset.app;
+        const missInp = document.querySelector('.rv-miss[data-app="' + app.replace(/"/g, '\\"') + '"]');
+        const earnInp = document.querySelector('.rv-earn[data-app="' + app.replace(/"/g, '\\"') + '"]');
+        if (!missInp || !earnInp) return;
+        const total = Number(missInp.dataset.total) || 0;
+        let v = Number(missInp.value); if (isNaN(v) || missInp.value === '' || v < 0) v = 0;
+        if (v > total) { v = total; toast('未达标篇数不能多于要求的 ' + total + ' 篇'); missInp.value = v; paintOk(); }
+        const earn = earnInp.value ? (Number(earnInp.value) || 0) : 0;
+        if (!existing.platformSettle) existing.platformSettle = {};
+        existing.platformSettle[app] = { miss: v, earn, reviewDate: todayStr(), settled: true };
+        const agg = { miss: {}, earn: {}, reviewDate: '' };
+        targets.forEach(tg => { const s2 = existing.platformSettle[tg.app]; if (s2) { agg.miss[tg.app] = s2.miss || 0; agg.earn[tg.app] = s2.earn || 0; if (s2.reviewDate > agg.reviewDate) agg.reviewDate = s2.reviewDate; } });
+        existing.review = agg;
+        existing.settled = targets.every(tg => existing.platformSettle[tg.app]);
+        S.set('workActs', raw);
+        toast(app + ' 已结算' + (existing.settled ? '，全部完成 ✓' : ''));
+        this.render(root);
+      });
+      const closeBtn = document.getElementById('rvClose');
+      if (closeBtn) closeBtn.onclick = () => closeModal();
       return;
     }
     // 未完成 / 未截止 → 原编辑弹窗（内容不变）
@@ -1275,15 +1404,13 @@ const Work = {
       <button class="btn" id="acOk" style="width:100%">创建计划</button>`);
     const rowsBox = document.getElementById('acRows');
     const paint = () => {
-      rowsBox.innerHTML = rows.map((r, i) => {
-        const fields = `<label style="font-size:13px">视频+图文 合计<input type="number" class="ac-t" data-i="${i}" value="${r.total || 0}" min="0" style="width:70px;margin-left:4px"> 篇</label>
-          <input class="ac-req" data-i="${i}" value="${esc(r.req || '')}" placeholder="达标要求，如：播放1000+ / 上首页 / 10赞以上" style="flex:1;min-width:120px;font-size:13px">`;
-        return `<div class="ac-row" data-i="${i}" style="display:flex;gap:8px;align-items:center;margin:6px 0;flex-wrap:wrap">
-          <select class="ac-app" data-i="${i}" style="min-width:110px">${this.PLATS.map(p => `<option value="${p}" ${p === r.app ? 'selected' : ''}>${p}</option>`).join('')}</select>
-          ${fields}
+      rowsBox.innerHTML = rows.map((r, i) => `
+        <div class="ac-row" data-i="${i}" style="display:flex;gap:6px;align-items:center;margin:6px 0">
+          <select class="ac-app" data-i="${i}" style="min-width:92px">${this.PLATS.map(p => `<option value="${p}" ${p === r.app ? 'selected' : ''}>${p}</option>`).join('')}</select>
+          <label style="font-size:13px;white-space:nowrap">几篇<input type="number" class="ac-t" data-i="${i}" value="${r.total || 0}" min="0" style="width:52px;margin:0 3px">篇</label>
+          <input class="ac-req" data-i="${i}" value="${esc(r.req || '')}" placeholder="达标要求，如：播放1000+/上首页/10赞以上" style="flex:1;min-width:84px;font-size:13px">
           <button class="del ac-del" data-i="${i}" title="删除该平台目标">✕</button>
-        </div>`;
-      }).join('');
+        </div>`).join('');
       rowsBox.querySelectorAll('.ac-app').forEach(s => s.onchange = e => { const i = +e.target.dataset.i; rows[i].app = e.target.value; paint(); });
       rowsBox.querySelectorAll('.ac-t').forEach(s => s.oninput = e => rows[+e.target.dataset.i].total = Number(e.target.value) || 0);
       rowsBox.querySelectorAll('.ac-req').forEach(s => s.oninput = e => rows[+e.target.dataset.i].req = e.target.value);
