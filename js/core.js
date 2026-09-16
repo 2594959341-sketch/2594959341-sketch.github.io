@@ -558,9 +558,9 @@ function createBackupScanner(opts) {
   let capInStr = false;
   let capTooBig = false;       // 当前 capture 已超过 MAX_CAP，仅追踪深度不再存内容（保护内存）
   let sawLS = false, sawPhotos = false;
-  // funLogs 流式状态：娱乐配置值内嵌 base64 封面，捕获时完整保留（不剥离），确保封面全部恢复；
-  // 仅当整段 funLogs 超过 FUN_CAP_CEILING 时才对后续封面兜底置空，避免超大 funLogs 整段驻留撑爆内存。
-  let funStrip = false, funOuterPending = false, funAfterColon = false, funReadingKey = false, funCoverVal = false, funCoverStrip = false, funPendingCover = false;
+  // funLogs 流式状态：娱乐配置值内嵌 base64 封面，捕获时【边读边剥离超大封面】(单封面>COVER_IMPORT_CAP 或整段>FUN_CAP_CEILING 即置空)，
+  // 既保留全部文字数据+小封面(图标/缩略图)，又保证 capBuf 恒定有界(≤~40MB)，根治「整段 funLogs 驻留撑爆内存→86%崩溃」。被剥离的大封面可日后单张重传(上传已自动压缩)。
+  let funStrip = false, funOuterPending = false, funAfterColon = false, funReadingKey = false, funCoverVal = false, funCoverStrip = false, funPendingCover = false, funAggressiveStrip = false;
   let funKeyBuf = '', funCoverLen = 0, funCoverStart = -1;
   const onConfig = (opts && opts.onConfig) || null;  // 逐键流式回调：每解析完一个配置键立即写盘，避免整段配置(含娱乐 base64 封面)一次载入内存撑爆
   let pendingLsKey = null;
@@ -568,7 +568,8 @@ function createBackupScanner(opts) {
     if (onConfig) await onConfig(key, rawVal);   // 必须 await：否则配置键落盘是 fire-and-forget，reload 可能早于落盘
     else lsObj[key] = rawVal;
   }
-  const FUN_CAP_CEILING = 512 * 1024 * 1024; // funLogs 流式捕获内存上限：超过则后续封面置空（极端兜底，正常不会触发），避免超大 funLogs 整段驻留撑爆内存
+  const FUN_CAP_CEILING = 40 * 1024 * 1024;  // funLogs 流式捕获【聚合内存预算】：capBuf 超过 40MB 即对所有后续封面强制置空，保证整段 funLogs 驻留内存恒定有界(≤~40MB)，彻底杜绝 OOM（86% 崩溃根因）
+  const COVER_IMPORT_CAP = 256 * 1024;       // 单个封面/图标 base64 保留阈值：≤256KB 的小封面(图标/缩略图)保留；更大的(多为手机原图)在导入时流式剥离置空，避免单封面撑爆 capBuf。被剥离的封面可日后单张重传(上传已自动压缩)
 
   function isWs(c) { return c === ' ' || c === '\n' || c === '\r' || c === '\t'; }
 
@@ -642,7 +643,7 @@ function createBackupScanner(opts) {
         if (c === '"') {                // 内层真实闭引号（结构）
           capInStr = false;
           if (funCoverVal) {
-          if (funCoverStrip) capBuf = capBuf.slice(0, funCoverStart) + 'null';  // 已达上限：该封面置空（极端兜底）
+          if (funCoverStrip) { capBuf = capBuf.slice(0, funCoverStart) + 'null'; stats.coversStripped = (stats.coversStripped || 0) + 1; } // 达上限/超大：该封面置空(记剥离数)，不堆积
           else capBuf += '"';                                                     // 普通封面值：补闭引号
           funCoverVal = false; funCoverStrip = false;
           } else if (funReadingKey) {
@@ -654,7 +655,10 @@ function createBackupScanner(opts) {
           continue;
         }
         if (funCoverVal) {
-          if (!funCoverStrip) capBuf += c;             // 保留封面 base64（不再剥离，确保娱乐封面全部恢复）
+          if (capBuf.length > FUN_CAP_CEILING) funAggressiveStrip = true;   // 聚合超预算：后续封面全剥离
+          if (funCoverStrip || funAggressiveStrip) { funCoverLen++; continue; } // 已决定剥离超大封面：丢弃后续 base64，绝不堆积进 capBuf
+          if (funCoverLen < COVER_IMPORT_CAP) capBuf += c; else funCoverStrip = true; // 单封面超 120KB 也剥离，避免单封面撑爆
+          funCoverLen++;
           continue;
         }
         if (funReadingKey) { funKeyBuf += c; capBuf += c; continue; }
@@ -664,7 +668,7 @@ function createBackupScanner(opts) {
       if (c === '"') {
         capInStr = true;
         if (funAfterColon) {
-          if (funPendingCover) { funCoverVal = true; funCoverStart = capBuf.length; funCoverStrip = (capBuf.length > FUN_CAP_CEILING); capBuf += '"'; funPendingCover = false; }
+          if (funPendingCover) { funCoverVal = true; funCoverStart = capBuf.length; funCoverLen = 0; funCoverStrip = funAggressiveStrip; capBuf += '"'; funPendingCover = false; }
           else capBuf += '"';
           funAfterColon = false;
         } else { funReadingKey = true; funKeyBuf = ''; capBuf += '"'; }
