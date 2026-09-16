@@ -1,5 +1,5 @@
 /* ============ 首页 + 导航 ============ */
-window.APP_VER = 'mumu-v312'; // 当前前端版本（设置页可见，用于确认是否加载到最新代码）
+window.APP_VER = 'mumu-v313'; // 当前前端版本（设置页可见，用于确认是否加载到最新代码）
 const SR_LINKS = [
   { v: 'sport', n: '运动（任意跟练）' },
   { v: 'sport:', n: '运动（具体项目，选后填名）' },
@@ -336,7 +336,7 @@ const App = {
       { id:'work:tool:edit', label:'剪辑灵感' },
       { id:'work:writing', label:'写作' }
     ]},
-    { id:'kaogong', icon:'book', label:'考公', noSideBranch: true, branches:[
+    { id:'kaogong', icon:'book', label:'备考', noSideBranch: true, branches:[
       { id:'kaogong', label:'备考打卡' },
       { id:'kaogong:shizheng', label:'每日时政' },
       { id:'kaogong:info', label:'报考资讯' },
@@ -369,7 +369,7 @@ const App = {
     home: '木木的工作台', daily: '计划', work: '创作产出', finance: '理财',
     'finance:snapshot': '财务快照', 'finance:fund': '基金分析', 'finance:learn': '理财学习', 'finance:system': '理财体系',
     'work:writing': '写作',
-    kaogong: '考公考编', growth: '个人成长', sport: '运动',
+    kaogong: '备考', growth: '个人成长', sport: '运动',
     meals: '三餐记录', review: '复盘', settings: '设置',
     'growth:english': '英语', 'growth:reading': '阅读', 'growth:skill': '技能',
     'travel': '出行', 'travel:out': '日常外出', 'travel:trip': '旅行',
