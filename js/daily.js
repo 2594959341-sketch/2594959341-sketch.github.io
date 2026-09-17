@@ -20,7 +20,7 @@ function rechPowerOf(arr) {
 const Daily = {
   cur: todayStr(),
   _root: null,
-  _sub: null, // 'monthCal' | 'monthTimeline'
+  _sub: null, // 'monthCal' | 'streak' | 'freq'
   _monthYm: null, // 月视图当前年月 '2026-07'
   _mtCats: null, // 月时间轴分类筛选：null=全部；数组=仅显示这些分类
   _mtChipsOpen: false, // 分类筛选面板是否展开
@@ -799,9 +799,9 @@ const Daily = {
     return !day[slot] || day[slot].skipped;
   },
 
-  // 4 段式子导航（月历 / 时间轴 / 火花 / 频率）—— 纯新增（v221）
+  // 3 段式子导航（月历 / 火花 / 频率）—— 纯新增（v221）
   renderSubTabs(box, active) {
-    const tabs = [['monthCal', '月历'], ['monthTimeline', '时间轴'], ['streak', '火花'], ['freq', '频率']];
+    const tabs = [['monthCal', '月历'], ['streak', '火花'], ['freq', '频率']];
     const el = document.createElement('div');
     el.className = 'subtabs subnav';
     el.innerHTML = tabs.map(([s, n]) => `<button class="subtab ${active === s ? 'active' : ''}" data-s="${s}">${n}</button>`).join('');
@@ -812,14 +812,13 @@ const Daily = {
 
   render(root) {
     this._root = root;
-    // 子页面路由：月日历 / 月时间轴 / 续火花 / 频率（v221 新增后两者，纯增加）
-    if (this._sub && (this._sub === 'monthCal' || this._sub === 'monthTimeline' || this._sub === 'streak' || this._sub === 'freq' || this._sub === 'goalYear' || this._sub === 'goalMonth' || this._sub === 'goalWeek')) {
+    // 子页面路由：月日历 / 续火花 / 频率（v221 新增后两者，纯增加）
+    if (this._sub && (this._sub === 'monthCal' || this._sub === 'streak' || this._sub === 'freq' || this._sub === 'goalYear' || this._sub === 'goalMonth' || this._sub === 'goalWeek')) {
       root.innerHTML = `<div id="dSubPage"></div>`;
       const box = root.querySelector('#dSubPage');
       if (this._sub === 'streak') { Streak.render(box); return; }
       if (this._sub === 'freq') { Freq.render(box); return; }
       if (this._sub === 'monthCal') { this.renderMonthCalPage(box); return; }
-      if (this._sub === 'monthTimeline') { this.renderMonthTimelinePage(box); return; }
       if (this._sub === 'goalYear') { this.renderGoalYearPage(box); return; }
       if (this._sub === 'goalMonth') { this.renderGoalMonthPage(box); return; }
       if (this._sub === 'goalWeek') { this.renderGoalWeekPage(box); return; }
@@ -2513,342 +2512,6 @@ const Daily = {
     box.querySelector('#gwBack').onclick = () => this.renderGoalMonthPage(box);
   },
 
-  // ===== 月时间轴页面 ======
-  renderMonthTimelinePage(box) {
-    if (!this._monthYm) this._monthYm = todayStr().slice(0, 7);
-    const ym = this._monthYm;
-    const [yy, mm] = ym.split('-').map(Number);
-    const dim = new Date(yy, mm, 0).getDate();
-    const wdNames = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
-
-    // 收集当月所有打卡记录（三餐不进月时间轴；每日计划任务 vs 专栏打卡去重）
-    const records = [];
-    for (let dd = 1; dd <= dim; dd++) {
-     try {
-      const ds = ym + '-' + String(dd).padStart(2, '0');
-      const planList = this.list(ds);
-      // 1. 每日计划已完成任务（特别排除三餐类：meals: 链接不进时间轴）
-      //   自愈合：由专栏打卡自动生成的任务，若其 srcId 对应的专栏记录已不存在（被删/移动），不进时间轴，避免残留孤儿块
-      planList.filter(t => {
-        if (!this.effDone(t, ds) || t.abandoned) return false;
-        if (t.link && t.link.startsWith('meals:')) return false;
-        if (t.autoGen && t.link && t.srcId) {
-          const [mod] = t.link.split(':');
-          const missing = (store) => { const o = S.get(store, {}); return !Object.keys(o).some(d => (o[d] || []).some(l => l.id === t.srcId)); };
-          if (mod === 'growth' && (t.link === 'growth:reading' || t.link === 'growth:阅读')) { if (missing('readLogs')) return false; }
-          else if (mod === 'sport') { if (missing('sportLogs')) return false; }
-          else if (mod === 'kaogong') { if (missing('kgLogs')) return false; }
-          else if (mod === 'work') { if (missing('workLogs')) return false; }
-          else if (mod === 'travel') { if (missing('travelOut')) return false; }
-        }
-        return true;
-      }).forEach(t => {
-        const cat = t.cat || this.catFromLink(t.link || '');
-        const time = this.taskTime(t, ds) || '';
-        // 基础信息：不依赖 cat 精确匹配，任务上有值就显示（运动/学习/创作/成长通用）
-        const fields = {};
-        if (cat === 'sport' || (t.link || '').startsWith('sport:')) fields['项目'] = t.title || '';
-        if (t.sportMin != null) fields['运动时长'] = t.sportMin + '分钟';
-        if (t.sportFeel) fields['程度'] = t.sportFeel;
-        // v283：平台可能是字符串也可能是数组，统一归一化后展示
-        const la = this.appArr(t.linkApp);
-        if (la.length) fields['平台'] = la.join('、');
-        if (cat === 'work') {
-          fields['类型'] = (t.extra && t.extra.type === 'video') ? '视频' : '图文';
-          const ea = this.appArr(t.extra && t.extra.app);
-          if (ea.length) fields['平台'] = ea.join('、');
-        }
-        if (t.takeaway) fields['收获'] = t.takeaway;
-        if (t.minutes != null) fields['时长'] = t.minutes + '分钟';
-        // 兜底：运动时长缺失时，从当天 sportLogs 取同项目记录补全
-        if (t.sportMin == null) {
-          const sl = (S.get('sportLogs', {})[ds] || []).find(l => l.autoGen && (l.project === t.title || (t.link && t.link === 'sport:' + l.project)));
-          if (sl) {
-            if (sl.minutes != null) fields['运动时长'] = sl.minutes + '分钟';
-            if (sl.feel) fields['程度'] = sl.feel;
-          }
-        }
-        // 各版块数据互通：从任务自带 colExtra + 专栏原始打卡记录补齐基本信息
-        const merge = src => { if (src) Object.keys(src).forEach(k => { const v = src[k]; if (!fields[k] && v != null && String(v).trim()) fields[k] = String(v); }); };
-        merge(t.colExtra);
-        merge(this._colFields(t, ds));
-        const fine = this.catFine(t.link || '') || cat;
-        records.push({ date: ds, time, cat: fine, catBase: cat, catLabel: this.catName(fine), title: t.title, fields, src: 'plan', rid: t.id, link: t.link || '', srcId: t.srcId || '' });
-      });
-      // 2. 专栏打卡（排除已通过每日计划同步的 autoGen 记录）；三餐专栏本就不在此收集
-      (S.get('sportLogs', {})[ds] || []).forEach(l => {
-        const hasPlanMatch = planList.some(t => t.link === ('sport:' + (l.project || '')) && this.effDone(t, ds));
-        if (!hasPlanMatch) records.push({ date: ds, time: l.time || '', cat: 'sport', catBase: 'sport', catLabel: '跟练', title: l.project || '运动', fields: { '时长': (l.minutes || 0) + '分钟', '程度': l.feel || '' }, rid: l.id, src: 'sport' });
-      });
-      (S.get('kgLogs', {})[ds] || []).forEach(l => {
-        const hasPlanMatch = planList.some(t => t.link?.startsWith('kaogong:') && this.effDone(t, ds));
-        if (!hasPlanMatch) records.push({ date: ds, time: l.time || '', cat: 'kaogong', catBase: 'kaogong', catLabel: '学习', title: l.subject || '备考', fields: { '内容': l.content || '', '时长': (l.minutes || 0) + '分钟' }, rid: l.id, src: 'kaogong' });
-      });
-      (S.get('workLogs', {})[ds] || []).forEach(l => {
-        const hasPlanMatch = planList.some(t => t.link?.startsWith('work:') && this.effDone(t, ds));
-        if (!hasPlanMatch) records.push({ date: ds, time: l.time || '', cat: 'work', catBase: 'work', catLabel: '创作', title: l.topic || '创作', fields: { '类型': l.type === 'video' ? '视频' : '图文', '平台': this.appArr(l.app).join('、'), '备注': l.note || '' }, rid: l.id, src: 'work' });
-      });
-      (S.get('growthLogs', {})[ds] || []).forEach(l => {
-        const area = this.growthArea('growth:' + (l.area || '')) || (l.area || '');
-        const hasPlanMatch = planList.some(t => t.link && t.link.startsWith('growth:') && this.growthArea(t.link) === area && this.effDone(t, ds));
-        if (!hasPlanMatch) {
-          const fields = { '收获': l.takeaway || '', '时长': (l.minutes || 0) + '分钟' };
-          if (l.read) Object.keys(l.read).forEach(k => { if (l.read[k]) fields[k] = String(l.read[k]); });
-          records.push({ date: ds, time: l.time || '', cat: area ? 'g:' + area : 'growth', catBase: 'growth', catLabel: area || '成长', title: l.content || area || '', fields, rid: l.id, src: 'growth' });
-        }
-      });
-      // 阅读专栏原始打卡（每日计划里没有对应已完成任务的，单独进时间轴，带书籍基本信息）
-      (S.get('readLogs', {})[ds] || []).forEach(l => {
-        const hasPlanMatch = planList.some(t => t.link && t.link.startsWith('growth:') && this.growthArea(t.link) === '阅读' && (t.title || '') === (l.book || '') && this.effDone(t, ds));
-        if (hasPlanMatch) return;
-        const G = window.Growth;
-        const fields = {};
-        fields['书名'] = l.book || '';
-        if (G && G.readCat) fields['分类'] = G.readCat(l).name;
-        fields['进度'] = l.finished ? '已读完' : (l.pages || '在读');
-        if (l.rating) fields['评分'] = l.rating + ' 星';
-        if ((l.tags || []).length) fields['标签'] = l.tags.join('、');
-        records.push({ date: ds, time: l.time || '', cat: 'g:阅读', catBase: 'growth', catLabel: '阅读', title: l.book || '阅读', fields, rid: l.id, src: 'read' });
-      });
-      // 娱乐专栏打卡进月时间轴（影视/小说/漫画/游戏，展示名称·状态·评分·标签·时长）
-      (S.get('funLogs', {})[ds] || []).forEach(l => {
-        const tp = (window.Entertainment && window.Entertainment.funNormType) ? window.Entertainment.funNormType(l.type) : (l.type || '影视');
-        if (tp === '随手记') tp = '娱乐';
-        const fields = {};
-        if (l.status) fields['状态'] = l.status;
-        if (l.rating) fields['评分'] = l.rating + ' 星';
-        if ((l.tags || []).length) fields['标签'] = l.tags.join('、');
-        if (l.minutes) fields['时长'] = (Number(l.minutes) || 0) + '分钟';
-        records.push({ date: ds, time: '', cat: 'fun', catBase: 'fun', catLabel: tp, color: (window.Entertainment && window.Entertainment.typeColor) ? window.Entertainment.typeColor(tp) : '', title: l.title || (tp + '·娱乐'), fields, rid: l.id, src: 'fun' });
-      });
-      // 出行（日常外出 + 照片日历）原始记录进时间轴
-      // 去重：autoGen entry 来自「每日计划完成任务」，planList 路径已收录过，跳过避免重复
-      (S.get('travelOut', {})[ds] || []).forEach(l => {
-        if (l.autoGen && l.srcId && planList.some(t => t.id === l.srcId && this.effDone(t, ds))) return;
-        records.push({ date: ds, time: l.time || '', cat: 'travel', catBase: 'travel', catLabel: '日常外出', title: l.place || l.text || '出行', fields: { '地点': l.place || '', '内容': l.text || '', '感想': l.thought || '', '备注': l.note || '' }, rid: l.id, src: 'travel' });
-      });
-      // 三餐不在月时间轴展示（上面 planList 已排除 meals: 链接，专栏也无 meals 收集）
-     } catch (e) { console.warn('monthTimeline day render failed', ym, dd, e); }
-    }
-
-    // 倒序：日期大者在前（今天在最上面）；同日内部按时间【正序】（早→晚）
-    records.sort((a, b) => b.date.localeCompare(a.date) || (a.time || '').localeCompare(b.time || ''));
-
-    // 分类清单（用于筛选）
-    const cats = [];
-    records.forEach(r => { if (!cats.includes(r.cat)) cats.push(r.cat); });
-    if (this._mtCats && !cats.some(c => this._mtCats.includes(c))) this._mtCats = null; // 当前月无选中分类则重置为全部
-    const activeCats = this._mtCats || cats;
-    const shown = records.filter(r => activeCats.includes(r.cat));
-
-    box.innerHTML = `
-      <div class="mt-head">
-        <div class="mt-ym">
-          <span>${yy}年${mm}月</span>
-          <button class="icon-btn" id="mtMonth" title="选择月份">${icon('calendar', 16)}</button>
-        </div>
-        <div class="mt-toolbar">
-          <span class="mt-title">时间轴</span>
-          <button class="icon-btn" id="mtFilter" title="按分类筛选">${icon('filter', 16)}</button>
-          <button class="icon-btn" id="mtBack" title="返回">${icon('back', 16)}</button>
-        </div>
-      </div>
-      <div class="mt-chips" id="mtChips" style="display:${this._mtChipsOpen ? 'flex' : 'none'}">
-        <button class="mt-chip ${this._mtCats ? '' : 'on'}" data-cat="">全部</button>
-        ${cats.map(c => `<button class="mt-chip ${this._mtCats && this._mtCats[0] === c ? 'on' : ''}" data-cat="${c}">${esc(this.catName(c))}</button>`).join('')}
-      </div>
-      ${shown.length ? `<div id="mtBody"></div>` : '<div class="empty" style="padding:40px;text-align:center">本月还没有相关打卡记录</div>'}`;
-
-    box.appendChild(this.renderSubTabs(box, 'monthTimeline'));
-    box.querySelector('#mtBack').onclick = () => { this._sub = null; this.render(this._root); };
-    box.querySelector('#mtMonth').onclick = () => this.monthPickerDialog(ym);
-    box.querySelector('#mtFilter').onclick = () => {
-      this._mtChipsOpen = !this._mtChipsOpen;
-      box.querySelector('#mtChips').style.display = this._mtChipsOpen ? 'flex' : 'none';
-    };
-    box.querySelectorAll('#mtChips .mt-chip').forEach(chip => chip.onclick = () => {
-      const cat = chip.dataset.cat;
-      if (!cat) this._mtCats = null;
-      else this._mtCats = (this._mtCats && this._mtCats[0] === cat) ? null : [cat]; // 单选：点击分类只显示该分类，再点取消
-      this.renderMonthTimelinePage(box); // 重渲染（保留 _mtCats / _mtChipsOpen）
-    });
-
-    // 渲染时间轴主体
-    if (shown.length) {
-      const body = box.querySelector('#mtBody');
-      const groups = [];
-      let g = null;
-      shown.forEach(r => {
-        if (!g || g.date !== r.date) { g = { date: r.date, wd: wdNames[new Date(r.date + 'T00:00:00').getDay()], items: [] }; groups.push(g); }
-        g.items.push(r);
-      });
-      body.innerHTML = `<div class="tl">` + groups.map(gr => {
-        const [gy, gm, gd] = gr.date.split('-');
-        const dateTitle = `${Number(gm)}月${Number(gd)}日`;
-        const events = gr.items.map(r => {
-          /* 阅读类不再显示「名称」（书名已在 fields 里，避免重复）。
-             通用兜底：fields 已有同名 key 时，「名称」也跳过。 */
-          const fEntries = Object.entries(r.fields || {}).filter(([k, v]) => v && String(v).trim());
-          const fValues = new Set(fEntries.map(([k, v]) => String(v).trim()));
-          const isReading = r.cat === 'g:阅读' || r.catLabel === '阅读';
-          const showTitle = r.title && !isReading && !fValues.has(String(r.title).trim());
-          const allFields = (showTitle ? [['名称', r.title]] : []).concat(fEntries);
-          const fieldRows = allFields.map(([k, v]) => `<div class="tl-field"><span class="tl-fk">${esc(k)}</span><span class="tl-fv">${esc(v)}</span></div>`).join('');
-          const catCls = 'cat-' + (r.catBase || r.cat || 'daily');
-          // 未分类（标签为空或"未分类"）只显示事件内容，不显示分类徽标
-          const showCat = r.catLabel && r.catLabel !== '未分类';
-          const catBadge = showCat ? `<span class="tl-cat ${catCls}"${r.color ? ` style="background:${r.color}"` : ''}>${esc(r.catLabel)}</span>` : '';
-          return `<div class="tl-event" data-rec="${encodeURIComponent(JSON.stringify({ rid: r.rid, src: r.src, date: r.date, link: r.link || '', srcId: r.srcId || '' }))}">
-            <div class="tl-left">${esc(r.time || '—')}</div>
-            <div class="tl-axis"><span class="tl-dot-rec"></span></div>
-            <div class="tl-right">
-              <div class="tl-card">
-                <button class="tl-del" type="button" hidden>删除</button>
-                ${catBadge}
-                <div class="tl-fields">${fieldRows}</div>
-              </div>
-            </div>
-          </div>`;
-        }).join('');
-        return `<div class="tl-day">
-          <div class="tl-dayrow">
-            <div class="tl-left tl-wd">${gr.wd}</div>
-            <div class="tl-axis"><span class="tl-node"></span></div>
-            <div class="tl-right"><div class="tl-date">${dateTitle}<button class="tl-fold" type="button" title="收起/展开当天">▾</button></div></div>
-          </div>
-          ${events}
-        </div>`;
-      }).join('') + `</div>`;
-
-      // 每天折叠/展开（倒三角按钮）
-      body.querySelectorAll('.tl-fold').forEach(btn => btn.onclick = () => {
-        const day = btn.closest('.tl-day');
-        const collapsed = day.classList.toggle('collapsed');
-        btn.textContent = collapsed ? '▸' : '▾';
-      });
-      // 长按删除：长按某条记录 500ms 显示删除按钮
-      body.querySelectorAll('.tl-event').forEach(ev => {
-        let timer = null, sx = 0, sy = 0;
-        const rec = JSON.parse(decodeURIComponent(ev.dataset.rec));
-        ev.addEventListener('pointerdown', e => {
-          sx = e.clientX; sy = e.clientY;
-          timer = setTimeout(() => {
-            body.querySelectorAll('.tl-del').forEach(b => b.hidden = true);
-            const b = ev.querySelector('.tl-del'); if (b) b.hidden = false;
-          }, 500);
-        });
-        ev.addEventListener('pointermove', e => { if (Math.abs(e.clientX - sx) > 12 || Math.abs(e.clientY - sy) > 12) clearTimeout(timer); });
-        ev.addEventListener('pointerup', () => clearTimeout(timer));
-        ev.addEventListener('pointercancel', () => clearTimeout(timer));
-        const del = ev.querySelector('.tl-del');
-        if (del) del.onclick = (e) => {
-          e.stopPropagation();
-          openModal(`<button class="close-x" onclick="closeModal()">×</button><h3>删除这条记录？</h3>
-            <div class="muted" style="margin:8px 0">删除后将从月时间轴移除${rec.src === 'plan' && rec.srcId ? '（关联专栏记录一并清除）' : ''}。</div>
-            <button class="btn" id="tlDelOk" style="width:100%">确认删除</button>`);
-          setTimeout(() => { const ok = document.getElementById('tlDelOk'); if (ok) ok.onclick = () => { this.deleteTimelineRecord(rec); closeModal(); this.renderMonthTimelinePage(box); toast('已删除'); }; }, 0);
-        };
-      });
-    }
-
-    // 注入/更新样式（始终覆盖，避免旧版 CSS 残留）
-    let s = document.getElementById('mtStyles');
-    if (!s) { s = document.createElement('style'); s.id = 'mtStyles'; document.head.appendChild(s); }
-    s.textContent = `
-.mt-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px;flex-wrap:wrap}
-.mt-ym{display:flex;align-items:center;gap:6px;font-size:16px;font-weight:700;color:var(--ink)}
-.mt-ym .icon-btn{padding:4px}
-.mt-toolbar{display:flex;align-items:center;gap:2px}
-.mt-title{font-size:14px;font-weight:600;color:var(--ink);margin-right:2px}
-.mt-chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
-.mt-chip{font-size:12px;padding:4px 11px;border:1px solid var(--line);border-radius:14px;background:#fff;color:var(--muted);cursor:pointer}
-.mt-chip.on{background:var(--ink);color:#fff;border-color:var(--ink)}
-.mt-ypick{display:flex;align-items:center;justify-content:center;gap:14px;margin:8px 0 14px}
-.mt-months{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
-.mt-mbtn{padding:10px 0;border:1px solid var(--line);border-radius:10px;background:#fff;font-size:13px;cursor:pointer}
-.mt-mbtn.sel{background:var(--ink);color:#fff;border-color:var(--ink)}
-.tl{position:relative;padding:2px 0}
-.tl::before{content:'';position:absolute;left:67px;top:6px;bottom:6px;width:2px;background:#e5e5e5}
-.tl-day{position:relative;padding-bottom:14px}
-.tl-day:last-child{padding-bottom:0}
-.tl-dayrow,.tl-event{display:grid;grid-template-columns:56px 24px 1fr;align-items:start}
-.tl-left{text-align:right;padding-right:10px;font-size:12px;color:var(--muted);line-height:20px;min-height:20px}
-.tl-wd{font-weight:600;color:var(--ink)}
-.tl-axis{position:relative;min-height:20px}
-.tl-node{position:absolute;left:50%;top:3px;transform:translateX(-50%);width:12px;height:12px;border-radius:50%;background:#111;box-shadow:0 0 0 3px #fff;z-index:1}
-.tl-dot-rec{position:absolute;left:50%;top:5px;transform:translateX(-50%);width:8px;height:8px;border-radius:50%;background:#fff;border:2px solid #c9c9c9;box-sizing:border-box}
-.tl-date{font-size:13px;font-weight:600;color:var(--ink);line-height:20px;margin-bottom:4px}
-.tl-card{background:#fafafa;border:1px solid var(--line);border-radius:10px;padding:9px 11px;margin:3px 0 8px}
-.tl-cat{display:inline-block;font-size:11px;font-weight:600;color:#fff;padding:2px 9px;border-radius:10px;margin-bottom:6px}
-.tl-fields{display:flex;flex-direction:column;gap:3px}
-.tl-fold{margin-left:6px;border:none;background:transparent;color:var(--muted);cursor:pointer;font-size:11px;padding:0 2px;line-height:20px;vertical-align:middle}
-.tl-day.collapsed > .tl-event{display:none}
-.tl-field{display:flex;gap:10px;font-size:12.5px;align-items:baseline}
-.tl-fk{color:var(--muted);min-width:52px;flex-shrink:0}
-.tl-fv{color:var(--ink)}
-.tl-cat.cat-meals{background:#F6C56E}
-.tl-cat.cat-sport{background:#7CB390}
-.tl-cat.cat-work{background:#F4A6B8}
-.tl-cat.cat-kaogong{background:#8FB8E0}
-.tl-cat.cat-growth{background:#B8A4D4}
-.tl-cat.cat-reading{background:#9BC4CB}
-.tl-cat.cat-travel{background:#4FB0AE}
-.tl-cat.cat-daily{background:#A8B5C4}
-.tl-cat.cat-fun{background:#E59FC0}
-.tl-event{position:relative}
-.tl-del{position:absolute;top:0;right:2px;z-index:6;font-size:11px;padding:3px 9px;border:none;border-radius:10px;background:#e74c3c;color:#fff;cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,.2)}`;
-  },
-  // 月时间轴长按删除：从对应数据源删除一条记录
-  deleteTimelineRecord(rec) {
-    try {
-      const { src, date, rid, link, srcId } = rec;
-      const storeMap = { sport: 'sportLogs', kaogong: 'kgLogs', work: 'workLogs', growth: 'growthLogs', read: 'readLogs', travel: 'travelOut', fun: 'funLogs' };
-      if (src === 'plan') {
-        const all = S.get('plans', {});
-        if (all[date]) { all[date] = all[date].filter(t => t.id !== rid); S.set('plans', all); }
-        // 一并清掉关联专栏记录（含完成打卡写入的 srcId=rid 记录，以及 autoGen 任务的来源记录 l.id=srcId），保证「删除即全清」
-        if (link) this.removeFromColumn(date, link, rid, srcId);
-      } else if (storeMap[src]) {
-        const o = S.get(storeMap[src], {}); let changed = false;
-        Object.keys(o).forEach(d => { const before = o[d] ? o[d].length : 0; o[d] = (o[d] || []).filter(l => l.id !== rid); if ((o[d] ? o[d].length : 0) !== before) changed = true; });
-        if (changed) S.set(storeMap[src], o);
-        // 同时清掉任何指向它的 autoGen 计划任务
-        const all = S.get('plans', {}); let pc = false;
-        Object.keys(all).forEach(d => { const before = all[d].length; all[d] = (all[d] || []).filter(t => !(t.autoGen && t.srcId === rid)); if (all[d].length !== before) pc = true; });
-        if (pc) S.set('plans', all);
-      }
-    } catch (e) { console.warn('deleteTimelineRecord failed', e); }
-  },
-
-  // 月时间轴 · 选择月份弹层
-  monthPickerDialog(curYm) {
-    const initYm = this._monthYm || todayStr().slice(0, 7);
-    let py = Number(initYm.split('-')[0]);
-    const dlg = openModal(`<button class="close-x" onclick="closeModal()">×</button><h3>${icon('calendar', 18)} 选择月份</h3>
-      <div class="mt-ypick">
-        <button class="icon-btn" id="mtYPrev" title="上一年">${icon('chevronLeft', 16)}</button>
-        <span id="mtYLabel" style="font-weight:600;min-width:64px;text-align:center">${py}年</span>
-        <button class="icon-btn" id="mtYNext" title="下一年">${icon('chevronRight', 16)}</button>
-      </div>
-      <div class="mt-months" id="mtMonths"></div>`);
-    const monthsEl = dlg.querySelector('#mtMonths');
-    const drawMonths = () => {
-      const [sy, sm] = this._monthYm.split('-').map(Number);
-      monthsEl.innerHTML = Array.from({ length: 12 }, (_, i) => {
-        const m = i + 1;
-        const sel = (py === sy && m === sm) ? ' sel' : '';
-        return `<button class="mt-mbtn${sel}" data-m="${m}">${m}月</button>`;
-      }).join('');
-      monthsEl.querySelectorAll('.mt-mbtn').forEach(b => b.onclick = () => {
-        this._monthYm = py + '-' + String(b.dataset.m).padStart(2, '0');
-        this._mtCats = null; this._mtChipsOpen = false;
-        closeModal(); this.render(this._root);
-      });
-    };
-    drawMonths();
-    dlg.querySelector('#mtYPrev').onclick = () => { py--; dlg.querySelector('#mtYLabel').textContent = py + '年'; drawMonths(); };
-    dlg.querySelector('#mtYNext').onclick = () => { py++; dlg.querySelector('#mtYLabel').textContent = py + '年'; drawMonths(); };
-  },
 
   // 当月日历：预览每日任务 + 点日期切换（保留兼容）
   monthCalDialog(root) {
