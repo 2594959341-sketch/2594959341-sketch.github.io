@@ -341,6 +341,12 @@ textarea{resize:vertical}
 .tl-time{font-size:12px;color:var(--sub);font-variant-numeric:tabular-nums;min-width:38px;text-align:right}
 .tl-text{font-size:14px;color:var(--ink)}
 .tl-brief{font-size:12px;color:var(--muted);margin-left:2px}
+/* 每日计划主页 · 今日时间轴卡片 */
+.tl-card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 16px;margin-bottom:14px}
+.tl-card-header{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.tl-card-header h3{font-size:15px;font-weight:700;margin:0;display:flex;align-items:center;gap:6px}
+.tl-card-header .muted{margin-left:auto;font-size:12px}
+
 
 /* 三餐周报 · 照片日历 */
 .photo-cal{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-top:4px}
