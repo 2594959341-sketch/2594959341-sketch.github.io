@@ -196,7 +196,6 @@ const Entertainment = {
     if (this._view === 'wall') { this.renderWall(root); return; }
     if (this._view === 'mwall') { this.renderMediaWall(root); return; }
     if (this._view === 'cal') { this.renderCal(root); return; }
-    if (this._view === 'timeline') { this.renderTimeline(root); return; }
     if (this._view === 'detail') { this.renderDetail(root); return; }
     if (this.activeType === '全部') this.renderMain(root);
     else this.renderType(root);
@@ -694,9 +693,6 @@ const Entertainment = {
     root.innerHTML = `<div class="fun-archive novel-home">
       <div class="fun-subbar">
         <span>${esc(t)}</span>
-        <div class="fun-subbar-right">
-          <button class="icon-btn" data-tl="1" title="年时间轴">${icon('calendar', 18)}</button>
-        </div>
       </div>
       ${all.length ? '' : '<div class="empty">还没有' + esc(t) + '记录，去右下角 + 记第一' + unit + '~</div>'}
       ${all.length ? recentSection : ''}
@@ -728,7 +724,6 @@ const Entertainment = {
         <button class="fun-wk-arrow" data-wkprev ${off <= -104 ? 'disabled' : ''}>‹</button>
         <span class="fun-week-range">${this.typeScopeLabel()}</span>
         <button class="fun-wk-arrow" data-wknext ${off >= 0 ? 'disabled' : ''}>›</button>
-        <button class="icon-btn" data-tl="1" title="年时间轴">${icon('calendar', 20)}</button>
       </div>`;
     if (isGame) {
       const body = `${this.gameStatsHTML()}${dateHead}${this.weekHTML(t, off)}${this.fabHTML()}`;
@@ -748,8 +743,6 @@ const Entertainment = {
   bindType(root) {
     this.bindNav(root);
     root.querySelectorAll('[data-tscope]').forEach(b => b.onclick = () => { this._typeScope = b.dataset.tscope; this.renderType(this._root); });
-    const tl = root.querySelector('[data-tl]');
-    if (tl) tl.onclick = () => this.openTimeline(this.activeType);
     const wp = root.querySelector('[data-wkprev]');
     if (wp) wp.onclick = () => { this._typeWeekOff = (this._typeWeekOff || 0) - 1; this.renderType(this._root); };
     const wn = root.querySelector('[data-wknext]');
@@ -923,106 +916,6 @@ const Entertainment = {
       ${this.navHTML(t)}
     </div>`;
     this.bindSub(root);
-  },
-  /* ============ 时间轴（单类型：年/月聚合 OR 周聚合，可切换；月份标签与周视图对齐到左列） ============ */
-  openTimeline(scope) { this._savedView = { activeType: this.activeType, _view: this._view }; this._tlScope = scope; this._view = 'timeline'; this.render(this._root); },
-  renderTimeline(root) {
-    this._root = root;
-    const t = this._tlScope || this.activeType;
-    const allEs = this.all().filter(r => r.type === t).sort((a, b) => a.date.localeCompare(b.date));
-    const monthNames = ['一', '二', '三', '四', '五', '六', '七', '八', '九', '十', '十一', '十二'];
-    const unit = funUnit(t);
-    const view = this._tlView || 'year';
-    let yearDrop = '';
-    if (view === 'year') {
-      const years = [...new Set(allEs.map(r => r.date.slice(0, 4)))];
-      const thisYear = todayStr().slice(0, 4);
-      if (!years.includes(thisYear)) years.push(thisYear);
-      years.sort();
-      if (!this._tlYear || !years.includes(this._tlYear)) this._tlYear = years[years.length - 1];
-      const opts = years.map(yy => `<div class="tl-year-opt${yy === this._tlYear ? ' on' : ''}" data-year="${yy}">${yy}</div>`).join('');
-      yearDrop = `<div class="fun-tl-yeardrop" id="tlYearDrop" style="display:none">${opts}</div>`;
-    }
-    let body;
-    if (view === 'year') {
-      const y = this._tlYear;
-      const es = this.dedupLatest(allEs.filter(r => r.date.slice(0, 4) === y));
-      if (!es.length) {
-        body = `<div class="empty">${y} 年还没有「${esc(t)}」记录，去打卡第一笔~</div>`;
-      } else {
-        const byMonth = {};
-        es.forEach(r => { const m = r.date.slice(0, 7); (byMonth[m] = byMonth[m] || []).push(r); });
-        const months = Object.keys(byMonth).sort();
-        const totalMin = es.reduce((s, r) => s + (Number(r.minutes) || 0), 0);
-        const monthBlocks = months.map(m => {
-          const arr = byMonth[m];
-          const mm = Number(m.slice(5, 7));
-          const label = monthNames[mm - 1] + '月';
-          const mMin = arr.reduce((s, r) => s + (Number(r.minutes) || 0), 0);
-          const mTime = mMin ? ` · 共计 ${Math.round(mMin / 60 * 10) / 10} 小时` : '';
-          // 修复 bug：月份标签移到左列（与周时间轴对齐），不再"悬空"在右列
-          return `<div class="fun-axis-item">
-            <div class="fun-axis-left">${label}</div>
-            <div class="fun-axis-mid"><div class="fun-axis-dot"></div></div>
-            <div class="fun-axis-right">
-              <div class="fun-axis-date">${funVerb(t)}了 ${new Set(arr.map(r => r.title)).size} ${unit}${mTime}</div>
-              ${arr.map(r => this.entryRowHTML(r, false, false)).join('')}
-            </div>
-          </div>`;
-        }).join('');
-        body = `<div class="fun-axis fun-axis-year">${monthBlocks}</div>
-          <div class="fun-tl-year-sum">${y} 年 · 共${funVerb(t)} ${new Set(es.map(r => r.title)).size} ${unit} · 时长 ${Math.round(totalMin / 60 * 10) / 10} 小时</div>`;
-      }
-    } else {
-      // 周视图：复用 weekHTML，加上左右切换 + 周汇总
-      const off = this._tlWeekOff || 0;
-      const [mon, sun] = this.weekRangeOff(off);
-      const es = this.dedupLatest(allEs.filter(r => r.date >= mon && r.date <= sun));
-      const totalMin = es.reduce((s, r) => s + (Number(r.minutes) || 0), 0);
-      const weekHead = `<div class="fun-tl-week-head">
-        <button class="fun-wk-arrow" data-wkprev ${off <= -104 ? 'disabled' : ''}>‹</button>
-        <span class="fun-week-range">${mon.slice(5)} ~ ${sun.slice(5)}</span>
-        <button class="fun-wk-arrow" data-wknext ${off >= 0 ? 'disabled' : ''}>›</button>
-      </div>`;
-      const weekBody = es.length ? this.weekHTML(t, off) : `<div class="empty">本周还没有「${esc(t)}」记录，去打卡第一笔~</div>`;
-      const sum = `<div class="fun-tl-year-sum">本周 · ${es.length} ${unit} · 时长 ${Math.round(totalMin / 60 * 10) / 10} 小时</div>`;
-      body = weekHead + weekBody + sum;
-    }
-    root.innerHTML = `<div class="fun-sub">
-      <div class="fun-subbar">
-        <span>时间轴 · ${esc(t)}</span>
-        ${view === 'year' ? `<div class="fun-tl-year"><button class="fun-tl-yearbtn" id="tlYearBtn">${this._tlYear} ${icon('chevronDown', 14)}</button>${yearDrop}</div>` : ''}
-        <div class="fun-subbar-right">
-          <button class="icon-btn" id="tlViewBtn" title="${view === 'year' ? '切换到周' : '切换到年'}">${icon(view === 'year' ? 'calendar' : 'clock', 18)}</button>
-          <button class="icon-btn fun-back" data-back="1" title="返回">${icon('chevronLeft', 20)}</button>
-        </div>
-      </div>
-      ${body}
-      ${this.navHTML(t)}</div>`;
-    this.bindSub(root);
-    if (view === 'year') {
-      const yb = root.querySelector('#tlYearBtn');
-      const yd = root.querySelector('#tlYearDrop');
-      if (yb && yd) {
-        yb.onclick = (e) => {
-          e.stopPropagation();
-          const open = yd.style.display !== 'none';
-          yd.style.display = open ? 'none' : 'block';
-          if (!open) {
-            const outside = (ev) => { if (!yd.contains(ev.target) && ev.target !== yb) { yd.style.display = 'none'; document.removeEventListener('click', outside, true); } };
-            setTimeout(() => document.addEventListener('click', outside, true), 0);
-          }
-        };
-        yd.querySelectorAll('.tl-year-opt').forEach(o => o.onclick = () => { this._tlYear = o.dataset.year; this.renderTimeline(this._root); });
-      }
-    } else {
-      const wp = root.querySelector('[data-wkprev]');
-      if (wp) wp.onclick = () => { this._tlWeekOff = (this._tlWeekOff || 0) - 1; this.renderTimeline(this._root); };
-      const wn = root.querySelector('[data-wknext]');
-      if (wn) wn.onclick = () => { this._tlWeekOff = (this._tlWeekOff || 0) + 1; this.renderTimeline(this._root); };
-    }
-    const vb = root.querySelector('#tlViewBtn');
-    if (vb) vb.onclick = () => { this._tlView = (this._tlView === 'year' ? 'week' : 'year'); this.renderTimeline(this._root); };
   },
   /* ============ 单本/单部详情页（全屏独立页） ============ */
   openDetail(id) {
