@@ -280,7 +280,12 @@ const Daily = {
         const logs = S.get('sportLogs', {})[date] || [];
         return logs.some(l => (l.project || '') === sub);
       }
-      if (mod === 'kaogong') return ((S.get('kgLogs', {})[date]) || []).length > 0;
+      if (mod === 'kaogong') {
+        const ts = (t.extra && (t.extra.subject || t.extra['科目']) || '').trim().replace(/^(行测|申论|面试)-/, '');
+        if (!ts) return ((S.get('kgLogs', {})[date]) || []).length > 0; // 旧任务无科目兜底
+        const logs = (S.get('kgLogs', {})[date]) || [];
+        return logs.some(l => (l.subject || '').trim().replace(/^(行测|申论|面试)-/, '') === ts);
+      }
       if (mod === 'work') {
         if (sub === 'act') {
           const actId = t.link.split(':')[2];
@@ -758,8 +763,11 @@ const Daily = {
       return l && l.time ? l.time : null;
     }
     if (mod === 'kaogong') {
+      const ts = (t.extra && (t.extra.subject || t.extra['科目']) || '').trim().replace(/^(行测|申论|面试)-/, '');
       const logs = (S.get('kgLogs', {})[d]) || [];
-      return logs[0] && logs[0].time ? logs[0].time : null;
+      if (!ts) return logs[0] && logs[0].time ? logs[0].time : null; // 旧任务无科目兜底
+      const l = logs.find(x => (x.subject || '').trim().replace(/^(行测|申论|面试)-/, '') === ts);
+      return l && l.time ? l.time : null;
     }
     if (mod === 'work') {
       const actId = t.link.split(':')[2];
