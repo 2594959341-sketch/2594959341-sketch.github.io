@@ -921,6 +921,7 @@ const Daily = {
         </div>
         <div class="todo-card-body"><div id="taskList"></div></div>
       </div>
+      ${this.dayTimelineHTML(d)}
       ${this.todayGoalsHTML(d)}${this.goalQuickHTML(d)}`;
 
     root.querySelector('#dAdd').onclick = () => this.addDialog(root);
@@ -961,6 +962,29 @@ const Daily = {
       + '<div class="muted" style="margin-bottom:8px">今天这类共 <b>' + tot + '</b> 点精力' + (tasks.length ? '，' + tasks.length + ' 件事' : '') + '</div>'
       + '<div class="rech-list">' + (rows || '<div class="empty">今天还没有这类任务</div>') + '</div>');
   },
+  dayTimelineHTML(d) {
+    const list = this.list(d);
+    const items = list.filter(t => !t.abandoned && !t.moved && this.effDone(t, d) && !(t.link && t.link.startsWith('meals:')))
+      .map(t => ({ t, time: this.taskTime(t, d), ts: this._effTime(t, d) }))
+      .filter(x => x.time)
+      .sort((a, b) => a.ts - b.ts);
+    const rows = items.map(x => {
+      const t = x.t;
+      const cat = this.catFine(t) || t.cat || '';
+      const brief = this.catName(cat);
+      return '<div class="tl-item">'
+        + '<span class="tl-dot"></span>'
+        + '<span class="tl-time">' + x.time + '</span>'
+        + '<span class="tl-text">' + esc(t.title) + '</span>'
+        + (brief ? '<span class="tl-brief">' + esc(brief) + '</span>' : '')
+        + '</div>';
+    }).join('');
+    return '<div class="tl-card">'
+      + '<div class="tl-card-header"><h3>' + icon('clock', 16) + ' 今日时间轴</h3><span class="muted">' + items.length + ' 项完成</span></div>'
+      + '<div class="timeline">' + (rows || '<div class="empty" style="padding:14px 4px">今天还没有完成的任务，勾掉一项就会按时间排在这里 🕒</div>') + '</div>'
+      + '</div>';
+  },
+
   renderList(box, active, term) {
     const d = this.cur;
     if (!active.length && !term.length) {
