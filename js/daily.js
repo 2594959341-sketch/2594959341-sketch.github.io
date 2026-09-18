@@ -1163,7 +1163,7 @@ const Daily = {
   // 学习任务（cat=kaogong）完成任务/移到明天前，必须先填实际学习时长；其余任务直接继续
   // 刷题错题题型（v282 修订）：题型按「科目」细分（言语→中心理解/逻辑填空…，判断→图形推理…），
   // 不再拿科目当题型；按错题数 N 动态渲染 N 个下拉；换科目清空已选（不同科目题型不同）。
-  _kgSubjects() { return (window.KG && window.KG.SUBJECTS) || ['言语', '判断', '数量', '常识', '申论', '综合应用能力', '时政', '面试']; },
+  _kgSubjects() { return (window.KG && window.KG.SUBJECTS) || ['言语', '判断', '数量', '常识', '申论', '综合应用能力', '时政', '面试', '策略']; },
   _kgQTypes(subj) { return (window.KG && window.KG.subjQTypes) ? window.KG.subjQTypes(subj) : []; },
   _taskSubject(t) { return (t && (t.kgSubject || (t.extra && t.extra.subject))) || ''; },
   _qtWrongOpts(sel, subj) { return '<option value="">错题题型</option>' + this._kgQTypes(subj).map(tp => `<option ${tp === sel ? 'selected' : ''}>${tp}</option>`).join(''); },
