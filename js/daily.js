@@ -304,8 +304,10 @@ const Daily = {
         return logs.some(l => (l.project || '') === sub);
       }
       if (mod === 'kaogong') {
+        // 历史日期保留旧兜底（当天任意学习打卡即视为完成），避免 v323 去掉兜底后旧任务突然变未完成、凭空冒出"未解决"；今天/未来严格按科目，杜绝跨科目串味
+        if (date < todayStr()) return ((S.get('kgLogs', {})[date]) || []).length > 0;
         const ts = (t.extra && (t.extra.subject || t.extra['科目']) || '').trim().replace(/^(行测|申论|面试)-/, '');
-        if (!ts) return false; // 无科目：不再用"任一日志即满足"，避免跨科目串味；无科目的旧任务改为手动完成
+        if (!ts) return false; // 无科目：今天/未来不再用"任一日志即满足"，改为手动完成
         const logs = (S.get('kgLogs', {})[date]) || [];
         return logs.some(l => (l.subject || '').trim().replace(/^(行测|申论|面试)-/, '') === ts);
       }
