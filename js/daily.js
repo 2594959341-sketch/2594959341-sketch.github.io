@@ -1914,6 +1914,7 @@ const Daily = {
       <div class="form-row"><label>关联目标（选填）</label><select id="taskGoal">${this.goalSelectOpts(t.goalId || '', (t.link || ''), date)}</select></div>
       <div id="taskGoalNewWrap" style="display:${(t.goalId === '__new__') ? '' : 'none'}"><div class="form-row"><label>新目标内容</label><input id="taskGoalNewTitle" placeholder="例如：练 30 分钟肩颈放松"></div></div>
       <div id="linkAppHost">${this.appWrapHTML(t.link || '', t.linkApp || '')}</div>
+      ${t.link && t.link.indexOf('work:') === 0 ? `<div class="form-row" style="margin-bottom:8px"><label>产出类型</label><select id="edWType"><option value="video" ${(t.extra && t.extra.type || 'video') === 'video' ? 'selected' : ''}>视频</option><option value="article" ${(t.extra && t.extra.type) === 'article' ? 'selected' : ''}>图文</option></select></div>` : ''}
       <div class="form-row"><label>分类（用于复盘分组）</label><select id="taskCat">${this.catSelectHTML(t.cat || this.catFromLink(t.link || ''))}</select></div>
       ${!isMeal ? `<div class="form-row" style="margin-bottom:8px">
         <label>消耗精力</label>
@@ -1990,6 +1991,8 @@ const Daily = {
     if (lk) { lk.onchange = () => { t.link = lk.value || ''; t.linkApp = document.getElementById('npApp') ? document.getElementById('npApp').value : ''; if (!t.cat) t.cat = this.catFromLink(t.link || ''); save(); this.detail(root, id, dateKey); }; }
     const appSel = document.getElementById('npApp');
     if (appSel) appSel.onchange = () => { t.linkApp = appSel.value; save(); };
+    const edWType = document.getElementById('edWType');
+    if (edWType) edWType.onchange = () => { t.extra = t.extra || {}; t.extra.type = edWType.value; save(); this.render(this._root); };
     const catSel = document.getElementById('taskCat');
     if (catSel) catSel.onchange = () => { t.cat = catSel.value || ''; save(); this.render(this._root); };
     const tg = document.getElementById('taskGoal');
