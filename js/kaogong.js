@@ -28,6 +28,7 @@ const KG = {
   qWrongOpts(sel, subj) { return '<option value="">错题题型</option>' + this.subjQTypes(subj).map(t => `<option ${t === sel ? 'selected' : ''}>${t}</option>`).join(''); },
   renderWrong(wrap, count, prev, subj) { count = Math.max(0, count | 0); let h = ''; for (let i = 0; i < count; i++) { const sel = (prev && prev[i] && prev[i].type) || ''; h += `<div class="form-row"><label>错的第${i + 1}题 题型</label><select class="klWrongType">${this.qWrongOpts(sel, subj)}</select></div>`; } wrap.innerHTML = h; },
   readWrong(wrap, subj) { if (!wrap) return []; const a = []; wrap.querySelectorAll('.klWrongType').forEach(s => { if (s.value) a.push({ type: s.value, subj: subj || '' }); }); return a; },
+  normSubject(s) { return (typeof kgNorm === 'function') ? kgNorm(s) : (s || '').trim(); },
   tab: 'sz',
   interviewBank: [
     { q: '你负责组织一次社区反诈宣传活动，但报名人数很少，你怎么办？', a: '思路：①分析原因（时间冲突/宣传不到位/形式没吸引力）②针对性补救（联合物业/学校，改线上线下结合，加互动环节）③活动后总结经验形成机制。答题框架：帽子(表态)→分析→对策→总结。' },
@@ -193,7 +194,7 @@ const KG = {
     const plans = this.plans();
     const countMap = {}; Object.keys(logs).forEach(d => countMap[d] = logs[d].length);
     const allL = Object.entries(logs).flatMap(([d, arr]) => arr.map(l => ({ ...l, date: d })));
-    const bySub = {}; allL.forEach(l => bySub[l.subject] = (bySub[l.subject] || 0) + (l.minutes || 0));
+    const bySub = {}; allL.forEach(l => { const ns = KG.normSubject(l.subject); bySub[ns] = (bySub[ns] || 0) + (l.minutes || 0); });
     const totalH = Math.round(allL.reduce((s, l) => s + (l.minutes || 0), 0) / 60 * 10) / 10;
     const quizTotal = allL.reduce((s, l) => s + (l.qTotal || 0), 0);
     // 正确率模型：记「刷了几道 / 对了几道」；旧 qWrong 数据降级为 qCorrect = 总 - 错
@@ -229,7 +230,7 @@ const KG = {
       </div>
       ${quizTotal > 0 ? `<div class="muted" style="margin:-4px 0 12px">刷题累计 <b>${quizTotal}</b> 题 · 对 <b>${quizCorrect}</b> 道 · 平均正确率 <b>${quizAcc}%</b></div>` : ''}
       <div class="card"><h3>今天学了什么 <span style="margin-left:auto;display:flex;align-items:center;gap:4px"><button class="icon-btn" id="kgLogAdd" title="打卡">${icon('plus',16)}</button><button class="icon-btn" id="kgRestBtn" title="${todayIsRest ? '取消今日休息' : '今日休息'}（长按日历里那一天可补记）" style="${todayIsRest ? 'color:#e74c3c' : ''}">${icon(todayIsRest ? 'sun' : 'moon',16)}</button></span></h3>
-        ${(logs[todayStr()] || []).map(l => `<div class="list-row" data-kglog="${l.id}"><span class="tag">${esc(l.subject)}</span><span class="tag" style="background:#eef">${esc(l.mode || '网课')}</span><div style="flex:1">${esc(l.content)}${l.progress ? `<div class="muted">学到：${esc(l.progress)}</div>` : ''}${l.mode === '刷题' && l.qTotal ? `<div class="muted">刷题 ${l.qTotal} 题 · 正确率 ${accOf(l)}%</div>` : ''}</div><span class="muted">${l.minutes}min</span><button class="del" data-kgdel="${l.id}" title="删除">✕</button></div>`).join('') || '<div class="empty">今天还没打卡，学完一节课就来记一笔</div>'}
+        ${(logs[todayStr()] || []).map(l => `<div class="list-row" data-kglog="${l.id}"><span class="tag">${esc(KG.normSubject(l.subject))}</span><span class="tag" style="background:#eef">${esc(l.mode || '网课')}</span><div style="flex:1">${esc(l.content)}${l.progress ? `<div class="muted">学到：${esc(l.progress)}</div>` : ''}${l.mode === '刷题' && l.qTotal ? `<div class="muted">刷题 ${l.qTotal} 题 · 正确率 ${accOf(l)}%</div>` : ''}</div><span class="muted">${l.minutes}min</span><button class="del" data-kgdel="${l.id}" title="删除">✕</button></div>`).join('') || '<div class="empty">今天还没打卡，学完一节课就来记一笔</div>'}
         <h3 class="section-gap">各科累计投入</h3>
         ${Object.keys(bySub).length ? svgBars(Object.values(bySub).map(m => Math.round(m / 60 * 10) / 10), Object.keys(bySub)) : '<div class="empty">暂无数据</div>'}
         ${(() => { const wm = {}; allL.forEach(l => (l.qWrongTypes || []).forEach(x => { if (x && x.type) { const k = x.subj ? (x.subj + '·' + x.type) : x.type; wm[k] = (wm[k] || 0) + 1; } })); const ents = Object.entries(wm).sort((a, b) => b[1] - a[1]); if (!ents.length) return ''; const mx = ents[0][1]; return `<div class="card" style="margin-top:12px"><h3>薄弱题型</h3>${ents.map(([tp, c]) => `<div class="qt-wbar"><span class="qt-wlab">${esc(tp.split('·').pop())}</span><span class="qt-wtrack"><span class="qt-wfill" style="width:${Math.round(c / mx * 100)}%"></span></span><span class="qt-wcnt">${c}</span></div>`).join('')}<div class="muted" style="font-size:11px;margin-top:6px">统计所有「刷题」打卡里记录的错题题型，帮你定位弱项</div></div>`; })()}
@@ -244,8 +245,8 @@ const KG = {
       <div class="card"><h3>学习热力图</h3><div id="kgHm"></div>
         <h3 class="section-gap">最近学习轨迹 <button class="icon-btn" id="kgPastTrails" title="往期备考计划学习轨迹" style="margin-left:auto">${icon('calendar',15)}</button></h3>
         ${curPlan ? `<div class="muted" style="font-size:11px;margin-bottom:6px">所属周期：${esc(curPlan.name)}（倒计时 ${daysBetween(todayStr(), curPlan.date)} 天）</div>` : ''}
-        ${trail2.length ? trail2.map(l => `<div class="list-row kg-trail-row"><span class="tag">${l.date.slice(5)}</span><span class="tag">${esc(l.subject)}</span>${l.mode ? `<span class="tag" style="background:#eef">${esc(l.mode)}</span>` : ''}<div style="flex:1">${esc(l.content)} <span class="muted">${l.progress ? '→ ' + esc(l.progress) : ''}</span>${l.mode === '刷题' && l.qTotal ? ` · 刷题 ${l.qTotal} 题 · 正确率 ${accOf(l)}%` : ''}</div></div>`).join('') : `<div class="empty">本期计划还没有关联的学习记录。打卡时选「关联考试计划」即可归入本期轨迹；点右上角 📅 可回顾往期计划的学习轨迹。</div>`}
-        ${trailMore.length ? `<details class="kg-trail-more"><summary style="cursor:pointer;color:var(--sub);font-size:13px;margin-top:6px">展开更早的 ${trailMore.length} 条轨迹</summary>${trailMore.map(l => `<div class="list-row kg-trail-row"><span class="tag">${l.date.slice(5)}</span><span class="tag">${esc(l.subject)}</span><div style="flex:1">${esc(l.content)} <span class="muted">${l.progress ? '→ ' + esc(l.progress) : ''}</span></div></div>`).join('')}</details>` : ''}
+        ${trail2.length ? trail2.map(l => `<div class="list-row kg-trail-row"><span class="tag">${l.date.slice(5)}</span><span class="tag">${esc(KG.normSubject(l.subject))}</span>${l.mode ? `<span class="tag" style="background:#eef">${esc(l.mode)}</span>` : ''}<div style="flex:1">${esc(l.content)} <span class="muted">${l.progress ? '→ ' + esc(l.progress) : ''}</span>${l.mode === '刷题' && l.qTotal ? ` · 刷题 ${l.qTotal} 题 · 正确率 ${accOf(l)}%` : ''}</div></div>`).join('') : `<div class="empty">本期计划还没有关联的学习记录。打卡时选「关联考试计划」即可归入本期轨迹；点右上角 📅 可回顾往期计划的学习轨迹。</div>`}
+        ${trailMore.length ? `<details class="kg-trail-more"><summary style="cursor:pointer;color:var(--sub);font-size:13px;margin-top:6px">展开更早的 ${trailMore.length} 条轨迹</summary>${trailMore.map(l => `<div class="list-row kg-trail-row"><span class="tag">${l.date.slice(5)}</span><span class="tag">${esc(KG.normSubject(l.subject))}</span><div style="flex:1">${esc(l.content)} <span class="muted">${l.progress ? '→ ' + esc(l.progress) : ''}</span></div></div>`).join('')}</details>` : ''}
         ${plans.length ? `
           <div style="margin-top:10px;padding:10px;background:#f7f7f7;border-radius:10px">
             <div class="muted" style="font-size:11px;margin-bottom:6px">备考计划：${esc(plans[0].name)}</div>
@@ -262,7 +263,7 @@ const KG = {
       const arr = logs[ds] || [];
       if (!arr.length) return [];
       const seen = {}; const out = [];
-      arr.forEach(l => { const c = KG.subjectColor(l.subject); if (!seen[c]) { seen[c] = 1; out.push(c); } });
+      arr.forEach(l => { const c = KG.subjectColor(KG.normSubject(l.subject)); if (!seen[c]) { seen[c] = 1; out.push(c); } });
       return out;
     }});
     renderMonthCal(box.querySelector('#kgMonthCal'), { ym, marks: marksProxy, restSet: calRestSet, menstrualSet: menstrualSet(), onLongPress: ds => openRestMenu(ds, 'kaogong', () => this.render(root), d => this.toggleRest(root, d)) });
@@ -389,14 +390,14 @@ const KG = {
             <span><span class="tag">${ended ? '已结束' : '进行中'}</span><span class="tag">${esc(p.date)}</span></span>
           </div>
           <div class="muted" style="margin:4px 0">${recs.length} 条学习记录 · 累计 ${Math.round(mins / 60 * 10) / 10} 小时 / 目标 ${p.targetHours} 小时</div>
-          ${recs.length ? recs.map(l => `<div class="list-row"><span class="tag">${l.date.slice(5)}</span><span class="tag">${esc(l.subject)}</span><div style="flex:1">${esc(l.content)} <span class="muted">${l.progress ? '→ ' + esc(l.progress) : ''}</span></div><span class="muted">${l.minutes}min</span></div>`).join('') : '<div class="empty" style="margin:6px 0">本期还没有关联的学习记录</div>'}
+          ${recs.length ? recs.map(l => `<div class="list-row"><span class="tag">${l.date.slice(5)}</span><span class="tag">${esc(KG.normSubject(l.subject))}</span><div style="flex:1">${esc(l.content)} <span class="muted">${l.progress ? '→ ' + esc(l.progress) : ''}</span></div><span class="muted">${l.minutes}min</span></div>`).join('') : '<div class="empty" style="margin:6px 0">本期还没有关联的学习记录</div>'}
         </div>`;
       }).join('');
     }
     const unlinked = allL.filter(l => this.planOfRecord(l) === null).sort((a, b) => b.date.localeCompare(a.date));
     if (unlinked.length) {
       html += `<details class="card" style="margin-top:6px"><summary style="cursor:pointer;font-weight:600">未关联备考计划的学习记录（${unlinked.length}条）</summary>
-        ${unlinked.slice(0, 60).map(l => `<div class="list-row"><span class="tag">${l.date.slice(5)}</span><span class="tag">${esc(l.subject)}</span><div style="flex:1">${esc(l.content)} <span class="muted">${l.progress ? '→ ' + esc(l.progress) : ''}</span></div><span class="muted">${l.minutes}min</span></div>`).join('')}
+        ${unlinked.slice(0, 60).map(l => `<div class="list-row"><span class="tag">${l.date.slice(5)}</span><span class="tag">${esc(KG.normSubject(l.subject))}</span><div style="flex:1">${esc(l.content)} <span class="muted">${l.progress ? '→ ' + esc(l.progress) : ''}</span></div><span class="muted">${l.minutes}min</span></div>`).join('')}
       </details>`;
     }
     openModal(html);
