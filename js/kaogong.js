@@ -200,6 +200,10 @@ const KG = {
     // 正确率模型：记「刷了几道 / 对了几道」；旧 qWrong 数据降级为 qCorrect = 总 - 错
     const quizCorrect = allL.reduce((s, l) => s + (l.qCorrect != null ? l.qCorrect : ((l.qTotal || 0) - (l.qWrong || 0))), 0);
     const quizAcc = quizTotal > 0 ? Math.round(quizCorrect / quizTotal * 100) : 0;
+    // 错题/准确率：按科目聚合刷题总量与做对量，用于「错题库」与低准确率提醒
+    const bySubQ = {}; const bySubC = {};
+    allL.forEach(l => { if (l.mode === '刷题') { const s2 = KG.normSubject(l.subject); const tot = l.qTotal || 0; const cor = (l.qCorrect != null) ? l.qCorrect : (tot - (l.qWrong || 0)); bySubQ[s2] = (bySubQ[s2] || 0) + tot; bySubC[s2] = (bySubC[s2] || 0) + cor; } });
+    const warnSubs = Object.keys(bySubQ).filter(s2 => bySubQ[s2] > 50 && Math.round(bySubC[s2] / bySubQ[s2] * 100) < 50).map(s2 => s2 + '(' + Math.round(bySubC[s2] / bySubQ[s2] * 100) + '%)');
     const accOf = l => (l.qTotal > 0) ? Math.round(((l.qCorrect != null ? l.qCorrect : ((l.qTotal || 0) - (l.qWrong || 0))) ) / l.qTotal * 100) : 0;
     // 连续天数（休息日不计入中断）
     const _kgStData = S.get('mumu_streak', { items: [] });
@@ -231,7 +235,8 @@ const KG = {
       ${quizTotal > 0 ? `<div class="muted" style="margin:-4px 0 12px">刷题累计 <b>${quizTotal}</b> 题 · 对 <b>${quizCorrect}</b> 道 · 平均正确率 <b>${quizAcc}%</b></div>` : ''}
       <div class="card"><h3>今天学了什么 <span style="margin-left:auto;display:flex;align-items:center;gap:4px"><button class="icon-btn" id="kgLogAdd" title="打卡">${icon('plus',16)}</button><button class="icon-btn" id="kgRestBtn" title="${todayIsRest ? '取消今日休息' : '今日休息'}（长按日历里那一天可补记）" style="${todayIsRest ? 'color:#e74c3c' : ''}">${icon(todayIsRest ? 'sun' : 'moon',16)}</button></span></h3>
         ${(logs[todayStr()] || []).map(l => `<div class="list-row" data-kglog="${l.id}"><span class="tag">${esc(KG.normSubject(l.subject))}</span><span class="tag" style="background:#eef">${esc(l.mode || '网课')}</span><div style="flex:1">${esc(l.content)}${l.progress ? `<div class="muted">学到：${esc(l.progress)}</div>` : ''}${l.mode === '刷题' && l.qTotal ? `<div class="muted">刷题 ${l.qTotal} 题 · 正确率 ${accOf(l)}%</div>` : ''}</div><span class="muted">${l.minutes}min</span><button class="del" data-kgdel="${l.id}" title="删除">✕</button></div>`).join('') || '<div class="empty">今天还没打卡，学完一节课就来记一笔</div>'}
-        <h3 class="section-gap">各科累计投入</h3>
+        ${warnSubs.length ? `<div class="banner warn" style="margin:0 0 12px">${icon('bulb',16)} 刷题量够但准确率偏低（<50%）：建议回看对应网课提分 —— ${warnSubs.join('、')}</div>` : ''}
+        <h3 class="section-gap" style="display:flex;align-items:center;gap:6px">各科累计投入 <button class="icon-btn" id="kgWrongBank" title="错题库" style="margin-left:auto">${icon('book',16)}</button></h3>
         ${Object.keys(bySub).length ? svgBars(Object.values(bySub).map(m => Math.round(m / 60 * 10) / 10), Object.keys(bySub)) : '<div class="empty">暂无数据</div>'}
         ${(() => { const wm = {}; allL.forEach(l => (l.qWrongTypes || []).forEach(x => { if (x && x.type) { const k = x.subj ? (x.subj + '·' + x.type) : x.type; wm[k] = (wm[k] || 0) + 1; } })); const ents = Object.entries(wm).sort((a, b) => b[1] - a[1]); if (!ents.length) return ''; const mx = ents[0][1]; return `<div class="card" style="margin-top:12px"><h3>薄弱题型</h3>${ents.map(([tp, c]) => `<div class="qt-wbar"><span class="qt-wlab">${esc(tp.split('·').pop())}</span><span class="qt-wtrack"><span class="qt-wfill" style="width:${Math.round(c / mx * 100)}%"></span></span><span class="qt-wcnt">${c}</span></div>`).join('')}<div class="muted" style="font-size:11px;margin-top:6px">统计所有「刷题」打卡里记录的错题题型，帮你定位弱项</div></div>`; })()}
       </div>
@@ -274,6 +279,7 @@ const KG = {
     if (restBtn) restBtn.onclick = () => this.toggleRest(root);
     const pastBtn = box.querySelector('#kgPastTrails');
     if (pastBtn) pastBtn.onclick = () => this.pastTrailsModal();
+    const wbBtn = box.querySelector('#kgWrongBank'); if (wbBtn) wbBtn.onclick = () => KG.wrongBankModal();
 
     // 热力图：三个月并排
     const kgHmEl = box.querySelector('#kgHm');
@@ -432,6 +438,54 @@ const KG = {
     });
   },
 
+  /* ---- 错题库（v321） ---- */
+  wrongBankData() {
+    const logs = S.get('kgLogs', {});
+    const bySub = {};
+    Object.values(logs).forEach(arr => (arr || []).forEach(l => {
+      if (l.mode !== '刷题') return;
+      const sub = KG.normSubject(l.subject);
+      if (!bySub[sub]) bySub[sub] = { qTotal: 0, qCorrect: 0, wrong: {} };
+      const tot = l.qTotal || 0;
+      const cor = (l.qCorrect != null) ? l.qCorrect : (tot - (l.qWrong || 0));
+      bySub[sub].qTotal += tot; bySub[sub].qCorrect += cor;
+      (l.qWrongTypes || []).forEach(x => { if (x && x.type) bySub[sub].wrong[x.type] = (bySub[sub].wrong[x.type] || 0) + 1; });
+    }));
+    return bySub;
+  },
+  wrongBankModal() {
+    const data = this.wrongBankData();
+    const subs = Object.keys(data).filter(s => data[s].qTotal > 0);
+    let scope = '全部';
+    const paint = () => {
+      let den = 0, num = 0, wrong = {};
+      if (scope === '全部') {
+        subs.forEach(s => { den += data[s].qTotal; num += data[s].qCorrect; Object.keys(data[s].wrong).forEach(t => { wrong[t] = (wrong[t] || 0) + data[s].wrong[t]; }); });
+      } else { den = data[scope].qTotal; num = data[scope].qCorrect; wrong = data[scope].wrong; }
+      const acc = den > 0 ? Math.round(num / den * 100) : 0;
+      const wlst = Object.entries(wrong).sort((a, b) => b[1] - a[1]);
+      let html = '<div class="wb-acc"><div class="wb-acc-num" style="color:' + (acc < 50 ? '#e74c3c' : '#111') + '">' + acc + '%</div><div class="wb-acc-lab">' + (scope === '全部' ? '整体刷题准确率' : (scope + ' 刷题准确率')) + '（' + num + '/' + den + ' 题）</div></div>';
+      if (!wlst.length) html += '<div class="empty">还没有记录错题题型，继续刷题就会自动收集到这里 📚</div>';
+      else if (scope === '全部') {
+        html += subs.map(s => {
+          const sw = Object.entries(data[s].wrong).sort((a, b) => b[1] - a[1]);
+          if (!sw.length) return '';
+          const sacc = data[s].qTotal > 0 ? Math.round(data[s].qCorrect / data[s].qTotal * 100) : 0;
+          return '<div class="wb-sub"><div class="wb-sub-h">' + esc(s) + ' <span class="muted">准确率 ' + sacc + '%</span></div>' + sw.map(([t, c]) => '<div class="qt-wbar"><span class="qt-wlab">' + esc(t) + '</span><span class="qt-wtrack"><span class="qt-wfill" style="width:' + Math.round(c / wlst[0][1] * 100) + '%"></span></span><span class="qt-wcnt">' + c + '</span></div>').join('') + '</div>';
+        }).join('');
+      } else {
+        html += wlst.map(([t, c]) => '<div class="qt-wbar"><span class="qt-wlab">' + esc(t) + '</span><span class="qt-wtrack"><span class="qt-wfill" style="width:' + Math.round(c / wlst[0][1] * 100) + '%"></span></span><span class="qt-wcnt">' + c + '</span></div>').join('');
+      }
+      const body = document.getElementById('wbBody'); if (body) body.innerHTML = html;
+    };
+    const chips = ['全部'].concat(subs).map(s => '<button class="wb-chip ' + (s === scope ? 'on' : '') + '" data-wb="' + esc(s) + '">' + esc(s) + '</button>').join('');
+    openModal('<button class="close-x" onclick="closeModal()">×</button><h3>' + icon('book', 18) + ' 错题库</h3>'
+      + '<div class="muted" style="margin-bottom:10px;font-size:12px">收录所有「刷题」打卡记录的错题题型，按科目归集；点上方切换「全部」或单科。准确率 = 做对题数 ÷ 刷题总数。</div>'
+      + '<div class="wb-chips">' + chips + '</div>'
+      + '<div id="wbBody"></div>');
+    document.querySelectorAll('[data-wb]').forEach(b => b.onclick = () => { scope = b.dataset.wb; document.querySelectorAll('.wb-chip').forEach(x => x.classList.remove('on')); b.classList.add('on'); paint(); });
+    paint();
+  },
   /* ---- 备考搭子（已移除：用户认为用处不大） ---- */
 };
 window.Modules.kaogong = { render: r => KG.render(r) };
