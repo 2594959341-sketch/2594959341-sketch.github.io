@@ -111,7 +111,7 @@ const Daily = {
     tmpl.forEach(t => {
       if (have.has(t.id)) return;
       list.push({ id: uid(), title: t.title, steps: (t.steps || []).map(s => ({ id: uid(), text: s.text, done: false })),
-        manualDone: false, abandoned: false, moved: false, createdAt: Date.now(), link: t.link || '', linkApp: t.linkApp || '', cat: t.cat || this.catFromLink(t.link || ''), estMin: t.estMin || 0, _tmpl: t.id,
+        manualDone: false, abandoned: false, moved: false, createdAt: Date.now(), link: t.link || '', linkApp: t.linkApp || '', cat: t.cat || this.catFromLink(t.link || ''), extra: (function(){ var e = t.extra ? Object.assign({}, t.extra) : {}; if (t.cat === 'kaogong' && !e.subject) { var s = (typeof kgSubjectFromTitle === 'function') ? kgSubjectFromTitle(t.title) : ''; if (s) e.subject = s; } return e; })(), estMin: t.estMin || 0, _tmpl: t.id,
         taskLoad: (t.taskLoad && t.taskLoad >= 1 && t.taskLoad <= 5) ? t.taskLoad : 1, taskType: t.taskType === 'invest' ? 'invest' : 'consume' });
       changed = true;
     });
@@ -305,7 +305,7 @@ const Daily = {
       }
       if (mod === 'kaogong') {
         const ts = (t.extra && (t.extra.subject || t.extra['科目']) || '').trim().replace(/^(行测|申论|面试)-/, '');
-        if (!ts) return ((S.get('kgLogs', {})[date]) || []).length > 0; // 旧任务无科目兜底
+        if (!ts) return false; // 无科目：不再用"任一日志即满足"，避免跨科目串味；无科目的旧任务改为手动完成
         const logs = (S.get('kgLogs', {})[date]) || [];
         return logs.some(l => (l.subject || '').trim().replace(/^(行测|申论|面试)-/, '') === ts);
       }
@@ -1830,7 +1830,7 @@ const Daily = {
       const arr = this.list(this.cur);
       arr.push({ id, title, steps, cat, link, linkApp, goalId: taskGoalId, extra: link ? extra : null, estMin, manualDone: false, abandoned: false, moved: false, createdAt: Date.now(), taskLoad: isMealAdd ? undefined : newLoad, taskType: newType, studyType: (cat === 'kaogong' ? studyType : undefined) });
       this.setList(this.cur, arr);
-      if (daily) { const tmpl = this.dailyTmpl(); tmpl.push({ id: uid(), title, steps: steps.map(s => ({ id: uid(), text: s.text })), cat, link, goalId: taskGoalId, estMin, taskLoad: isMealAdd ? undefined : newLoad, taskType: newType, studyType: (cat === 'kaogong' ? studyType : undefined) }); this.saveDaily(tmpl); arr[arr.length - 1]._tmpl = tmpl[tmpl.length - 1].id; this.setList(this.cur, arr); }
+      if (daily) { const tmpl = this.dailyTmpl(); tmpl.push({ id: uid(), title, steps: steps.map(s => ({ id: uid(), text: s.text })), cat, link, extra: link ? extra : null, goalId: taskGoalId, estMin, taskLoad: isMealAdd ? undefined : newLoad, taskType: newType, studyType: (cat === 'kaogong' ? studyType : undefined) }); this.saveDaily(tmpl); arr[arr.length - 1]._tmpl = tmpl[tmpl.length - 1].id; this.setList(this.cur, arr); }
       closeModal(); this.render(root); toast('任务已添加');
     };
   },
