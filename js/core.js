@@ -441,6 +441,7 @@ function repairAll() {
   }
   if (typeof BIG_KEYS !== 'undefined') BIG_KEYS.forEach(function (k) { if (Store.mem[k] != null) { Store.mem[k] = repairValue(Store.mem[k]); try { _persist(k, JSON.stringify(Store.mem[k])); } catch (e) {} } });
   try { migrateKgSubjects(); } catch (e) {}
+  try { migrateDailySubjects(); } catch (e) {}
   var removed = _dedupDropped - before;
   repairAll._last = removed;
   return removed;
@@ -462,6 +463,41 @@ function migrateKgSubjects() {
     if (changed) S.set('kgLogs', kg);
   } catch (e) {}
 }
+// 备考每日任务科目回填：固定每日任务的模板(plansDaily)与已实例化的计划(plans)里，学习类任务可能没存 extra.subject，
+// 导致 linkSatisfied 的旧兜底"任一日志即满足"跨科目串味（完成一科，所有学习任务都被勾掉）。
+// 这里从标题反推规范科目（常识 优先于 判断，避免「常识判断」误判成判断），幂等。
+function kgSubjectFromTitle(title) {
+  if (!title) return '';
+  var s = String(title);
+  var subs = ['综合应用能力', '常识', '时政', '申论', '面试', '言语', '资料', '数量', '判断'];
+  for (var i = 0; i < subs.length; i++) { if (s.indexOf(subs[i]) >= 0) return subs[i]; }
+  return '';
+}
+function migrateDailySubjects() {
+  try {
+    var tmpl = S.get('plansDaily', []);
+    var tc = false;
+    (tmpl || []).forEach(function (t) {
+      if (t && (t.link || '').indexOf('kaogong:') === 0) {
+        t.extra = t.extra || {};
+        if (!t.extra.subject) { var s = kgSubjectFromTitle(t.title); if (s) { t.extra.subject = s; tc = true; } }
+      }
+    });
+    if (tc) S.set('plansDaily', tmpl);
+    var plans = S.get('plans', {});
+    var pc = false;
+    Object.keys(plans).forEach(function (d) {
+      (plans[d] || []).forEach(function (t) {
+        if (t && (t.link || '').indexOf('kaogong:') === 0) {
+          t.extra = t.extra || {};
+          if (!t.extra.subject) { var s = kgSubjectFromTitle(t.title); if (s) { t.extra.subject = s; pc = true; } }
+        }
+      });
+    });
+    if (pc) S.set('plans', plans);
+  } catch (e) {}
+}
+
 async function importData(obj, opts) {
   if (!obj || obj.app !== 'mumu-workbench' || !obj.localStorage) throw new Error('文件格式不对，不是木木的工作台备份');
   const merge = !opts || opts.merge !== false; // 默认合并（非破坏性），除非显式 merge:false
