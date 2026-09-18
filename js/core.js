@@ -442,6 +442,7 @@ function repairAll() {
   if (typeof BIG_KEYS !== 'undefined') BIG_KEYS.forEach(function (k) { if (Store.mem[k] != null) { Store.mem[k] = repairValue(Store.mem[k]); try { _persist(k, JSON.stringify(Store.mem[k])); } catch (e) {} } });
   try { migrateKgSubjects(); } catch (e) {}
   try { migrateDailySubjects(); } catch (e) {}
+  try { migrateKgMerge(); } catch (e) {}
   var removed = _dedupDropped - before;
   repairAll._last = removed;
   return removed;
@@ -469,8 +470,9 @@ function migrateKgSubjects() {
 function kgSubjectFromTitle(title) {
   if (!title) return '';
   var s = String(title);
-  var subs = ['综合应用能力', '常识', '时政', '申论', '面试', '言语', '资料', '数量', '判断'];
+  var subs = ['综合应用能力', '常识', '时政', '申论', '面试', '言语', '数量', '判断'];
   for (var i = 0; i < subs.length; i++) { if (s.indexOf(subs[i]) >= 0) return subs[i]; }
+  if (s.indexOf('资料') >= 0) return '数量'; // 合并：资料分析归入数量(数量分析)
   return '';
 }
 function migrateDailySubjects() {
@@ -495,6 +497,41 @@ function migrateDailySubjects() {
       });
     });
     if (pc) S.set('plans', plans);
+  } catch (e) {}
+}
+// 备考科目合并：数量关系 + 资料分析 合并为「数量」(全称数量分析)。把历史数据里的 资料/资料分析 科目统一归并到 数量，
+// 并把旧细分题型映射到新题型（数量关系 12 型→数学运算，资料分析 7 型→资料分析）。幂等，跑在 repairAll 与 App.init。
+function migrateKgMerge() {
+  try {
+    var OLD_SHU = ['工程问题', '行程问题', '排列组合', '概率问题', '利润问题', '容斥问题', '几何问题', '最值问题', '浓度问题', '年龄问题', '日期问题', '方程问题'];
+    var OLD_ZI = ['简单计算', '增长率', '增长量', '比重', '平均数', '倍数', '综合分析'];
+    function remapType(t) { if (OLD_SHU.indexOf(t) >= 0) return '数学运算'; if (OLD_ZI.indexOf(t) >= 0) return '资料分析'; return t; }
+    // kgLogs
+    var kg = S.get('kgLogs', {}); var c1 = false;
+    Object.keys(kg).forEach(function (d) {
+      (kg[d] || []).forEach(function (l) {
+        if (l && l.subject) {
+          if (l.subject === '资料' || l.subject === '资料分析') { l.subject = '数量'; c1 = true; }
+          if (Array.isArray(l.qWrongTypes)) {
+            l.qWrongTypes.forEach(function (w) { if (w && w.type) { var nt = remapType(w.type); if (nt !== w.type) { w.type = nt; c1 = true; } } });
+          }
+        }
+      });
+    });
+    if (c1) S.set('kgLogs', kg);
+    // 每日计划模板 + 已实例化计划
+    function mergeTask(t) {
+      if (!t) return false; var ch = false;
+      if (t.extra && t.extra.subject === '资料') { t.extra.subject = '数量'; ch = true; }
+      if ((t.link || '') === 'kaogong:资料') { t.link = 'kaogong:数量'; ch = true; }
+      return ch;
+    }
+    var tmpl = S.get('plansDaily', []); var c2 = false;
+    (tmpl || []).forEach(function (t) { if (mergeTask(t)) c2 = true; });
+    if (c2) S.set('plansDaily', tmpl);
+    var plans = S.get('plans', {}); var c3 = false;
+    Object.keys(plans).forEach(function (d) { (plans[d] || []).forEach(function (t) { if (mergeTask(t)) c3 = true; }); });
+    if (c3) S.set('plans', plans);
   } catch (e) {}
 }
 
