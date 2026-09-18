@@ -760,7 +760,7 @@ const Review = {
       const mv = mealsStore[d]; const mealN = mv ? ['breakfast', 'lunch', 'dinner'].filter(k => mv[k] && !mv[k].skipped).length : 0; if (mealN) add('meals', '三餐', 'meals', di, mealN);
       const wn = (workLogs[d] || []).length; if (wn) add('work', '创作', 'work', di, wn);
       const outN = ((travelStore[d] || []).some(e => e.kind === 'ootd') ? 1 : 0); if (outN) add('travel', '出行', 'travel', di, outN);
-      (kgLogs[d] || []).forEach(l => { const sub = (l.subject || '').trim(); const lab = sub ? sub.replace(/^(行测|申论|面试)-/, '') : '学习'; if (planHasUndone(d, t => t.link === 'kaogong:study' && ((t.extra && t.extra.subject) || '') === sub)) return; add('kaogong:' + (sub || '学习'), lab, 'kaogong', di, 1); });
+      (kgLogs[d] || []).forEach(l => { const sub = kgNorm(l.subject); const lab = sub || '学习'; if (planHasUndone(d, t => t.link === 'kaogong:study' && kgNorm(t.extra && t.extra.subject) === sub)) return; add('kaogong:' + (sub || '学习'), lab, 'kaogong', di, 1); });
       (sportLogs[d] || []).forEach(l => { const p = (l.project || '运动').trim(); if (!p) return; if (planHasUndone(d, t => t.link === 'sport:' + p)) return; add('sport:' + p, p, 'sport', di, 1); });
       (growthLogs[d] || []).forEach(l => { const a = (l.area || '成长').trim(); if (a) add('growth:' + a, a, 'growth', di, 1); });
       (readLogs[d] || []).forEach(l => { const isFun = (window.Growth && window.Growth.readCat) ? window.Growth.readCat(l).key === 'fun' : (l && (l.cat === 'fun' || l.cat === '娱乐')); if (!isFun) add('growth:阅读', '阅读', 'growth', di, 1); });
@@ -807,7 +807,7 @@ const Review = {
     const seen = new Set();
     const add = (v) => { if (v && !seen.has(v)) { seen.add(v); out.push(v); } };
     if (key === 'sport' || key === 'all') (S.get('sportLogs', {})[d] || []).forEach(l => add((l.project || '运动').trim()));
-    if (key === 'kaogong' || key === 'all') (S.get('kgLogs', {})[d] || []).forEach(l => { const s = (l.subject || '').trim().replace(/^(行测|申论|面试)-/, ''); if (s) add(s); });
+    if (key === 'kaogong' || key === 'all') (S.get('kgLogs', {})[d] || []).forEach(l => { const s = kgNorm(l.subject); if (s) add(s); });
     if (key === 'work' || key === 'all') (S.get('workLogs', {})[d] || []).forEach(l => add('创作'));
     if (key === 'growth' || key === 'all') (S.get('growthLogs', {})[d] || []).forEach(l => add((l.area || '成长').trim()));
     if (key === 'read' || key === 'all') { if ((S.get('readLogs', {})[d] || []).some(l => !(window.Growth && window.Growth.readCat) || window.Growth.readCat(l).key !== 'fun')) add('阅读'); }
@@ -845,7 +845,7 @@ const Review = {
     const set = new Set();
     days.forEach(d => {
       if (key === 'all' || key === 'sport') (S.get('sportLogs', {})[d] || []).forEach(l => { const pr = (l.project || '运动').trim(); if (pr) set.add(pr); });
-      if (key === 'all' || key === 'kaogong') (S.get('kgLogs', {})[d] || []).forEach(l => { const s = (l.subject || '').trim(); if (s) set.add(s.replace(/^(行测|申论|面试)-/, '')); });
+      if (key === 'all' || key === 'kaogong') (S.get('kgLogs', {})[d] || []).forEach(l => { const s = kgNorm(l.subject); if (s) set.add(s); });
       if (key === 'all' || key === 'work') { if ((S.get('workLogs', {})[d] || []).length) set.add('创作'); }
       if (key === 'all' || key === 'growth' || key === 'read') (S.get('growthLogs', {})[d] || []).forEach(l => { const a = (l.area || '成长').trim(); if (a) set.add(a); });
       if (key === 'all' || key === 'read') { if ((S.get('readLogs', {})[d] || []).some(l => !(window.Growth && window.Growth.readCat) || window.Growth.readCat(l).key !== 'fun')) set.add('阅读'); }
@@ -1252,7 +1252,7 @@ const Review = {
 
     // 学习科目分布
     const kg = {};
-    days.forEach(d => (kgLogs[d] || []).forEach(l => { const s = (l.subject || '学习').replace(/^(行测|申论|面试)-/, ''); kg[s] = (kg[s] || 0) + 1; }));
+    days.forEach(d => (kgLogs[d] || []).forEach(l => { const s = kgNorm(l.subject) || '学习'; kg[s] = (kg[s] || 0) + 1; }));
     const kgTop = Object.entries(kg).sort((a, b) => b[1] - a[1]).slice(0, 6);
 
     // 出行时间线
@@ -1498,9 +1498,9 @@ const Review = {
       if (outN) add('travel', '出行', 'travel', di, outN);
       // 学习：按具体科目展开（言语/判断推理/资料分析/常识/申论…），不再笼统计成一行「学习」
       (kgLogs[d] || []).forEach(l => {
-        const sub = (l.subject || '').trim();
-        const lab = sub ? sub.replace(/^(行测|申论|面试)-/, '') : '学习';
-        if (planHasUndone(d, t => t.link === 'kaogong:study' && ((t.extra && t.extra.subject) || '') === sub)) return;
+        const sub = kgNorm(l.subject);
+        const lab = sub || '学习';
+        if (planHasUndone(d, t => t.link === 'kaogong:study' && kgNorm(t.extra && t.extra.subject) === sub)) return;
         add('kaogong:' + (sub || '学习'), lab, 'kaogong', di, 1);
       });
       // 运动：按项目(子部分) 展开，如「大小脸改善」「天鹅颈」
