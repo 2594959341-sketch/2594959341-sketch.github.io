@@ -869,7 +869,7 @@ const Work = {
           <div style="display:flex;gap:6px;margin-top:6px;align-items:center;flex-wrap:wrap">${platTags}</div>
           <div style="display:flex;gap:8px;margin-top:6px;align-items:center;flex-wrap:wrap">
             <span class="tag" style="background:#111;color:#fff;border:none">达标 ${st.ok}/${st.req} 篇</span>
-            ${totalEarn > 0 ? `<span class="tag" style="background:#F6C56E;color:#fff;border:none">收入 ¥${totalEarn}</span>` : ''}
+            ${totalEarn > 0 ? `<span class="tag" style="background:#F6C56E;color:#fff;border:none">收入 ¥${fmtYuan(totalEarn)}</span>` : ''}
           </div>
           ${reasonTxt ? `<div class="muted" style="font-size:12px;margin-top:6px">${esc(reasonTxt)}</div>` : ''}
         </div>`;
@@ -1070,18 +1070,18 @@ const Work = {
       <div style="display:flex;gap:6px;margin:6px 0 10px">
         ${['week', 'month', 'year'].map(m => `<button class="btn sm ${this._earnMode === m ? '' : 'ghost'}" data-emode="${m}">${m === 'week' ? '周' : m === 'month' ? '月' : '年'}</button>`).join('')}
       </div>
-      <div class="stat-num" style="font-size:30px">¥${total}</div>
+      <div class="stat-num" style="font-size:30px">¥${fmtYuan(total)}</div>
       <div class="muted" style="margin-bottom:8px">${modeLabel}累计收入</div>
       ${plats.length ? plats.map(p => `<div class="earn-plat" data-plat="${esc(p)}" style="display:flex;justify-content:space-between;align-items:center;padding:9px 10px;border:1px solid var(--line);border-radius:10px;margin:6px 0;cursor:pointer">
-        <span>${esc(p)}</span><b>¥${byPlat[p]}</b></div>`).join('') : '<div class="empty">还没有记录收入，去已完成活动的「编辑」里填各平台赚了多少</div>'}
+        <span>${esc(p)}</span><b>¥${fmtYuan(byPlat[p])}</b></div>`).join('') : '<div class="empty">还没有记录收入，去已完成活动的「编辑」里填各平台赚了多少</div>'}
     </div>`;
     box.querySelectorAll('[data-emode]').forEach(b => b.onclick = () => { this._earnMode = b.dataset.emode; this.render_earn(box, root); });
     box.querySelectorAll('.earn-plat').forEach(el => el.onclick = () => {
       const p = el.dataset.plat;
       const list = filtered.filter(e => e.platform === p);
       openModal(`<button class="close-x" onclick="closeModal()">×</button><h3>${esc(p)} · 收入明细</h3>
-        <div style="max-height:60vh;overflow:auto">${list.length ? list.map(e => `<div class="list-row"><span style="flex:1">${esc(e.actName)}<div class="muted" style="font-size:11px">${e.date || '未记录日期'}</div></span><b>¥${e.amount}</b></div>`).join('') : '<div class="empty">暂无记录</div>'}</div>
-        <div style="margin-top:8px;display:flex;justify-content:space-between"><span class="muted">合计</span><b>¥${byPlat[p]}</b></div>`);
+        <div style="max-height:60vh;overflow:auto">${list.length ? list.map(e => `<div class="list-row"><span style="flex:1">${esc(e.actName)}<div class="muted" style="font-size:11px">${e.date || '未记录日期'}</div></span><b>¥${fmtYuan(e.amount)}</b></div>`).join('') : '<div class="empty">暂无记录</div>'}</div>
+        <div style="margin-top:8px;display:flex;justify-content:space-between"><span class="muted">合计</span><b>¥${fmtYuan(byPlat[p])}</b></div>`);
     });
   },
   /* 创作收入合计（供财务快照「内容变现」单向同步，避免记两遍）
@@ -1787,3 +1787,6 @@ const Work = {
 };
 window.Modules.work = { render: r => Work.render(r) };
 window.Work = Work;
+
+/* 收入统一格式化：保留2位小数，避免浮点累加后位数过长 */
+function fmtYuan(x) { return (Number(x) || 0).toFixed(2); }
