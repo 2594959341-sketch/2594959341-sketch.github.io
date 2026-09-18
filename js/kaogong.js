@@ -1,12 +1,11 @@
 /* ============ 备考考编 · 内蒙古为主，东三省为辅 ============ */
 const KG = {
   // 科目列表（v282 前这里被误用成「错题题型」，现拆分：SUBJECTS=科目，QS_BY_SUBJ=各科目下的细分题型）
-  SUBJECTS: ['言语', '判断', '资料', '数量', '常识', '申论', '综合应用能力', '时政', '面试'],
+  SUBJECTS: ['言语', '判断', '数量', '常识', '申论', '综合应用能力', '时政', '面试'],
   get QTYPES() { return this.SUBJECTS; },
   QS_BY_SUBJ: {
     '言语': ['中心理解', '逻辑填空', '语句填空', '语句排序', '标题填入', '细节判断', '词句理解', '接语选择'],
     '判断': ['图形推理', '定义判断', '类比推理', '逻辑判断', '事件排序'],
-    '资料': ['简单计算', '增长率', '增长量', '比重', '平均数', '倍数', '综合分析'],
     '数量': ['数学运算', '资料分析'],
     '常识': ['政治', '法律', '经济', '人文历史', '科技常识', '地理国情', '管理公文'],
     '申论': ['归纳概括', '综合分析', '提出对策', '贯彻执行', '文章写作'],
@@ -18,7 +17,7 @@ const KG = {
   subjQTypes(subj) {
     const s = String(subj || '');
     if (this.QS_BY_SUBJ[s]) return this.QS_BY_SUBJ[s];
-    const rules = [['言语', '言语'], ['判断', '判断'], ['资料', '资料'], ['数量', '数量'],
+    const rules = [['言语', '言语'], ['判断', '判断'], ['资料', '数量'], ['数量', '数量'],
       ['常识', '常识'], ['公基', '常识'], ['申论', '申论'],
       ['综应', '综合应用能力'], ['综合应用', '综合应用能力'], ['时政', '时政'], ['面试', '面试']];
     for (let i = 0; i < rules.length; i++) { if (s.indexOf(rules[i][0]) >= 0) return this.QS_BY_SUBJ[rules[i][1]]; }
@@ -88,7 +87,7 @@ const KG = {
   subjectColor(name) {
     if (!this._sc) this._sc = {};
     if (this._sc[name]) return this._sc[name];
-    const subs = ['言语', '判断', '资料', '数量', '常识', '申论', '综合应用能力', '时政', '面试'];
+    const subs = ['言语', '判断', '数量', '常识', '申论', '综合应用能力', '时政', '面试'];
     const palette = ['#E8746B', '#4A90D9', '#F0A45B', '#9B7FD4', '#5FB58E', '#D98CC4', '#E0C44B', '#7FB069', '#5BC0BE'];
     let idx = subs.indexOf(name), c;
     if (idx >= 0) c = palette[idx % palette.length];
@@ -218,7 +217,7 @@ const KG = {
     while ((logs[d] && logs[d].length) || restSet.has(d)) { streak++; d = addDays(d, -1); }
     // 日历科目图例
     const allSubs = new Set(Object.keys(bySub));
-    ['言语', '判断', '资料', '数量', '常识', '申论', '综合应用能力', '时政', '面试'].forEach(s => allSubs.add(s));
+    ['言语', '判断', '数量', '常识', '申论', '综合应用能力', '时政', '面试'].forEach(s => allSubs.add(s));
     const legendHTML = [...allSubs].map(s => `<span class="sp-leg"><span class="sp-leg-dot" style="background:${this.subjectColor(s)}"></span>${esc(s)}</span>`).join('');
     // 最近学习轨迹：以「当前备考计划」为一个周期记录（只展示关联当前计划的记录；无计划时回退到全局最近）
     const curPlan = plans[0];
@@ -285,7 +284,7 @@ const KG = {
     renderHeatmap(kgHmEl, countMap);
     box.querySelector('#kgLogAdd').onclick = () => {
       openModal(`<button class="close-x" onclick="closeModal()">×</button><h3>${icon('check',18)} 学习打卡</h3>
-        <div class="form-row"><label>科目</label><select id="klSub"><option>言语</option><option>判断</option><option>资料</option><option>数量</option><option>常识</option><option>申论</option><option>综合应用能力</option><option>时政</option><option>面试</option></select></div>
+        <div class="form-row"><label>科目</label><select id="klSub"><option>言语</option><option>判断</option><option>数量</option><option>常识</option><option>申论</option><option>综合应用能力</option><option>时政</option><option>面试</option></select></div>
         <div class="form-row"><label>学习方式</label><select id="klMode"><option value="网课">网课</option><option value="刷题">刷题</option></select></div>
         <div class="form-row" id="klConWrap"><label>学了什么</label><input id="klCon" placeholder="例如：欣说言语 第3课 中心理解题"></div>
         <div class="form-row" id="klProgWrap"><label>学到哪儿了（进度标记·网课用）</label><input id="klProg" placeholder="例如：看完P3，做题30道，正确率70%"></div>
