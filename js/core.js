@@ -440,9 +440,27 @@ function repairAll() {
     }
   }
   if (typeof BIG_KEYS !== 'undefined') BIG_KEYS.forEach(function (k) { if (Store.mem[k] != null) { Store.mem[k] = repairValue(Store.mem[k]); try { _persist(k, JSON.stringify(Store.mem[k])); } catch (e) {} } });
+  try { migrateKgSubjects(); } catch (e) {}
   var removed = _dedupDropped - before;
   repairAll._last = removed;
   return removed;
+}
+// 备考科目归一：把历史数据里的「行测言语 / 行测-言语 / 言语理解」等变体统一归到规范科目名（言语/判断/…），
+// 根治 v313 去前缀后旧打卡记录仍带「行测-」前缀导致界面出现两个「言语」。幂等，跑在 repairAll 与 App.init。
+function migrateKgSubjects() {
+  try {
+    var kg = S.get('kgLogs', {});
+    var changed = false;
+    Object.keys(kg).forEach(function (d) {
+      (kg[d] || []).forEach(function (l) {
+        if (l && l.subject != null) {
+          var ns = (typeof kgNorm === 'function') ? kgNorm(l.subject) : (l.subject || '').trim().replace(/^行测[\s\-－·:：]*/, '');
+          if (ns && ns !== l.subject) { l.subject = ns; changed = true; }
+        }
+      });
+    });
+    if (changed) S.set('kgLogs', kg);
+  } catch (e) {}
 }
 async function importData(obj, opts) {
   if (!obj || obj.app !== 'mumu-workbench' || !obj.localStorage) throw new Error('文件格式不对，不是木木的工作台备份');
