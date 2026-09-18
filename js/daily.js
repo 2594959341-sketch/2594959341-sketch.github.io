@@ -102,8 +102,9 @@ const Daily = {
   saveDaily(arr) { S.set('plansDaily', arr); },
   ensureDaily(date) {
     const tmpl = this.dailyTmpl();
-    if (!tmpl.length) return;
     if (date < todayStr()) return; // 固定任务只部署到今天与未来，绝不往过去补（避免「穿越处理」）
+    const all = this.all();
+    const isNew = !all[date]; // 这一天才刚出现、尚无任何计划 -> 全新一天
     const list = this.list(date);
     const have = new Set(list.filter(t => t._tmpl).map(t => t._tmpl));
     let changed = false;
@@ -114,7 +115,29 @@ const Daily = {
         taskLoad: (t.taskLoad && t.taskLoad >= 1 && t.taskLoad <= 5) ? t.taskLoad : 1, taskType: t.taskType === 'invest' ? 'invest' : 'consume' });
       changed = true;
     });
-    if (changed) this.setList(date, list);
+    if (isNew) { this.applyInheritedOrder(date, list); changed = true; } // 全新一天：按昨天顺序排，免去每天重排
+    if (changed && list.length) this.setList(date, list);
+  },
+
+  // 任务排序继承用的稳定键：固定任务用 _tmpl（跨天相同），其余用 link+title+cat（moveTmr 拷贝的也认得出）
+  orderKey(t) {
+    if (t && t._tmpl) return 'tmpl:' + t._tmpl;
+    return 'key:' + ((t && t.link || '') + '|' + (t && t.title || '') + '|' + (t && t.cat || ''));
+  },
+  // 全新一天：把当天待办按「昨天列表的顺序」排好；昨天没有的新任务追加在末尾（保持原相对顺序）
+  applyInheritedOrder(date, list) {
+    if (!list || !list.length) return;
+    const prevList = this.list(addDays(date, -1));
+    if (!prevList.length) return;
+    const pos = {};
+    prevList.forEach((t, i) => { const k = this.orderKey(t); if (!(k in pos)) pos[k] = i; });
+    list.sort((a, b) => {
+      const pa = pos[this.orderKey(a)], pb = pos[this.orderKey(b)];
+      if (pa !== undefined && pb !== undefined) return pa - pb;
+      if (pa !== undefined) return -1;
+      if (pb !== undefined) return 1;
+      return 0;
+    });
   },
 
   isDone(t) { if (!t) return false; return (Array.isArray(t.steps) && t.steps.length) ? t.steps.every(s => s && s.done) : !!t.manualDone; },
