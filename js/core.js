@@ -470,7 +470,7 @@ function migrateKgSubjects() {
 function kgSubjectFromTitle(title) {
   if (!title) return '';
   var s = String(title);
-  var subs = ['综合应用能力', '常识', '时政', '申论', '面试', '言语', '数量', '判断'];
+  var subs = ['综合应用能力', '常识', '时政', '申论', '面试', '言语', '数量', '判断', '策略'];
   for (var i = 0; i < subs.length; i++) { if (s.indexOf(subs[i]) >= 0) return subs[i]; }
   if (s.indexOf('资料') >= 0) return '数量'; // 合并：资料分析归入数量(数量分析)
   return '';
