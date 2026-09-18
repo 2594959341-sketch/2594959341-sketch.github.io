@@ -1,5 +1,5 @@
 /* ============ 首页 + 导航 ============ */
-window.APP_VER = 'mumu-v325'; // 当前前端版本（设置页可见，用于确认是否加载到最新代码）
+window.APP_VER = 'mumu-v326'; // 当前前端版本（设置页可见，用于确认是否加载到最新代码）
 const SR_LINKS = [
   { v: 'sport', n: '运动（任意跟练）' },
   { v: 'sport:', n: '运动（具体项目，选后填名）' },
@@ -640,6 +640,7 @@ const App = {
     if (window.menstrualReconcile) menstrualReconcile(); // 月经假对账：给历史月经假日补休息标、清理与其他休息的重叠
     migrateNovelsV188(); // 一次性把阅读里的娱乐小说迁到娱乐专栏（阅读今后只放知识/严肃阅读）
     if (typeof migrateKgSubjects === 'function') { try { migrateKgSubjects(); } catch (e) {} } // 备考科目归一：行测言语→言语（一次性，幂等）
+    if (typeof migrateKgMerge === 'function') { try { migrateKgMerge(); } catch (e) {} } // 备考科目合并：数量关系+资料分析→数量（一次性，幂等）
     if (window.Meals && Meals.backfillJunkTags) Meals.backfillJunkTags();
     const sb = document.getElementById('nav');
     sb.innerHTML = this.navs.map(n => {
