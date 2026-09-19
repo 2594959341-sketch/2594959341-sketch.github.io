@@ -100,13 +100,17 @@ const Streak = {
   makeupUsed(item) { return Object.keys(item.madeup || {}).length; },
   makeupAvail(item) { return Math.max(0, this.makeupEarned(item) - this.makeupUsed(item)); },
 
-  // 当前连续天数：从最近一个「已覆盖日」往前数连续覆盖天数（今天还没打卡也不归零，但出现缺口则止）
+  // 当前连续天数：休息/月经假/补签日不中断连续性，但也不计入连续天数；只有真实打卡日才计入
   curStreak(item) {
     const origin = '2025-01-01';
     let cur = todayStr();
+    // covered = 真实打卡 / 休息日 / 月经假 / 补签日，任意一条都算「续上」（不中断）
     while (cur >= origin && !this.covered(item, cur)) cur = addDays(cur, -1);
     let c = 0;
-    while (cur >= origin && this.covered(item, cur)) { c++; cur = addDays(cur, -1); }
+    while (cur >= origin && this.covered(item, cur)) {
+      if (this.isDone(item, cur)) c++; // 仅真实打卡日计入；休息/月经假/补签不计入
+      cur = addDays(cur, -1);
+    }
     return c;
   },
   // 用一张补签卡补最近的一个缺口（从今天往前第一个未覆盖日）
