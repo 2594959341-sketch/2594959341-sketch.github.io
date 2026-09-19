@@ -49,6 +49,8 @@ const Work = {
       root.innerHTML = `<div style="padding:4px 0 8px;display:flex;align-items:center;gap:8px"><button class="icon-btn coll-back" title="返回活动规划">${icon('chevronLeft',18)}</button><b style="font-size:16px">活动收集箱</b></div><div id="workBody"></div>`;
       const body = root.querySelector('#workBody');
       this.render_collection(body, root);
+      const cb = root.querySelector('.coll-back');
+      if (cb) cb.onclick = () => { this._workView = null; this.render(root); };
       return;
     }
     // 创作打卡（默认竖排总览）：无 tabs
