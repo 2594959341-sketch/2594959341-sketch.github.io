@@ -845,6 +845,7 @@ const Daily = {
 
   render(root) {
     this._root = root;
+    if (window.__modalOpen) return; // 编辑弹窗打开期间不重渲染底层页面，避免半透明遮罩后的内容闪烁
     // 子页面路由：月日历 / 续火花 / 频率（v221 新增后两者，纯增加）
     if (this._sub && (this._sub === 'monthCal' || this._sub === 'streak' || this._sub === 'freq' || this._sub === 'goalYear' || this._sub === 'goalMonth' || this._sub === 'goalWeek')) {
       root.innerHTML = `<div id="dSubPage"></div>`;
