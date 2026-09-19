@@ -215,7 +215,8 @@ const KG = {
     const todayIsRest = restSet.has(todayStr());
     let streak = 0; let d = todayStr();
     if (!((logs[d] && logs[d].length) || restSet.has(d))) d = addDays(d, -1);
-    while ((logs[d] && logs[d].length) || restSet.has(d)) { streak++; d = addDays(d, -1); }
+    // 休息/月经假/补签日不中断连续，但「不计入」天数；只有真正有学习记录(kgLogs)的日子才算 1 天
+    while ((logs[d] && logs[d].length) || restSet.has(d)) { if (logs[d] && logs[d].length) streak++; d = addDays(d, -1); }
     // 日历科目图例
     const allSubs = new Set(Object.keys(bySub));
     ['言语', '判断', '数量', '常识', '申论', '综合应用能力', '时政', '面试', '策略'].forEach(s => allSubs.add(s));
