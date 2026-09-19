@@ -1,5 +1,5 @@
 /* ============ 首页 + 导航 ============ */
-window.APP_VER = 'mumu-v330'; // 当前前端版本（设置页可见，用于确认是否加载到最新代码）
+window.APP_VER = 'mumu-v331'; // 当前前端版本（设置页可见，用于确认是否加载到最新代码）
 const SR_LINKS = [
   { v: 'sport', n: '运动（任意跟练）' },
   { v: 'sport:', n: '运动（具体项目，选后填名）' },
@@ -743,6 +743,13 @@ function migrateNovelsV188() {
   } catch (e) { console.warn('migrateNovelsV188 failed', e); }
 }
 
+window.addEventListener('modalClosed', function () {
+  var key = (window.App && App.cur); if (!key) return;
+  var base = key.indexOf(':') >= 0 ? key.split(':')[0] : key;
+  var m = window.Modules && window.Modules[base];
+  var root = document.getElementById('main');
+  if (m && root) m.render(root);
+});
 document.addEventListener('DOMContentLoaded', () => {
   try { const ck = localStorage.getItem('mumu_import_ckpt'); if (ck) { const o = JSON.parse(ck); toast('上次导入在 ' + (o.pct || 0) + '% 中断（阶段：' + (o.phase || '?') + '）。可重新导入，或把此百分比告诉枝枝定位问题。'); } } catch (e) {}
   App.init();
