@@ -248,13 +248,24 @@ function toast(msg) {
   document.body.appendChild(t); setTimeout(() => t.remove(), 2200);
 }
 function openModal(html) {
-  closeModal();
+  closeModal(true);
   const ov = document.createElement('div'); ov.className = 'overlay'; ov.id = 'ov';
   ov.innerHTML = '<div class="modal">' + html + '</div>';
   ov.addEventListener('click', e => { if (e.target === ov) closeModal(); });
-  document.body.appendChild(ov); return ov;
+  document.body.appendChild(ov);
+  document.body.classList.add('modal-open');
+  window.__modalOpen = true;
+  return ov;
 }
-function closeModal() { const o = document.getElementById('ov'); if (o) o.remove(); }
+function closeModal(silent) {
+  const o = document.getElementById('ov');
+  if (o) {
+    o.remove();
+    document.body.classList.remove('modal-open');
+    window.__modalOpen = false;
+    if (!silent) window.dispatchEvent(new Event('modalClosed'));
+  }
+}
 
 /* ---- 图片瘦身：手机原图 base64 动辄好几 MB，直接进 localStorage 会撑爆配额 ---- */
 // 把 dataURL 等比缩到最长边 max 像素内并转成 JPEG，失败时原样返回
