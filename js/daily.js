@@ -112,7 +112,7 @@ const Daily = {
       if (have.has(t.id)) return;
       list.push({ id: uid(), title: t.title, steps: (t.steps || []).map(s => ({ id: uid(), text: s.text, done: false })),
         manualDone: false, abandoned: false, moved: false, createdAt: Date.now(), link: t.link || '', linkApp: t.linkApp || '', cat: t.cat || this.catFromLink(t.link || ''), extra: (function(){ var e = t.extra ? Object.assign({}, t.extra) : {}; if (t.cat === 'kaogong' && !e.subject) { var s = (typeof kgSubjectFromTitle === 'function') ? kgSubjectFromTitle(t.title) : ''; if (s) e.subject = s; } return e; })(), estMin: t.estMin || 0, _tmpl: t.id,
-        taskLoad: (t.taskLoad && t.taskLoad >= 1 && t.taskLoad <= 5) ? t.taskLoad : 1, taskType: t.taskType === 'invest' ? 'invest' : 'consume' });
+        taskLoad: (t.taskLoad && t.taskLoad >= 1 && t.taskLoad <= 5) ? t.taskLoad : 1, taskType: t.taskType === 'invest' ? 'invest' : 'consume', studyType: (t.studyType === '刷题' || t.studyType === '网课') ? t.studyType : undefined });
       changed = true;
     });
     if (isNew) { this.applyInheritedOrder(date, list); changed = true; } // 全新一天：按昨天顺序排，免去每天重排
@@ -138,6 +138,39 @@ const Daily = {
       if (pb !== undefined) return 1;
       return 0;
     });
+  },
+
+  // 重排后：把固定任务的相对顺序写回模板，并同步到所有未来日期，让"后一天跟着前一天的顺序走"
+  propagateOrder(date, arr) {
+    if (date < todayStr()) return; // 仅当重排的是今天或未来的日期才向前传播（避免改动过去影响今天）
+    const fixedOrder = arr.filter(t => t._tmpl).map(t => t._tmpl);
+    if (fixedOrder.length < 2) return; // 固定任务不足 2 个，无需传播
+    // 1) 把模板的固定任务顺序刷新成这次重排后的顺序（作为后续新生成日子的顺序基准）
+    const tmpl = this.dailyTmpl();
+    const byId = {}; tmpl.forEach(x => byId[x.id] = x);
+    const reordered = fixedOrder.map(id => byId[id]).filter(Boolean);
+    const rest = tmpl.filter(x => fixedOrder.indexOf(x.id) < 0);
+    if (reordered.length) this.saveDaily(reordered.concat(rest));
+    // 2) 同步到所有严格晚于今天的日期：固定任务按新模板顺序重排，非固定任务保持原位
+    const all = S.get('plans', {});
+    let ch = false;
+    Object.keys(all).forEach(dd => {
+      if (dd <= todayStr()) return;
+      const lst = all[dd] || [];
+      const slots = []; lst.forEach((t, i) => { if (t._tmpl) slots.push(i); });
+      if (!slots.length) return;
+      const pos = {}; fixedOrder.forEach((id, i) => pos[id] = i);
+      const sortedFixed = lst.filter(t => t._tmpl).sort((a, b) => {
+        const pa = pos[a._tmpl], pb = pos[b._tmpl];
+        if (pa !== undefined && pb !== undefined) return pa - pb;
+        if (pa !== undefined) return -1;
+        if (pb !== undefined) return 1;
+        return 0;
+      });
+      slots.forEach((p, idx) => { lst[p] = sortedFixed[idx]; });
+      ch = true;
+    });
+    if (ch) S.set('plans', all);
   },
 
   isDone(t) { if (!t) return false; return (Array.isArray(t.steps) && t.steps.length) ? t.steps.every(s => s && s.done) : !!t.manualDone; },
@@ -1453,6 +1486,7 @@ const Daily = {
           return 0;
         });
         this.setList(date, arr);
+        this.propagateOrder(date, arr); // 重排后让明日及未来日子跟着前一天的顺序走
       }
       this.render(this._root);
     };
@@ -1981,15 +2015,21 @@ const Daily = {
       // 1) 更新模板本身（未来新生成的日子从这里取）
       const tmpl = this.dailyTmpl();
       const e = tmpl.find(x => x.id === t._tmpl);
-      if (e) { e.title = t.title; e.link = t.link || ''; e.linkApp = t.linkApp || ''; e.cat = t.cat || this.catFromLink(t.link || ''); e.steps = t.steps.map(s => ({ id: uid(), text: s.text })); e.taskLoad = t.taskLoad; e.taskType = t.taskType; e.studyType = t.studyType; this.saveDaily(tmpl); }
+      if (e) { e.title = t.title; e.link = t.link || ''; e.linkApp = t.linkApp || ''; e.cat = t.cat || this.catFromLink(t.link || ''); e.steps = t.steps.map(s => ({ id: uid(), text: s.text })); e.taskLoad = t.taskLoad; e.taskType = t.taskType; e.studyType = t.studyType; e.extra = t.extra; this.saveDaily(tmpl); }
       // 2) 同步已生成（今天及未来）的固定任务实例，让"后续固定计划"一并改精力/类型/标题
       const all = S.get('plans', {});
       let ch = false;
       Object.keys(all).forEach(dd => {
         if (dd < todayStr()) return;
         (all[dd] || []).forEach(x => {
-          if (x._tmpl === t._tmpl && (x.taskLoad !== t.taskLoad || x.taskType !== t.taskType || x.title !== t.title)) {
-            x.taskLoad = t.taskLoad; x.taskType = t.taskType; x.title = t.title; ch = true;
+          if (x._tmpl === t._tmpl) {
+            let up = false;
+            if (x.taskLoad !== t.taskLoad) { x.taskLoad = t.taskLoad; up = true; }
+            if (x.taskType !== t.taskType) { x.taskType = t.taskType; up = true; }
+            if (x.title !== t.title) { x.title = t.title; up = true; }
+            if (x.studyType !== t.studyType) { x.studyType = t.studyType; up = true; }
+            if (JSON.stringify(x.extra || null) !== JSON.stringify(t.extra || null)) { x.extra = t.extra; up = true; }
+            if (up) ch = true;
           }
         });
       });
