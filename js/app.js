@@ -1,5 +1,5 @@
 /* ============ 首页 + 导航 ============ */
-window.APP_VER = 'mumu-v333'; // 当前前端版本（设置页可见，用于确认是否加载到最新代码）
+window.APP_VER = 'mumu-v334'; // 当前前端版本（设置页可见，用于确认是否加载到最新代码）
 const SR_LINKS = [
   { v: 'sport', n: '运动（任意跟练）' },
   { v: 'sport:', n: '运动（具体项目，选后填名）' },
@@ -118,27 +118,14 @@ const Home = {
     const srPct = Math.min(100, Math.round(srDay / 365 * 100));
     const wk7 = weekDates(d);
     const srActive = wk7.filter(dd => dd <= d && ((S.get('plans', {})[dd] || []).length || (S.get('workLogs', {})[dd] || []).length || (S.get('kgLogs', {})[dd] || []).length || (S.get('growthLogs', {})[dd] || []).length || (S.get('sportLogs', {})[dd] || []).length || (S.get('meals', {})[dd]) || (S.get('reviews', {})[dd] && S.get('reviews', {})[dd].text))).length;
-    const srItemHTML = sr.items.map(it => {
-      const isOut = it.mode === 'output';
-      const cur = (it.base || 0) + (it.auto || 0);
-      const goal = it.goal || 365;
-      const pct = Math.min(100, Math.round(cur / goal * 100));
-      const unit = isOut ? '条' : '天';
-      return `<div class="sr-item-row" style="margin:9px 0">
-        <div style="display:flex;justify-content:space-between;font-size:13px;align-items:baseline">
-          <span>${esc(it.name)}</span>
-          <span class="muted" style="font-size:12px">${cur}${unit}${goal ? ` / ${goal}` : ''}</span>
-        </div>
-        <div class="progress-bar" style="height:8px;margin-top:5px"><i style="width:${pct}%"></i></div>
-      </div>`;
-    }).join('');
+
     const srHTML = `
       <div class="card" id="srCard" style="margin-top:14px;cursor:pointer">
         <div style="display:flex;justify-content:space-between;align-items:center">
           <h3>${icon('rescue',18)} 365天自救计划 · 第 ${srDay} 天</h3>
           <button class="btn sm ghost" id="srEdit">${icon('settings',16)} 设置</button>
         </div>
-        ${srItemHTML || '<div class="muted">还没有专项，点设置添加</div>'}
+
         <div class="muted" style="margin-top:10px">本周工作台活跃 <b>${srActive}</b>/7 天 · 这些专栏就是你的自救内容</div>
       </div>`;
 
@@ -301,27 +288,10 @@ const Home = {
     const d = todayStr();
     const srDay = Math.max(1, daysBetween(sr.start, d) + 1);
     const pct = Math.min(100, Math.round(srDay / 365 * 100));
-    const rows = (sr.items || []).map(it => {
-      const isOut = it.mode === 'output';
-      const days = this.srDaysOf(sr, it);
-      const goal = it.goal || 0;
-      const unit = isOut ? '条' : '天';
-      const ip = goal > 0 ? Math.min(100, Math.round(days / goal * 100)) : 0;
-      return `<div style="border:1px solid #ececec;border-radius:10px;padding:10px;margin-bottom:10px">
-        <div style="display:flex;justify-content:space-between;align-items:center"><b>${esc(it.name)}</b>${it.link ? '<span class="tag blue" style="font-size:11px">🔗 自动累计</span>' : ''}${isOut ? '<span class="tag" style="font-size:11px">按产出</span>' : ''}</div>
-        <div style="display:flex;gap:8px;align-items:baseline;margin:6px 0">
-          <span style="font-size:20px;font-weight:700;color:var(--ink)">${days}</span><span class="muted">${unit}</span>
-          ${goal > 0 ? `<span class="muted" style="margin-left:auto">目标 ${goal} ${unit} · 完成 ${ip}%</span>` : '<span class="muted" style="margin-left:auto">未设目标，慢慢来</span>'}
-        </div>
-        ${goal > 0 ? `<div class="progress-bar" style="height:10px"><i style="width:${ip}%"></i></div>` : ''}
-        ${it.start ? `<div class="muted" style="font-size:11px;margin-top:4px">始于 ${it.start}</div>` : ''}
-      </div>`;
-    }).join('') || '<div class="empty">还没有专项，点「⚙ 设置」添加</div>';
+
     openModal(`<button class="close-x" onclick="closeModal()">×</button><h3>${icon('rescue',18)} 365天自救计划 · 第 ${srDay} 天</h3>
       <div class="progress-bar" style="height:12px;margin:6px 0 4px"><i style="width:${pct}%"></i></div>
-      <div class="muted" style="margin-bottom:12px">总进度 ${pct}% · 满格 365 天（创作产出按条数算）</div>
-      ${rows}
-      <div class="muted" style="margin-top:8px">点「${icon('settings',12)} 设置」可以给每个专项设目标与累计方式，这里就会显示完成百分比。</div>`);
+      <div class="muted" style="margin-bottom:12px">总进度 ${pct}% · 满格 365 天（创作产出按条数算）</div>`);
   }
 };
 window.Modules.home = { render: r => Home.render(r) };
