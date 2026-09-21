@@ -143,6 +143,14 @@ const Streak = {
   render(box) {
     const items = this.ensureItems();
     box.innerHTML = '';
+    // 自救计划（只显示第几天，与续火花并列更直观；项目与续火花重叠故不列）
+    const _sr = S.get('selfRescue');
+    const _srStart = (_sr && _sr.start) || '2026-07-13';
+    const _srDay = Math.max(1, daysBetween(_srStart, todayStr()) + 1);
+    const srIntro = document.createElement('div'); srIntro.style.marginBottom = '12px';
+    srIntro.innerHTML = `<div style="font-size:13px;line-height:1.6;color:#777;margin-bottom:8px">我的自救计划就是为了让自己振作起来，把每日过得充实，而续的火花就能证明我过得很充实，所以这俩放一起会更直观。</div>
+      <div class="branch-title" style="margin:0;padding:0;border:none;font-size:17px">${icon('rescue',18)} 365天自救计划 · 第 ${_srDay} 天</div>`;
+    box.appendChild(srIntro);
     const top = document.createElement('div'); top.style.marginBottom = '12px'; box.appendChild(top);
     const bar = document.createElement('div');
     bar.style.cssText = 'display:flex;align-items:center;justify-content:space-between;margin-top:10px';
