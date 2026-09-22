@@ -1,5 +1,5 @@
 /* ============ 首页 + 导航 ============ */
-window.APP_VER = 'mumu-v334'; // 当前前端版本（设置页可见，用于确认是否加载到最新代码）
+window.APP_VER = 'mumu-v335'; // 当前前端版本（设置页可见，用于确认是否加载到最新代码）
 const SR_LINKS = [
   { v: 'sport', n: '运动（任意跟练）' },
   { v: 'sport:', n: '运动（具体项目，选后填名）' },
@@ -218,7 +218,7 @@ const Home = {
     for (let i = 0; i <= daysBetween(start, todayStr()); i++) {
       const d = addDays(start, i);
       if (this._dayMatches(link, d)) { n++; continue; }
-      if (rest.includes(d)) n++; // 运动专项：休息日也算一天（不中断连续天数）
+      if (rest.includes(d) || isAnnualHoliday(d)) n++; // 运动专项：休息日/年度假期也算一天（不中断连续天数）
     }
     return n;
   },
