@@ -44,6 +44,7 @@ const Streak = {
   },
   // 是否覆盖（真实打卡 / 休息日 / 补签日都算续上；休息日含每日计划里的运动/备考休息日）
   covered(item, date) {
+    if (isAnnualHoliday(date)) return true; // 年度固定假期（生日/纪念日）：全局保护所有板块续火花，等同月经假
     if ((S.get('menstrualRest', []) || []).indexOf(date) >= 0) return true; // 月经假：保护所有板块续火花
     if (item.type === 'sport' && (S.get('sportRest', []) || []).indexOf(date) >= 0) return true;
     if (item.type === 'kg' && (S.get('kgRest', []) || []).indexOf(date) >= 0) return true;
@@ -204,7 +205,7 @@ const Streak = {
     stat.innerHTML = `连续 <b>${this.curStreak(item)}</b> 天 · 补签卡 ×<b>${this.makeupAvail(item)}</b> · 打卡满 30 天得 1 张`;
     box.appendChild(stat);
     const grid = document.createElement('div'); grid.className = 'stk-days'; box.appendChild(grid);
-    const catRest = ds => { const mr = (S.get('menstrualRest', []) || []).indexOf(ds) >= 0; return mr || (item.type === 'sport' ? (S.get('sportRest', []) || []).indexOf(ds) >= 0 : item.type === 'kg' ? (S.get('kgRest', []) || []).indexOf(ds) >= 0 : item.type === 'work' ? (S.get('workRest', []) || []).indexOf(ds) >= 0 : false); };
+    const catRest = ds => { const mr = (S.get('menstrualRest', []) || []).indexOf(ds) >= 0; return mr || isAnnualHoliday(ds) || (item.type === 'sport' ? (S.get('sportRest', []) || []).indexOf(ds) >= 0 : item.type === 'kg' ? (S.get('kgRest', []) || []).indexOf(ds) >= 0 : item.type === 'work' ? (S.get('workRest', []) || []).indexOf(ds) >= 0 : false); };
     for (let dd = 1; dd <= dim; dd++) {
       const ds = ym + '-' + String(dd).padStart(2, '0');
       const done = this.isDone(item, ds);
