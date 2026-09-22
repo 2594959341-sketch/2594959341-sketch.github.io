@@ -215,8 +215,40 @@ function menstrualReconcile() {
   mset.forEach(function (ds) { menstrualSyncDaily(ds, true); });
 }
 
+/* ---- 年度固定假期（木木生日 9/22、恋爱纪念日 9/24）----
+   规则：全局、所有板块、自动、不占「每月4天」额度；等同月经假逻辑——
+   这两天不要求完成任何任务，但保护所有续火花 / 连续天数不被打断。 */
+var ANNUAL_HOLIDAYS = [
+  { md: '09-22', label: '生日' },
+  { md: '09-24', label: '恋爱纪念日' }
+];
+function isAnnualHoliday(dateStr) {
+  if (!dateStr) return false;
+  var md = dateStr.slice(5, 10);
+  for (var i = 0; i < ANNUAL_HOLIDAYS.length; i++) if (ANNUAL_HOLIDAYS[i].md === md) return true;
+  return false;
+}
+function annualHolidayLabel(dateStr) {
+  if (!dateStr) return '';
+  var md = dateStr.slice(5, 10);
+  for (var i = 0; i < ANNUAL_HOLIDAYS.length; i++) if (ANNUAL_HOLIDAYS[i].md === md) return ANNUAL_HOLIDAYS[i].label;
+  return '';
+}
+// [from,to] 区间内所有年度假期日期集合（供日历 restSet 渲染用，避免逐日谓词）
+function annualHolidaySet(fromStr, toStr) {
+  var s = new Set();
+  if (!fromStr || !toStr) return s;
+  var d = fromStr, guard = 0;
+  while (d <= toStr && guard < 200000) { if (isAnnualHoliday(d)) s.add(d); d = addDays(d, 1); guard++; }
+  return s;
+}
+
 // 各板块日历长按菜单：今日休息 / 月经假 并列（运动/备考/创作共用，不额外加按钮）
 function openRestMenu(ds, boardKey, render, restToggleFn) {
+  if (isAnnualHoliday(ds)) {
+    openModal('<button class="close-x" onclick="closeModal()">×</button><h3>' + fmtCN(ds) + ' · ' + annualHolidayLabel(ds) + '</h3><div style="margin-top:8px;color:#777;font-size:13px;line-height:1.6">每年这一天自动设为休息日，所有板块续火花不受影响，不用完成任何任务 🎂</div><div style="display:flex;flex-direction:column;gap:10px;margin-top:12px"><button class="btn ghost" onclick="closeModal()">知道了</button></div>');
+    return;
+  }
   if (ds > todayStr()) { toast('不能给未来的日期设休息 / 月经假'); return; }
   var restSet = _restSet(boardKey);
   var mset = menstrualSet();
