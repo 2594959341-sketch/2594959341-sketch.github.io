@@ -1019,9 +1019,9 @@ const Work = {
   render_cal(box, root) {
     const logs = this.logs();
     const marks = {}; Object.keys(logs).forEach(d => { marks[d] = logs[d].map(l => l.type === 'video' ? '#7CB390' : '#F6C56E'); });
-    const restSet = new Set((S.get('workRest', []) || []));
+    const restSet = new Set([].concat(S.get('workRest', []) || [], S.get('menstrualRest', []) || [], annualHolidaySet('2020-01-01', '2050-12-31')));
     const mensSet = menstrualSet();
-    const todayIsRest = restSet.has(todayStr());
+    const todayIsRest = (S.get('workRest', []) || []).indexOf(todayStr()) >= 0;
     box.innerHTML = `<div class="card"><h3 style="font-size:14px;color:var(--sub);font-weight:600">创作日历 <span style="margin-left:auto"><button class="icon-btn" id="workCalRest" title="${todayIsRest ? '取消今日休息' : '今日休息'}（长按日历里那一天可补记 / 设月经假）" style="${todayIsRest ? 'color:#e74c3c' : ''}">${icon(todayIsRest ? 'sun' : 'moon',16)}</button></span></h3><div id="workCal"></div>
       <div class="sp-rest-note"><span class="sp-rest-sq"></span>休息<span class="muted" style="font-size:11px;margin-left:6px">· 长按日历某天可补记</span></div>
       <div class="sp-mens-note"><span class="sp-mens-sq"></span>月经假<span class="muted" style="font-size:11px;margin-left:6px">· 连续两天 · 与其他假不重叠</span></div>
