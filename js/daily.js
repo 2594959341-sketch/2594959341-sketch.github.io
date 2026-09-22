@@ -227,7 +227,7 @@ const Daily = {
     const cap = this.loadCap();
     const tasks = this.list(date);
     // 三餐（meals:*）不进精力系统；阅读·娱乐（纯放松）也不消耗精力
-    const counted = tasks.filter(t => !t.abandoned && !t.moved && !t.restDay && !this.isMealTask(t) && !this.isLoadFree(t));
+    const counted = tasks.filter(t => !t.abandoned && !t.moved && !t.restDay && !isAnnualHoliday(date) && !this.isMealTask(t) && !this.isLoadFree(t));
     let plannedLoad = 0, doneLoad = 0, investLoad = 0, consumeLoad = 0;
     const allTasks = [], doneTasks = [], plannedTasks = [];
     counted.forEach(t => {
@@ -892,12 +892,13 @@ const Daily = {
     }
     const d = this.cur;
     const isToday = d === todayStr();
+    const isHol = isAnnualHoliday(d);
     this.ensureDaily(d);
     let tasks = this.list(d);
     // 三餐类显示去重：当天有手工三餐任务（meals:任意/具体餐）时，隐藏自动生成的重复三餐任务，避免「固定早餐 + 打卡早餐」显示两条
     const hasManualMeals = tasks.some(t => !t.autoGen && !t.abandoned && t.link && t.link.startsWith('meals:'));
     if (hasManualMeals) tasks = tasks.filter(t => !(t.autoGen && t.link && t.link.startsWith('meals:') && !t.abandoned));
-    const active = tasks.filter(t => !this.effDone(t, d) && !t.moved && !t.abandoned && !t.restDay);
+    const active = tasks.filter(t => !this.effDone(t, d) && !t.moved && !t.abandoned && !t.restDay && !isAnnualHoliday(d));
     const term = tasks.filter(t => this.effDone(t, d) || t.moved || t.abandoned || t.restDay).sort((a, b) => (b.doneAt || b.createdAt || 0) - (a.doneAt || a.createdAt || 0));
     const doneN = tasks.filter(t => !t.abandoned && this.effDone(t, d)).length;
     const totalN = tasks.filter(t => !t.moved).length; // 含放弃/请假：均计为"未完成"，不再从分母剔除（修复 100% 虚高）
@@ -909,6 +910,7 @@ const Daily = {
     if (todayDone) streak = 1;
     for (let i = 0; i < 365; i++) {
       const dd = addDays(d, -(i + 1));
+      if (isAnnualHoliday(dd)) continue; // 年度假期：不中断、不计入连续天数
       if (!this._dayChecked(dd)) break;
       streak++;
     }
@@ -916,7 +918,7 @@ const Daily = {
     const overdue = [];
     const all = this.all();
     Object.keys(all).filter(k => k < todayStr()).forEach(k => {
-      all[k].forEach(t => { if (!this.effDone(t, k) && !t.abandoned && !t.moved && !t.restDay) overdue.push({ date: k, t }); });
+      all[k].forEach(t => { if (!this.effDone(t, k) && !t.abandoned && !t.moved && !t.restDay && !isAnnualHoliday(k)) overdue.push({ date: k, t }); });
     });
 
     // 精力能量槽（格子进度条：空格=还没做，完成时填上档位色；充电从右边还回精力）
@@ -963,6 +965,7 @@ const Daily = {
 
     root.innerHTML = `
       <div class="branch-title" style="display:flex;align-items:center;gap:8px">每日计划<button class="btn sm ghost" id="dCal" style="padding:5px 9px;font-size:12.5px;font-weight:500">${icon('calendar',16)}</button></div>
+      ${isHol ? '<div class="banner info" style="margin-bottom:10px">' + icon('sun', 14) + ' 今天是' + annualHolidayLabel(d) + '，已自动设为休息日，所有板块续火花不受影响，不用完成任何任务 🎂</div>' : ''}
       <!-- 合并统计卡片 -->
       <div class="stat-combined">
         <div class="sc-half">
@@ -1131,16 +1134,17 @@ const Daily = {
   },
 
   taskBlock(t, reorder) {
+    const holiday = isAnnualHoliday(this.cur);
     const linked = this.linkSatisfied(t, this.cur);
     const done = this.effDone(t, this.cur);
     const byLink = (linked && !this.isDone(t)) || t.autoGen;
     const total = t.steps.length, dn = t.steps.filter(s => s.done).length;
     const open = !!this._openTasks[t.id];
-    const cls = [done ? 'done' : '', t.abandoned ? 'abandoned' : '', t.moved ? 'moved' : '', t.restDay ? 'rest' : '', open ? 'open' : ''].filter(Boolean).join(' ');
+    const cls = [done ? 'done' : '', t.abandoned ? 'abandoned' : '', t.moved ? 'moved' : '', (t.restDay || holiday) ? 'rest' : '', open ? 'open' : ''].filter(Boolean).join(' ');
     let dotCls = 't-dot', dotIc = '●';
     if (t.abandoned) { dotCls += ' abandoned'; dotIc = '×'; }
     else if (t.moved) { dotCls += ' moved'; dotIc = '›'; }
-    else if (t.restDay) { dotCls += ' rest'; dotIc = '休'; }
+    else if (t.restDay || holiday) { dotCls += ' rest'; dotIc = '休'; }
     else if (done) { dotCls += ' done'; dotIc = '✓'; }
     const active = !done && !t.moved && !t.abandoned;
     const stepsHTML = t.steps.map(s => `<div class="step-row ${s.done ? 'done' : ''}" data-lp>
@@ -1154,7 +1158,7 @@ const Daily = {
         <button class="${dotCls}" data-dot ${active ? '' : 'disabled'} title="${active ? '点击：完成 / 移到明天 / 无法完成' : ''}">${dotIc}</button>
         <span class="tt">${catTag ? `<span class="task-cat-tag">${catTag}</span>` : ''}${esc(t.title)}${goalTag}${t.cat === 'kaogong' && t.studyType ? `<span class="task-study-tag">${esc(t.studyType)}</span>` : ''}</span>
         ${reorder && !this.isMealTask(t) && !this.isLoadFree(t) ? `<span class="task-load ${this.taskType(t)}" title="${this.taskType(t) === 'invest' ? '主动投资' : '系统消耗'}">${this.taskType(t) === 'invest' ? '投' : '耗'}${this.taskLoad(t)}</span>` : ''}
-        ${t.restDay ? '<span class="rest-badge">休息</span>' : ''}
+        ${(t.restDay || holiday) ? '<span class="rest-badge">休息</span>' : ''}
         ${reorder && !done ? `<span class="drag-handle" data-drag="${t.id}" title="按住拖动排序"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="5" y1="7" x2="19" y2="7"/><line x1="5" y1="12" x2="19" y2="12"/><line x1="5" y1="17" x2="19" y2="17"/></svg></span>` : ''}
         ${total ? `<span class="prog">${dn}/${total}</span>` : ''}
         ${t.cat === 'kaogong' && t.actMin != null ? `<span class="ltime">实际${t.actMin}分钟</span>` : ''}
