@@ -44,8 +44,8 @@ const Sport = {
 
   render_main_checkin(box, root) {
     const logs = this.logs();
-    const restSet = new Set((S.get('sportRest', []) || []));
-    const todayIsRest = restSet.has(todayStr());
+    const restSet = new Set([].concat(S.get('sportRest', []) || [], S.get('menstrualRest', []) || [], annualHolidaySet('2020-01-01', '2050-12-31')));
+    const todayIsRest = (S.get('sportRest', []) || []).indexOf(todayStr()) >= 0;
     let streak = 0; let d = todayStr();
     if (!((logs[d] && logs[d].length) || restSet.has(d))) d = addDays(d, -1);
     while ((logs[d] && logs[d].length) || restSet.has(d)) { streak++; d = addDays(d, -1); }
