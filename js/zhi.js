@@ -84,7 +84,7 @@ const Zhi = {
         const day = todayStr(new Date(dt - i * 864e5));
         const v = store[day];
         if (v && ((Array.isArray(v) && v.length) || (typeof v === 'object' && Object.keys(v).filter(k => v[k]).length))) n++;
-        else if (i > 0) break; else break;
+        else if (isAnnualHoliday(day)) continue; else break;
       }
       return n;
     };
