@@ -209,10 +209,10 @@ const KG = {
     const _kgStData = S.get('mumu_streak', { items: [] });
     const _kgMadeup = [];
     (_kgStData.items || []).forEach(function(it){ if (it && it.type === 'kg' && it.madeup) Object.keys(it.madeup).forEach(function(d){ _kgMadeup.push(d); }); });
-    const restSet = new Set([].concat(S.get('kgRest', []) || [], S.get('menstrualRest', []) || [], _kgMadeup));
+    const restSet = new Set([].concat(S.get('kgRest', []) || [], S.get('menstrualRest', []) || [], _kgMadeup, annualHolidaySet('2020-01-01', '2050-12-31')));
     // 日历用"不含月经假"的休息集：月经假单独走 menstrualSet 上粉色，避免被 rest 绿色覆盖（火花/连续天数仍用上面的 restSet）
-    const calRestSet = new Set([].concat(S.get('kgRest', []) || [], _kgMadeup));
-    const todayIsRest = restSet.has(todayStr());
+    const calRestSet = new Set([].concat(S.get('kgRest', []) || [], _kgMadeup, annualHolidaySet('2020-01-01', '2050-12-31')));
+    const todayIsRest = (S.get('kgRest', []) || []).indexOf(todayStr()) >= 0;
     let streak = 0; let d = todayStr();
     if (!((logs[d] && logs[d].length) || restSet.has(d))) d = addDays(d, -1);
     // 休息/月经假/补签日不中断连续，但「不计入」天数；只有真正有学习记录(kgLogs)的日子才算 1 天
