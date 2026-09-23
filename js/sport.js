@@ -44,7 +44,8 @@ const Sport = {
 
   render_main_checkin(box, root) {
     const logs = this.logs();
-    const restSet = new Set([].concat(S.get('sportRest', []) || [], S.get('menstrualRest', []) || [], annualHolidaySet('2020-01-01', '2050-12-31')));
+    const restSet = new Set([].concat(S.get('sportRest', []) || [], S.get('menstrualRest', []) || [], annualHolidaySet('2020-01-01', '2050-12-31'))); // 连续天数循环用：含月经假+年度假期（均不中断）
+    const calRestSet = new Set([].concat(S.get('sportRest', []) || [], annualHolidaySet('2020-01-01', '2050-12-31'))); // 日历绿休息集：排除月经假（月经假走粉色 menstrualSet）
     const todayIsRest = (S.get('sportRest', []) || []).indexOf(todayStr()) >= 0;
     let streak = 0; let d = todayStr();
     if (!((logs[d] && logs[d].length) || restSet.has(d))) d = addDays(d, -1);
@@ -136,7 +137,7 @@ const Sport = {
     this.spView(box.querySelector('#spView'), 'week');
 
     // 当月运动日历（彩色圆点 + 可翻月）；长按某一天可把那天设为/取消休息（补记，长按防误触）
-    renderMonthCal(box.querySelector('#spMonthCal'), { ym, marks: marksProxy, restSet, menstrualSet: menstrualSet(), onLongPress: ds => openRestMenu(ds, 'sport', () => this.render(root), d => this.toggleRest(root, d)) });
+    renderMonthCal(box.querySelector('#spMonthCal'), { ym, marks: marksProxy, restSet: calRestSet, menstrualSet: menstrualSet(), onLongPress: ds => openRestMenu(ds, 'sport', () => this.render(root), d => this.toggleRest(root, d)) });
 
     // 项目图例折叠
     const legendEl = box.querySelector('#spLegend');
