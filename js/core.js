@@ -237,10 +237,10 @@ function annualHolidayLabel(dateStr) {
 // [from,to] 区间内所有年度假期日期集合（供日历 restSet 渲染用，避免逐日谓词）
 function annualHolidaySet(fromStr, toStr) {
   var s = new Set();
-  if (!fromStr || !toStr) return s;
+  if (!fromStr || !toStr) return [];
   var d = fromStr, guard = 0;
   while (d <= toStr && guard < 200000) { if (isAnnualHoliday(d)) s.add(d); d = addDays(d, 1); guard++; }
-  return s;
+  return Array.from(s);
 }
 
 // 各板块日历长按菜单：今日休息 / 月经假 并列（运动/备考/创作共用，不额外加按钮）
