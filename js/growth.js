@@ -483,6 +483,141 @@ const Growth = {
   },
   readCatTag(l, fs) { const c = this.readCat(l); return `<span class="tag" style="background:${c.color};color:#fff;border:none;font-size:${fs || 10}px;padding:1px 7px">${c.name}</span>`; },
   readCatDot(l, sz) { const c = this.readCat(l); const s = sz || 7; return `<span style="display:inline-block;width:${s}px;height:${s}px;border-radius:50%;background:${c.color}"></span>`; },
+  /* ============ 阅读报告（复用娱乐·小说界面风格） ============ */
+  readReportAll() {
+    const rLogs = this.readLogs();
+    const out = [];
+    Object.entries(rLogs).forEach(([d, arr]) => (arr || []).forEach(l => {
+      out.push({
+        id: l.id, title: l.book || '未命名', book: l.book, cover: l.cover || null,
+        minutes: Number(l.minutes) || 0, finished: !!l.finished, status: l.finished ? '已读完' : '',
+        review: l.review || '', tags: l.tags || [], cat: l.cat, rating: l.rating || 0,
+        pages: l.pages || '', date: d
+      });
+    }));
+    return out;
+  },
+  readCoverHTML(e) {
+    const cover = e.cover ? `<img src="${esc(e.cover)}" alt="" class="novel-recent-thumb">` : `<div class="novel-recent-thumb novel-recent-ph"></div>`;
+    return `<div class="novel-recent-cell" data-dtcover="${e.id}">${cover}<div class="novel-recent-name">${esc(e.title || '未命名')}</div></div>`;
+  },
+  readThreeMonthsEnding(ym) {
+    let [y, m] = ym.split('-').map(Number);
+    const out = [];
+    for (let k = 2; k >= 0; k--) { let mm = m - k, yy = y; while (mm < 1) { mm += 12; yy--; } out.push(yy + '-' + String(mm).padStart(2, '0')); }
+    return out;
+  },
+  readLongestStreakMonth(ym) {
+    const days = this.readReportAll().filter(r => r.date.slice(0, 7) === ym && r.minutes > 0).map(r => r.date).sort();
+    if (!days.length) return 0;
+    let max = 1, cur = 1;
+    for (let i = 1; i < days.length; i++) { cur = (daysBetween(days[i - 1], days[i]) === 1) ? cur + 1 : 1; if (cur > max) max = cur; }
+    return max;
+  },
+  readHeatmapHTML(months) {
+    const all = this.readReportAll();
+    const dayMin = {}, dayCnt = {};
+    all.forEach(r => { dayMin[r.date] = (dayMin[r.date] || 0) + r.minutes; dayCnt[r.date] = (dayCnt[r.date] || 0) + 1; });
+    const maxMin = Math.max(1, ...Object.values(dayMin));
+    const cols = months.map(ym => {
+      const [y, m] = ym.split('-').map(Number);
+      const dim = new Date(y, m, 0).getDate();
+      const lead = (new Date(y, m - 1, 1).getDay() + 6) % 7;
+      const cells = [];
+      for (let i = 0; i < lead; i++) cells.push(`<div class="n3-hm-c empty"></div>`);
+      for (let d = 1; d <= dim; d++) {
+        const date = `${ym}-${String(d).padStart(2, '0')}`;
+        const mm = dayMin[date] || 0, cnt = dayCnt[date] || 0;
+        const lvl = mm === 0 ? (cnt ? 1 : 0) : Math.min(4, Math.ceil((mm / maxMin) * 4));
+        cells.push(`<div class="n3-hm-c lvl-${lvl}" title="${cnt || mm ? date + (mm ? ' · ' + Math.round(mm) + ' 分钟' : ' · 读过') : date}"></div>`);
+      }
+      return `<div class="n3-month"><div class="n3-m-head">${m}月</div><div class="n3-days">${cells.join('')}</div></div>`;
+    }).join('');
+    return `<div class="n3-heatmap">${cols}</div>`;
+  },
+  readInsightHTML(all) {
+    if (!all.length) return '';
+    const ym = todayStr().slice(0, 7);
+    const monthEs = all.filter(r => r.date.slice(0, 7) === ym);
+    const monthBooks = new Set(monthEs.map(r => r.title)).size;
+    const monthFin = new Set(monthEs.filter(r => r.finished).map(r => r.title)).size;
+    const tags = {};
+    all.forEach(r => (r.tags || []).forEach(t2 => { if (!['阅读', '在读'].includes(t2)) tags[t2] = (tags[t2] || 0) + 1; }));
+    const topTag = Object.entries(tags).sort((a, b) => b[1] - a[1])[0];
+    if (monthEs.length === 0) return `本月还没有新的阅读记录，去开启一段新旅程吧。`;
+    if (monthBooks > 0) return `这个月你读了 <b>${monthBooks}</b> 本${monthFin ? `，其中 <b>${monthFin}</b> 本读完` : ''}。`;
+    if (topTag && topTag[1] >= 3) return `你最近偏爱「<b>${esc(topTag[0])}</b>」类内容，已经标记了 <b>${topTag[1]}</b> 次。`;
+    const totalH = (all.reduce((s, r) => s + r.minutes, 0) / 60).toFixed(0);
+    if (Number(totalH) > 0) return `累计阅读 <b>${totalH}</b> 小时，每一段时光都在陪伴你。`;
+    return `坚持记录，是给阅读最好的礼物。`;
+  },
+  readReportHTML() {
+    const all = this.readReportAll();
+    if (!all.length) return '';
+    const ym = this._rdCalYm || todayStr().slice(0, 7);
+    const monthEs = all.filter(r => r.date.slice(0, 7) === ym);
+    const monthTitles = new Set(monthEs.map(r => r.title));
+    const monthHours = (monthEs.reduce((s, r) => s + r.minutes, 0) / 60).toFixed(1);
+    const byTitle = {};
+    all.forEach(r => { if (!byTitle[r.title] || r.date > byTitle[r.title].date) byTitle[r.title] = r; });
+    const recently = Object.values(byTitle).sort((a, b) => b.date.localeCompare(a.date)).slice(0, 3);
+    let mainEntry = null, mainMin = 0, mainCount = 0;
+    if (monthEs.length) {
+      const byT = {};
+      monthEs.forEach(r => { const k = r.title || '未命名'; if (!byT[k]) byT[k] = { min: 0, latest: r }; byT[k].min += r.minutes; if (r.date > byT[k].latest.date) byT[k].latest = r; });
+      const sorted = Object.entries(byT).sort((a, b) => b[1].min - a[1].min);
+      mainEntry = sorted[0][1].latest; mainMin = sorted[0][1].min; mainCount = monthEs.filter(r => r.title === mainEntry.title).length;
+    }
+    const mainHours = (mainMin / 60).toFixed(1);
+    const footYm = ym;
+    const footMonths = this.readThreeMonthsEnding(footYm);
+    const curYm = todayStr().slice(0, 7);
+    const curMonthDays = new Set(all.filter(r => r.date.slice(0, 7) === curYm).map(r => r.date)).size;
+    const curMonthStreak = this.readLongestStreakMonth(curYm);
+    const heatmapHTML = this.readHeatmapHTML(footMonths);
+    const insight = this.readInsightHTML(all);
+    const yYear = todayStr().slice(0, 4);
+    const yearEs = all.filter(r => r.date.slice(0, 4) === yYear);
+    const totalMin = yearEs.reduce((s, r) => s + r.minutes, 0);
+    const totalDays = new Set(yearEs.map(r => r.date)).size;
+    const finishedBooks = new Set(yearEs.filter(r => r.finished).map(r => r.title)).size;
+    const recentSection = `<div class="card novel-card">
+      <div class="novel-card-head"><span class="novel-head-l">最近陪伴你的书</span><a class="novel-head-r" data-rdall="1">全部 ›</a></div>
+      <div class="novel-recent-row">${recently.length ? recently.map(e => this.readCoverHTML(e)).join('') : '<div class="empty">还没有读过书</div>'}</div>
+      <div class="novel-card-sub">这个月，你读了 ${monthTitles.size} 本 · 共阅读 ${monthHours} 小时</div>
+    </div>`;
+    const mainSection = mainEntry ? `<div class="card novel-card novel-main-card">
+      <div class="novel-card-head"><span class="novel-head-l">本月主故事</span></div>
+      <div class="novel-main-body">
+        <div class="novel-main-cover" data-dtcover="${mainEntry.id}">${mainEntry.cover ? `<img src="${esc(mainEntry.cover)}" alt="">` : `<div class="novel-cover-ph-lg"></div>`}</div>
+        <div class="novel-main-info">
+          <div class="novel-main-pre">本月，陪伴你最久的是</div>
+          <div class="novel-main-title">《${esc(mainEntry.title)}》</div>
+          <div class="novel-main-desc">${mainEntry.review ? esc(mainEntry.review.slice(0, 50)) + (mainEntry.review.length > 50 ? '…' : '') : '你在它的字里行间，走过一段旅程。'}</div>
+          <div class="novel-main-stats">
+            <div><span class="novel-stat-num">${mainHours}<small>h</small></span><span class="novel-stat-lab">阅读时长</span></div>
+            <div><span class="novel-stat-num">${mainCount}<small>次</small></span><span class="novel-stat-lab">读次数</span></div>
+            <div><span class="novel-stat-num">${esc(mainEntry.date.slice(5))}</span><span class="novel-stat-lab">上次读</span></div>
+          </div>
+        </div>
+      </div></div>` : '';
+    const heatmapSection = `<div class="card novel-card" id="nheatmapCard">
+      <div class="novel-card-head"><span class="novel-head-l">阅读足迹</span></div>
+      <div class="novel-heatmap-body">${heatmapHTML}</div>
+      <div class="novel-heatmap-foot"><div class="novel-heatmap-sum"><div>${Number(curYm.slice(5))}月读了 ${curMonthDays} 天</div><div>最长连续 ${curMonthStreak} 天</div></div></div>
+    </div>`;
+    const insightSection = insight ? `<div class="card novel-card novel-insight-card">
+      <div class="novel-card-head"><span class="novel-head-l">一条洞察</span></div>
+      <div class="novel-insight-body">${insight}</div></div>` : '';
+    const archiveSection = `<div class="card novel-card">
+      <div class="novel-card-head"><span class="novel-head-l">${yYear} 阅读档案</span></div>
+      <div class="novel-archive-grid">
+        <div><div class="novel-arc-num">${(totalMin / 60).toFixed(0)}<small>h</small></div><div class="novel-arc-lab">累计阅读时长</div></div>
+        <div><div class="novel-arc-num">${totalDays}</div><div class="novel-arc-lab">累计阅读天数</div></div>
+        <div><div class="novel-arc-num">${finishedBooks}</div><div class="novel-arc-lab">累计读完作品</div></div>
+      </div></div>`;
+    return recentSection + mainSection + heatmapSection + insightSection + archiveSection;
+  },
   readingPage(allRecs, learnedToday, root) {
     if (!this._rdCalYm) this._rdCalYm = todayStr().slice(0, 7);
     const rLogs = this.readLogs();
@@ -530,13 +665,15 @@ const Growth = {
       ? `<div class="rdcal-legend">${usedCats.map(c => `<span><i style="background:${c.color}"></i>${c.name}</span>`).join('')}</div>`
       : `<div class="rdcal-legend">${this.READ_CATS.map(c => `<span><i style="background:${c.color}"></i>${c.name}</span>`).join('')}</div>`;
 
+    const reportHTML = this.readReportHTML();
     return `<div style="display:flex;flex-direction:column;gap:12px">
+      ${reportHTML}
       <div class="card">
         <h3>阅读打卡 <button class="btn sm" id="readCheckIn" style="margin-left:auto">＋ 打卡</button></h3>
         ${todayRead.length ? todayRead.map(l => `<div class="list-row" data-editread="${l.id}" style="cursor:pointer">
           ${this.readCatTag(l, 11)}
           ${l.rating ? `<span style="letter-spacing:1px">${this.rdStarHTML(l.rating)}</span>` : ''}
-          <div style="flex:1"><b>${esc(l.book || '')}</b>${l.pages ? `<span class="muted"> · 读到 ${l.pages}</span>` : ''}</div>
+          <div style="flex:1"><b>${esc(l.book || '')}</b>${l.pages ? `<span class="muted"> · 读到 ${l.pages}</span>` : ''}${l.minutes ? `<span class="muted"> · ${l.minutes} 分钟</span>` : ''}</div>
           <button class="del" data-delread="${l.id}">✕</button></div>`).join('') : '<div class="empty">今天还没读书打卡</div>'}
       </div>
       <div class="card">
@@ -598,7 +735,7 @@ const Growth = {
             <div style="display:flex;gap:6px;align-items:center;margin-top:2px;flex-wrap:wrap">
               ${this.readCatTag(l)}
               ${l.rating ? `<span style="letter-spacing:1px;font-size:12px">${this.rdStarHTML(l.rating)}</span>` : ''}
-              <span class="muted" style="font-size:11px">${l.finished ? '已读完' : (l.pages ? esc(l.pages) : '在读')}</span>
+              <span class="muted" style="font-size:11px">${l.finished ? '已读完' : (l.pages ? esc(l.pages) : '在读')}${l.minutes ? ' · ' + l.minutes + ' 分钟' : ''}</span>
             </div>
             ${tagHTML}
           </div>
@@ -629,6 +766,9 @@ const Growth = {
   },
   bindReadingEvents(root, recs) {
     root.querySelector('#readCheckIn').onclick = () => this.readDialog(root);
+    root.querySelectorAll('[data-dtcover]').forEach(el => el.onclick = () => { const entry = this._findRead(el.dataset.dtcover); if (entry) this.readView(root, entry); });
+    const rdAll = root.querySelector('[data-rdall]');
+    if (rdAll) rdAll.onclick = () => { this._rdAxisOpen = true; this.render(root); };
     const rh = root.querySelector('#rdAxisToggle');
     if (rh) rh.onclick = () => {
       this._rdAxisOpen = !this._rdAxisOpen;
@@ -865,6 +1005,7 @@ const Growth = {
       <div class="form-row"><label>书名</label><input id="rdBook" placeholder="在读哪本书？" value="${esc(edit ? (edit.book || '') : '')}"></div>
       <div class="form-row"><label>阅读状态</label>
         <select id="rdStatus"><option value="reading">未读完</option><option value="done">已读完</option></select></div>
+      <div class="form-row"><label>阅读时长（分钟）</label><input id="rdMinutes" type="number" min="0" inputmode="numeric" placeholder="例如：45" value="${esc(edit ? (edit.minutes || '') : '')}"></div>
       <div id="rdProgress"><div class="form-row"><label>读到第几页/第几章</label><input id="rdPages" placeholder="例如：P120 / 第5章" value="${esc(edit && !edit.finished ? (edit.pages || '') : '')}"></div></div>
       <div id="rdDoneExtra" style="display:none">
         <div class="form-row"><label>评分</label><div id="rdRateBox" style="font-size:24px;cursor:pointer;letter-spacing:4px"></div></div>
@@ -927,7 +1068,7 @@ const Growth = {
         const targetDate = isEdit ? useDate : useDate;
         const entry = {
           book, pages: status === 'reading' ? (document.getElementById('rdPages').value.trim() || '') : '',
-          finished: status === 'done', cat,
+          finished: status === 'done', cat, minutes: Math.max(0, Number(document.getElementById('rdMinutes').value) || 0),
           cover: cover || (isEdit ? (edit.cover || null) : null),
           rating: status === 'done' ? rating : 0, review,
           tags,
