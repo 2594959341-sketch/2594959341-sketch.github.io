@@ -265,29 +265,54 @@ function sickToggle(dateStr) {
   var ym = dateStr.slice(0, 7), used = sickMonthCount(ym);
   if (used >= 3) return { added: false, count: used, msg: '本月病假已用完（3/3），无法再请' };
   arr.push(dateStr); S.set(SICK_KEY, arr);
+  clearDailyForSick(dateStr); // 病假当天：自动清空每日计划里未打卡的任务（已打卡保留）
   return { added: true, count: sickMonthCount(ym), msg: '' };
 }
+
+/* ---- 补签卡日子：streak items 的 madeup 键（全局并集），日历上给专属颜色 ---- */
+function madeupSetInRange(fromStr, toStr) {
+  var st = S.get('mumu_streak', { items: [] }); var s = new Set();
+  ((st && st.items) || []).forEach(function (it) { var mu = (it && it.madeup) || {}; Object.keys(mu).forEach(function (d) { if (d >= fromStr && d <= toStr) s.add(d); }); });
+  return Array.from(s);
+}
+function isMadeupDate(ds) { return madeupSetInRange(ds, ds).length > 0; }
+
+/* ---- 病假清空每日计划：未打卡任务移除，已打卡 / 专栏联动完成保留 ---- */
+function clearDailyForSick(dateStr) {
+  var all = S.get('plans', {}); var arr = all[dateStr];
+  if (!arr || !arr.length) return;
+  var D = (typeof window !== 'undefined' && window.Daily) ? window.Daily : null;
+  var kept = arr.filter(function (t) {
+    if (!t) return false;
+    if (t.abandoned || t.moved || t.restDay) return false;
+    var done = (Array.isArray(t.steps) && t.steps.length) ? t.steps.every(function (s) { return s && s.done; }) : !!t.manualDone;
+    if (done) return true;
+    if (D && typeof D.effDone === 'function') { try { if (D.effDone(t, dateStr)) return true; } catch (e) {} }
+    return false;
+  });
+  all[dateStr] = kept;
+  S.set('plans', all);
+}
 // 日期 → 假期配色类（优先级：病假 > 生日 > 纪念日；返回 '' 表示无假期，沿用普通休息/月经假配色）
+// ⚠️ 返回值带前导空格：调用点直接拼进 class 字符串（v339 曾因缺空格拼出 cal-cellcal-birth，两类名同时失效致格子消失）
 function dayHolidayClass(ds) {
-  if (isSickLeave(ds)) return 'cal-sick';
+  if (isSickLeave(ds)) return ' cal-sick';
   var t = annualHolidayType(ds);
-  if (t === 'birth') return 'cal-birth';
-  if (t === 'anni') return 'cal-anni';
+  if (t === 'birth') return ' cal-birth';
+  if (t === 'anni') return ' cal-anni';
   return '';
 }
-// 假期颜色说明（可折叠；仅当月含对应假期才返回内容，否则返回 ''）
+// 日历颜色图例（可折叠、默认收起；休息/月经假/补签/病假/生日/纪念日合并在一起，只标颜色对应关系）
 function holidayLegendHTML(ym) {
   if (!ym) ym = todayStr().slice(0, 7);
   var mm = ym.slice(5, 7);
-  var items = [];
-  if (mm === '09') {
-    items.push({ c: 'cal-birth', t: '生日（每年 9/22）', d: '木木的生日，自动休息，所有板块续火花不受影响' });
-    items.push({ c: 'cal-anni', t: '恋爱纪念日（每年 9/24）', d: '木木和对象的纪念日，自动休息，所有板块续火花不受影响' });
-  }
-  if (sickMonthCount(ym) > 0) items.push({ c: 'cal-sick', t: '病假', d: '请病假的日子，所有板块连续天数与续火花不受影响' });
-  if (!items.length) return '';
-  var inner = items.map(function (it) { return '<div class="hl-item"><span class="hl-sw ' + it.c + '"></span><span><b>' + it.t + '</b> · ' + it.d + '</span></div>'; }).join('');
-  return '<div class="holiday-legend"><div class="hl-head" data-hltoggle>假期说明 <span class="hl-caret">▾</span></div><div class="hl-body" style="display:none">' + inner + '</div></div>';
+  var items = [{ c: 'cal-rest', t: '休息' }, { c: 'cal-mens', t: '月经假' }];
+  if (madeupSetInRange(ym + '-01', ym + '-31').length) items.push({ c: 'cal-madeup', t: '补签' });
+  if (sickMonthCount(ym) > 0) items.push({ c: 'cal-sick', t: '病假' });
+  if (mm === '09') { items.push({ c: 'cal-birth', t: '生日' }); items.push({ c: 'cal-anni', t: '纪念日' }); }
+  var inner = items.map(function (it) { return '<div class="hl-item"><span class="hl-sw ' + it.c + '"></span><span>' + it.t + '</span></div>'; }).join('');
+  inner += '<div class="muted" style="font-size:11px">长按日历某天可补记休息 / 月经假</div>';
+  return '<div class="holiday-legend"><div class="hl-head" data-hltoggle>颜色图例 <span class="hl-caret">▸</span></div><div class="hl-body" style="display:none">' + inner + '</div></div>';
 }
 // 设置页「请病假」弹窗
 function openSickLeaveDialog(root) {
@@ -303,7 +328,7 @@ function openSickLeaveDialog(root) {
     var r = sickToggle(d);
     if (r.msg) { toast(r.msg); return; }
     closeModal();
-    toast(r.added ? ('已请病假（本月 ' + r.count + '/3）') : '已取消该病假');
+    toast(r.added ? ('已请病假（本月 ' + r.count + '/3），当日未打卡任务已清空') : '已取消该病假');
     if (window.App && window.App.renderSettings) window.App.renderSettings(root);
   };
 }
@@ -1150,16 +1175,19 @@ function renderMonthCal(el, opts) {
     const marks = (opts.marks && opts.marks[ds]) || [];
     const isRest = opts.restSet && (typeof opts.restSet.has === 'function' ? opts.restSet.has(ds) : opts.restSet[ds]);
     const hcls = dayHolidayClass(ds);
-    const restCls = (!hcls && isRest && !marks.length) ? ' rest' : '';
+    const isMadeup = opts.madeupSet && typeof opts.madeupSet.has === 'function' && opts.madeupSet.has(ds);
+    const madeCls = (!hcls && isMadeup && !marks.length) ? ' cal-madeup' : '';
+    const restCls = (!hcls && !madeCls && isRest && !marks.length) ? ' rest' : '';
     const isMens = opts.menstrualSet && (typeof opts.menstrualSet.has === 'function' ? opts.menstrualSet.has(ds) : opts.menstrualSet[ds]);
-    const mensCls = (!hcls && isMens && !marks.length && !isRest) ? ' mens' : '';
-    html += '<div class="cal-cell' + (ds === today ? ' today' : '') + hcls + restCls + mensCls + '" data-date="' + ds + '"><div class="d">' + d + '</div>'
+    const mensCls = (!hcls && !madeCls && isMens && !marks.length && !isRest) ? ' mens' : '';
+    html += '<div class="cal-cell' + (ds === today ? ' today' : '') + hcls + madeCls + restCls + mensCls + '" data-date="' + ds + '"><div class="d">' + d + '</div>'
       + (opts.cellHTML ? (() => { try { return opts.cellHTML(ds); } catch (e) { return ''; } })() : '')
       + (marks.length ? '<div class="dots">' + marks.slice(0, 6).map(c => '<span class="dot" style="background:' + c + '"></span>').join('') + '</div>' : '')
       + '</div>';
   }
   html += '</div>';
   el.innerHTML = html;
+  if (opts.legendEl && opts.legendHTML) { const le = typeof opts.legendEl === 'string' ? el.ownerDocument.querySelector(opts.legendEl) : opts.legendEl; if (le) le.innerHTML = opts.legendHTML(opts.ym); }
   el.querySelectorAll('[data-nav]').forEach(b => b.onclick = () => {
     const nd = new Date(y, m - 1 + Number(b.dataset.nav), 1);
     opts.ym = nd.getFullYear() + '-' + String(nd.getMonth() + 1).padStart(2, '0');
