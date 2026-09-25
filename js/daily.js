@@ -103,6 +103,7 @@ const Daily = {
   ensureDaily(date) {
     const tmpl = this.dailyTmpl();
     if (date < todayStr()) return; // 固定任务只部署到今天与未来，绝不往过去补（避免「穿越处理」）
+    if (typeof isSickLeave === 'function' && isSickLeave(date)) return; // 病假日：不部署固定任务（当天未打卡任务已被清空）
     const all = this.all();
     const isNew = !all[date]; // 这一天才刚出现、尚无任何计划 -> 全新一天
     const list = this.list(date);
@@ -227,7 +228,7 @@ const Daily = {
     const cap = this.loadCap();
     const tasks = this.list(date);
     // 三餐（meals:*）不进精力系统；阅读·娱乐（纯放松）也不消耗精力
-    const counted = tasks.filter(t => !t.abandoned && !t.moved && !t.restDay && !isAnnualHoliday(date) && !this.isMealTask(t) && !this.isLoadFree(t));
+    const counted = tasks.filter(t => !t.abandoned && !t.moved && !t.restDay && !isAnnualHoliday(date) && !isSickLeave(date) && !this.isMealTask(t) && !this.isLoadFree(t));
     let plannedLoad = 0, doneLoad = 0, investLoad = 0, consumeLoad = 0;
     const allTasks = [], doneTasks = [], plannedTasks = [];
     counted.forEach(t => {
@@ -892,13 +893,13 @@ const Daily = {
     }
     const d = this.cur;
     const isToday = d === todayStr();
-    const isHol = isAnnualHoliday(d);
+    const isHol = isAnnualHoliday(d) || isSickLeave(d);
     this.ensureDaily(d);
     let tasks = this.list(d);
     // 三餐类显示去重：当天有手工三餐任务（meals:任意/具体餐）时，隐藏自动生成的重复三餐任务，避免「固定早餐 + 打卡早餐」显示两条
     const hasManualMeals = tasks.some(t => !t.autoGen && !t.abandoned && t.link && t.link.startsWith('meals:'));
     if (hasManualMeals) tasks = tasks.filter(t => !(t.autoGen && t.link && t.link.startsWith('meals:') && !t.abandoned));
-    const active = tasks.filter(t => !this.effDone(t, d) && !t.moved && !t.abandoned && !t.restDay && !isAnnualHoliday(d));
+    const active = tasks.filter(t => !this.effDone(t, d) && !t.moved && !t.abandoned && !t.restDay && !isAnnualHoliday(d) && !isSickLeave(d));
     const term = tasks.filter(t => this.effDone(t, d) || t.moved || t.abandoned || t.restDay).sort((a, b) => (b.doneAt || b.createdAt || 0) - (a.doneAt || a.createdAt || 0));
     const doneN = tasks.filter(t => !t.abandoned && this.effDone(t, d)).length;
     const totalN = tasks.filter(t => !t.moved).length; // 含放弃/请假：均计为"未完成"，不再从分母剔除（修复 100% 虚高）
@@ -910,7 +911,7 @@ const Daily = {
     if (todayDone) streak = 1;
     for (let i = 0; i < 365; i++) {
       const dd = addDays(d, -(i + 1));
-      if (isAnnualHoliday(dd)) continue; // 年度假期：不中断、不计入连续天数
+      if (isAnnualHoliday(dd) || isSickLeave(dd)) continue; // 年度假期/病假：不中断、不计入连续天数
       if (!this._dayChecked(dd)) break;
       streak++;
     }
@@ -918,7 +919,7 @@ const Daily = {
     const overdue = [];
     const all = this.all();
     Object.keys(all).filter(k => k < todayStr()).forEach(k => {
-      all[k].forEach(t => { if (!this.effDone(t, k) && !t.abandoned && !t.moved && !t.restDay && !isAnnualHoliday(k)) overdue.push({ date: k, t }); });
+      all[k].forEach(t => { if (!this.effDone(t, k) && !t.abandoned && !t.moved && !t.restDay && !isAnnualHoliday(k) && !isSickLeave(k)) overdue.push({ date: k, t }); });
     });
 
     // 精力能量槽（格子进度条：空格=还没做，完成时填上档位色；充电从右边还回精力）
@@ -1134,7 +1135,7 @@ const Daily = {
   },
 
   taskBlock(t, reorder) {
-    const holiday = isAnnualHoliday(this.cur);
+    const holiday = isAnnualHoliday(this.cur) || isSickLeave(this.cur);
     const linked = this.linkSatisfied(t, this.cur);
     const done = this.effDone(t, this.cur);
     const byLink = (linked && !this.isDone(t)) || t.autoGen;
@@ -2200,11 +2201,12 @@ const Daily = {
           <button class="icon-btn" id="mcBack" title="返回今日计划">${icon('back',18)}</button>
         </div>
       </div>
-      <div id="mcCalGrid"></div>${holidayLegendHTML(ym)}`;
+      <div id="mcCalGrid"></div><div id="mcHl"></div>`;
     // 日历网格
     const calEl = box.querySelector('#mcCalGrid');
     renderMonthCal(calEl, {
       ym,
+      legendEl: '#mcHl', legendHTML: v => holidayLegendHTML(v), madeupSet: new Set(madeupSetInRange('2020-01-01', '2050-12-31')),
       cellHTML: ds => {
         const list = this.list(ds);
         const n = list.length;
@@ -2579,10 +2581,11 @@ const Daily = {
         <span>${ym.slice(0, 4)}年${Number(ym.slice(5))}月 · 目标</span>
         <span style="width:18px"></span>
       </div>
-      <div id="gmCal"></div>${holidayLegendHTML(ym)}`;
+      <div id="gmCal"></div><div id="gmHl"></div>`;
     const calEl = box.querySelector('#gmCal');
     renderMonthCal(calEl, {
       ym,
+      legendEl: '#gmHl', legendHTML: v => holidayLegendHTML(v), madeupSet: new Set(madeupSetInRange('2020-01-01', '2050-12-31')),
       cellHTML: ds => {
         const dgs = goals.filter(g => g.scope === 'day' && g.period === ds);
         if (!dgs.length) return '';
