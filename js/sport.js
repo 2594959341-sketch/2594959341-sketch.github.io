@@ -95,10 +95,8 @@ const Sport = {
       <div class="card">
         <div class="sp-today-head"><h3>当月运动打卡</h3><button class="icon-btn" id="spLegendToggle" title="折叠/展开项目图例">▾</button></div>
         <div id="spMonthCal"></div>
-        <div class="sp-rest-note"><span class="sp-rest-sq"></span>休息<span class="muted" style="font-size:11px;margin-left:6px">· 长按日历某天可补记</span></div>
-        <div class="sp-mens-note"><span class="sp-mens-sq"></span>月经假<span class="muted" style="font-size:11px;margin-left:6px">· 连续两天 · 与其他假不重叠</span></div>
         <div class="sp-legend collapsed" id="spLegend">${legendHTML}</div>
-        ${holidayLegendHTML(ym)}
+        <div id="spHl"></div>
       </div>
 
       <div class="card"><h3>视图</h3>
@@ -138,7 +136,7 @@ const Sport = {
     this.spView(box.querySelector('#spView'), 'week');
 
     // 当月运动日历（彩色圆点 + 可翻月）；长按某一天可把那天设为/取消休息（补记，长按防误触）
-    renderMonthCal(box.querySelector('#spMonthCal'), { ym, marks: marksProxy, restSet: calRestSet, menstrualSet: menstrualSet(), onLongPress: ds => openRestMenu(ds, 'sport', () => this.render(root), d => this.toggleRest(root, d)) });
+    renderMonthCal(box.querySelector('#spMonthCal'), { ym, marks: marksProxy, restSet: calRestSet, menstrualSet: menstrualSet(), madeupSet: new Set(madeupSetInRange('2020-01-01', '2050-12-31')), legendEl: '#spHl', legendHTML: v => holidayLegendHTML(v), onLongPress: ds => openRestMenu(ds, 'sport', () => this.render(root), d => this.toggleRest(root, d)) });
 
     // 项目图例折叠
     const legendEl = box.querySelector('#spLegend');
