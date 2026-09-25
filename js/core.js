@@ -219,9 +219,15 @@ function menstrualReconcile() {
    规则：全局、所有板块、自动、不占「每月4天」额度；等同月经假逻辑——
    这两天不要求完成任何任务，但保护所有续火花 / 连续天数不被打断。 */
 var ANNUAL_HOLIDAYS = [
-  { md: '09-22', label: '生日' },
-  { md: '09-24', label: '恋爱纪念日' }
+  { md: '09-22', label: '生日', key: 'birth' },
+  { md: '09-24', label: '恋爱纪念日', key: 'anni' }
 ];
+function annualHolidayType(dateStr) {
+  if (!dateStr) return null;
+  var md = dateStr.slice(5, 10);
+  for (var i = 0; i < ANNUAL_HOLIDAYS.length; i++) if (ANNUAL_HOLIDAYS[i].md === md) return ANNUAL_HOLIDAYS[i].key || (i === 0 ? 'birth' : 'anni');
+  return null;
+}
 function isAnnualHoliday(dateStr) {
   if (!dateStr) return false;
   var md = dateStr.slice(5, 10);
@@ -243,8 +249,77 @@ function annualHolidaySet(fromStr, toStr) {
   return Array.from(s);
 }
 
+/* ---- 病假（每月 3 天，全局、所有板块、自动、不占「每月4天」额度；等同月经假/年度假期逻辑：不要求完成任务，但保护所有续火花 / 连续天数不被打断）---- */
+var SICK_KEY = 'sickLeave';
+function sickArr() { return S.get(SICK_KEY, []) || []; }
+function isSickLeave(dateStr) { return sickArr().indexOf(dateStr) >= 0; }
+function sickSetInRange(fromStr, toStr) {
+  var arr = sickArr(), s = new Set();
+  for (var i = 0; i < arr.length; i++) { var d = arr[i]; if (d >= fromStr && d <= toStr) s.add(d); }
+  return Array.from(s);
+}
+function sickMonthCount(ym) { return sickArr().filter(function (d) { return d.slice(0, 7) === ym; }).length; }
+function sickToggle(dateStr) {
+  var arr = sickArr(), i = arr.indexOf(dateStr);
+  if (i >= 0) { arr.splice(i, 1); S.set(SICK_KEY, arr); return { added: false, count: sickMonthCount(dateStr.slice(0, 7)), msg: '' }; }
+  var ym = dateStr.slice(0, 7), used = sickMonthCount(ym);
+  if (used >= 3) return { added: false, count: used, msg: '本月病假已用完（3/3），无法再请' };
+  arr.push(dateStr); S.set(SICK_KEY, arr);
+  return { added: true, count: sickMonthCount(ym), msg: '' };
+}
+// 日期 → 假期配色类（优先级：病假 > 生日 > 纪念日；返回 '' 表示无假期，沿用普通休息/月经假配色）
+function dayHolidayClass(ds) {
+  if (isSickLeave(ds)) return 'cal-sick';
+  var t = annualHolidayType(ds);
+  if (t === 'birth') return 'cal-birth';
+  if (t === 'anni') return 'cal-anni';
+  return '';
+}
+// 假期颜色说明（可折叠；仅当月含对应假期才返回内容，否则返回 ''）
+function holidayLegendHTML(ym) {
+  if (!ym) ym = todayStr().slice(0, 7);
+  var mm = ym.slice(5, 7);
+  var items = [];
+  if (mm === '09') {
+    items.push({ c: 'cal-birth', t: '生日（每年 9/22）', d: '木木的生日，自动休息，所有板块续火花不受影响' });
+    items.push({ c: 'cal-anni', t: '恋爱纪念日（每年 9/24）', d: '木木和对象的纪念日，自动休息，所有板块续火花不受影响' });
+  }
+  if (sickMonthCount(ym) > 0) items.push({ c: 'cal-sick', t: '病假', d: '请病假的日子，所有板块连续天数与续火花不受影响' });
+  if (!items.length) return '';
+  var inner = items.map(function (it) { return '<div class="hl-item"><span class="hl-sw ' + it.c + '"></span><span><b>' + it.t + '</b> · ' + it.d + '</span></div>'; }).join('');
+  return '<div class="holiday-legend"><div class="hl-head" data-hltoggle>假期说明 <span class="hl-caret">▾</span></div><div class="hl-body" style="display:none">' + inner + '</div></div>';
+}
+// 设置页「请病假」弹窗
+function openSickLeaveDialog(root) {
+  var ym = todayStr().slice(0, 7), used = sickMonthCount(ym);
+  openModal('<button class="close-x" onclick="closeModal()">×</button><h3>请病假（病假）</h3>'
+    + '<div class="form-row"><label>请假日期</label><input type="date" id="slDate" value="' + todayStr() + '" max="' + todayStr() + '"></div>'
+    + '<div class="muted" style="font-size:12px;margin:4px 0 12px">本月已用 <b>' + used + '</b>/3 天病假（每月 3 天）</div>'
+    + '<button class="btn" id="slOk" style="width:100%">确定请假</button>');
+  var ok = document.getElementById('slOk');
+  if (ok) ok.onclick = function () {
+    var d = document.getElementById('slDate').value;
+    if (!d) return toast('先选个日期');
+    var r = sickToggle(d);
+    if (r.msg) { toast(r.msg); return; }
+    closeModal();
+    toast(r.added ? ('已请病假（本月 ' + r.count + '/3）') : '已取消该病假');
+    if (window.App && window.App.renderSettings) window.App.renderSettings(root);
+  };
+}
+// 假期说明折叠（全局委托，一次绑定）
+(function () {
+  function hlToggle(e) { var h = e.target.closest ? e.target.closest('.hl-head') : null; if (!h) return; var b = h.parentElement.querySelector('.hl-body'); if (!b) return; var open = b.style.display !== 'none'; b.style.display = open ? 'none' : ''; var c = h.querySelector('.hl-caret'); if (c) c.textContent = open ? '▾' : '▸'; }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', function () { document.addEventListener('click', hlToggle); });
+  else document.addEventListener('click', hlToggle);
+})();
+
 // 各板块日历长按菜单：今日休息 / 月经假 并列（运动/备考/创作共用，不额外加按钮）
 function openRestMenu(ds, boardKey, render, restToggleFn) {
+  if (isSickLeave(ds)) {
+    openModal('<button class="close-x" onclick="closeModal()">×</button><h3>' + fmtCN(ds) + ' · 病假</h3><div style="margin-top:8px;color:#777;font-size:13px;line-height:1.6">当天为病假，所有板块连续天数与续火花不受影响。取消请在「设置 → 请病假」。</div><div style="display:flex;flex-direction:column;gap:10px;margin-top:12px"><button class="btn ghost" onclick="closeModal()">知道了</button></div>');
+    return;
+  }
   if (isAnnualHoliday(ds)) {
     openModal('<button class="close-x" onclick="closeModal()">×</button><h3>' + fmtCN(ds) + ' · ' + annualHolidayLabel(ds) + '</h3><div style="margin-top:8px;color:#777;font-size:13px;line-height:1.6">每年这一天自动设为休息日，所有板块续火花不受影响，不用完成任何任务 🎂</div><div style="display:flex;flex-direction:column;gap:10px;margin-top:12px"><button class="btn ghost" onclick="closeModal()">知道了</button></div>');
     return;
@@ -1074,10 +1149,11 @@ function renderMonthCal(el, opts) {
     const ds = y + '-' + String(m).padStart(2, '0') + '-' + String(d).padStart(2, '0');
     const marks = (opts.marks && opts.marks[ds]) || [];
     const isRest = opts.restSet && (typeof opts.restSet.has === 'function' ? opts.restSet.has(ds) : opts.restSet[ds]);
-    const restCls = (isRest && !marks.length) ? ' rest' : '';
+    const hcls = dayHolidayClass(ds);
+    const restCls = (!hcls && isRest && !marks.length) ? ' rest' : '';
     const isMens = opts.menstrualSet && (typeof opts.menstrualSet.has === 'function' ? opts.menstrualSet.has(ds) : opts.menstrualSet[ds]);
-    const mensCls = (isMens && !marks.length && !isRest) ? ' mens' : '';
-    html += '<div class="cal-cell' + (ds === today ? ' today' : '') + restCls + mensCls + '" data-date="' + ds + '"><div class="d">' + d + '</div>'
+    const mensCls = (!hcls && isMens && !marks.length && !isRest) ? ' mens' : '';
+    html += '<div class="cal-cell' + (ds === today ? ' today' : '') + hcls + restCls + mensCls + '" data-date="' + ds + '"><div class="d">' + d + '</div>'
       + (opts.cellHTML ? (() => { try { return opts.cellHTML(ds); } catch (e) { return ''; } })() : '')
       + (marks.length ? '<div class="dots">' + marks.slice(0, 6).map(c => '<span class="dot" style="background:' + c + '"></span>').join('') + '</div>' : '')
       + '</div>';
