@@ -1,5 +1,5 @@
 /* ============ 首页 + 导航 ============ */
-window.APP_VER = 'mumu-v338'; // 当前前端版本（设置页可见，用于确认是否加载到最新代码）
+window.APP_VER = 'mumu-v339'; // 当前前端版本（设置页可见，用于确认是否加载到最新代码）
 const SR_LINKS = [
   { v: 'sport', n: '运动（任意跟练）' },
   { v: 'sport:', n: '运动（具体项目，选后填名）' },
@@ -515,6 +515,10 @@ const App = {
           <div><div class="setting-label">版本 / 检查更新</div><div class="setting-desc" style="font-size:11px">当前前端版本：<b id="appVer">检测中…</b>。若导入仍异常，点「检查更新」强制拉取最新代码后重试</div></div>
           <div class="setting-actions"><button class="btn sm" id="btnCheckUpdate">检查更新</button></div>
         </div>
+        <div class="setting-row">
+          <div><div class="setting-label">${icon('sun',16)} 请病假</div><div class="setting-desc" style="font-size:11px">每月 3 天病假，所有板块连续天数与续火花不受影响</div></div>
+          <div class="setting-actions"><button class="btn sm" id="btnSickLeave">请假</button></div>
+        </div>
       </div>`;
     const btnExport = root.querySelector('#btnExport');
     if (btnExport) btnExport.onclick = async () => {
@@ -601,6 +605,8 @@ const App = {
         setTimeout(() => location.reload(), 450);
       };
     });
+    const btnSickLeave = root.querySelector('#btnSickLeave');
+    if (btnSickLeave) btnSickLeave.onclick = () => { if (window.openSickLeaveDialog) openSickLeaveDialog(root); };
   },
   async init() {
     await S.boot();   // 启动先把 IndexedDB 历史数据载入内存（首次自动迁移旧 localStorage 数据），确保后续 reconcile/render 基于最新数据
