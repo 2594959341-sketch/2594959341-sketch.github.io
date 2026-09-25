@@ -2200,7 +2200,7 @@ const Daily = {
           <button class="icon-btn" id="mcBack" title="返回今日计划">${icon('back',18)}</button>
         </div>
       </div>
-      <div id="mcCalGrid"></div>`;
+      <div id="mcCalGrid"></div>${holidayLegendHTML(ym)}`;
     // 日历网格
     const calEl = box.querySelector('#mcCalGrid');
     renderMonthCal(calEl, {
@@ -2579,7 +2579,7 @@ const Daily = {
         <span>${ym.slice(0, 4)}年${Number(ym.slice(5))}月 · 目标</span>
         <span style="width:18px"></span>
       </div>
-      <div id="gmCal"></div>`;
+      <div id="gmCal"></div>${holidayLegendHTML(ym)}`;
     const calEl = box.querySelector('#gmCal');
     renderMonthCal(calEl, {
       ym,
