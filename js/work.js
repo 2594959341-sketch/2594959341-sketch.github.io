@@ -1019,7 +1019,7 @@ const Work = {
   render_cal(box, root) {
     const logs = this.logs();
     const marks = {}; Object.keys(logs).forEach(d => { marks[d] = logs[d].map(l => l.type === 'video' ? '#7CB390' : '#F6C56E'); });
-    const restSet = new Set([].concat(S.get('workRest', []) || [], annualHolidaySet('2020-01-01', '2050-12-31'))); // 排除月经假：月经假走粉色 menstrualSet；创作连续天数由 Streak.covered 统一处理（已含月经假+年度假期）
+    const restSet = new Set([].concat(S.get('workRest', []) || [], annualHolidaySet('2020-01-01', '2050-12-31'), sickSetInRange('2020-01-01', '2050-12-31'))); // 排除月经假：月经假走粉色 menstrualSet；病假走专属蓝色；创作连续天数由 Streak.covered 统一处理（已含月经假+年度假期+病假）
     const mensSet = menstrualSet();
     const todayIsRest = (S.get('workRest', []) || []).indexOf(todayStr()) >= 0;
     box.innerHTML = `<div class="card"><h3 style="font-size:14px;color:var(--sub);font-weight:600">创作日历 <span style="margin-left:auto"><button class="icon-btn" id="workCalRest" title="${todayIsRest ? '取消今日休息' : '今日休息'}（长按日历里那一天可补记 / 设月经假）" style="${todayIsRest ? 'color:#e74c3c' : ''}">${icon(todayIsRest ? 'sun' : 'moon',16)}</button></span></h3><div id="workCal"></div>
@@ -1028,7 +1028,7 @@ const Work = {
       <div class="muted" style="margin-top:8px;display:flex;gap:14px">
         <span><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#7CB390;margin-right:4px"></span>视频</span>
         <span><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#F6C56E;margin-right:4px"></span>图文</span>
-      </div></div>`;
+      </div>${holidayLegendHTML(this.ym)}</div>`;
     renderMonthCal(box.querySelector('#workCal'), { ym: this.ym, marks, restSet, menstrualSet: mensSet, onClick: ds => this.dayDialog(root, ds), onLongPress: ds => openRestMenu(ds, 'work', () => this.render(root), d => this.toggleRest(root, d)) });
     const restBtn = box.querySelector('#workCalRest');
     if (restBtn) restBtn.onclick = () => this.toggleRest(root);
