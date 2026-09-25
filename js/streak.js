@@ -44,6 +44,7 @@ const Streak = {
   },
   // 是否覆盖（真实打卡 / 休息日 / 补签日都算续上；休息日含每日计划里的运动/备考休息日）
   covered(item, date) {
+    if (isSickLeave(date)) return true; // 病假：保护所有板块续火花，等同月经假/年度假期
     if (isAnnualHoliday(date)) return true; // 年度固定假期（生日/纪念日）：全局保护所有板块续火花，等同月经假
     if ((S.get('menstrualRest', []) || []).indexOf(date) >= 0) return true; // 月经假：保护所有板块续火花
     if (item.type === 'sport' && (S.get('sportRest', []) || []).indexOf(date) >= 0) return true;
@@ -149,8 +150,7 @@ const Streak = {
     const _srStart = (_sr && _sr.start) || '2026-07-13';
     const _srDay = Math.max(1, daysBetween(_srStart, todayStr()) + 1);
     const srIntro = document.createElement('div'); srIntro.style.marginBottom = '12px';
-    srIntro.innerHTML = `<div style="font-size:13px;line-height:1.6;color:#777;margin-bottom:8px">我的自救计划就是为了让自己振作起来，把每日过得充实，而续的火花就能证明我过得很充实，所以这俩放一起会更直观。</div>
-      <div class="branch-title" style="margin:0;padding:0;border:none;font-size:17px">${icon('rescue',18)} 365天自救计划 · 第 ${_srDay} 天</div>`;
+    srIntro.innerHTML = `<div class="branch-title" style="margin:0;padding:0;border:none;font-size:17px">365天自救计划 · 第 ${_srDay} 天</div>`;
     box.appendChild(srIntro);
     const top = document.createElement('div'); top.style.marginBottom = '12px'; box.appendChild(top);
     const bar = document.createElement('div');
@@ -205,7 +205,7 @@ const Streak = {
     stat.innerHTML = `连续 <b>${this.curStreak(item)}</b> 天 · 补签卡 ×<b>${this.makeupAvail(item)}</b> · 打卡满 30 天得 1 张`;
     box.appendChild(stat);
     const grid = document.createElement('div'); grid.className = 'stk-days'; box.appendChild(grid);
-    const catRest = ds => { const mr = (S.get('menstrualRest', []) || []).indexOf(ds) >= 0; return mr || isAnnualHoliday(ds) || (item.type === 'sport' ? (S.get('sportRest', []) || []).indexOf(ds) >= 0 : item.type === 'kg' ? (S.get('kgRest', []) || []).indexOf(ds) >= 0 : item.type === 'work' ? (S.get('workRest', []) || []).indexOf(ds) >= 0 : false); };
+    const catRest = ds => { const mr = (S.get('menstrualRest', []) || []).indexOf(ds) >= 0; return mr || isAnnualHoliday(ds) || isSickLeave(ds) || (item.type === 'sport' ? (S.get('sportRest', []) || []).indexOf(ds) >= 0 : item.type === 'kg' ? (S.get('kgRest', []) || []).indexOf(ds) >= 0 : item.type === 'work' ? (S.get('workRest', []) || []).indexOf(ds) >= 0 : false); };
     for (let dd = 1; dd <= dim; dd++) {
       const ds = ym + '-' + String(dd).padStart(2, '0');
       const done = this.isDone(item, ds);
@@ -224,6 +224,7 @@ const Streak = {
     const tip = document.createElement('div'); tip.className = 'stk-tip';
     tip.textContent = item.type === 'custom' ? '点格子=打卡；再点取消' : '点空格=用补签卡补签；当天已打卡不可改；休息请在板块设置';
     box.appendChild(tip);
+    const _hl = holidayLegendHTML(ym); if (_hl) box.insertAdjacentHTML('beforeend', _hl);
     if (item.type === 'custom' || item.user) {
       const del = document.createElement('button'); del.className = 'btn ghost'; del.style.marginTop = '8px'; del.textContent = '删除该项目';
       del.onclick = () => { if (confirm('删除「' + item.name + '」？')) { const d = this.data(); d.items = d.items.filter(x => x.id !== item.id); this.save(d); this.render(box); } };
