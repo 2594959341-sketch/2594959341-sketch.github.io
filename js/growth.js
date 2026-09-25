@@ -508,7 +508,7 @@ const Growth = {
     return out;
   },
   readLongestStreakMonth(ym) {
-    const days = this.readReportAll().filter(r => r.date.slice(0, 7) === ym && r.minutes > 0).map(r => r.date).sort();
+    const days = this.readReportAll().filter(r => r.date.slice(0, 7) === ym && (r.minutes > 0 || isSickLeave(r.date) || annualHolidayType(r.date))).map(r => r.date).sort();
     if (!days.length) return 0;
     let max = 1, cur = 1;
     for (let i = 1; i < days.length; i++) { cur = (daysBetween(days[i - 1], days[i]) === 1) ? cur + 1 : 1; if (cur > max) max = cur; }
@@ -654,7 +654,7 @@ const Growth = {
       } else {
         // 常规日历：线性框 + 日期居中 + 底部分类彩色小圆点
         const dots = calDots[ds] || [];
-        calHTML += `<div class="rdcal-cell${ds === todayStr() ? ' today' : ''}" title="${ds}" data-rdate="${ds}">
+        calHTML += `<div class="rdcal-cell${ds === todayStr() ? ' today' : ''}${dayHolidayClass(ds)}" title="${ds}" data-rdate="${ds}">
           <span class="rdcal-num">${dd}</span>
           <span class="rdcal-dots">${dots.map(c => `<i style="background:${c.color}"></i>`).join('')}</span>
         </div>`;
@@ -708,7 +708,7 @@ const Growth = {
           <button class="btn sm ghost" id="rdToggleView" title="切换视图">${isPhoto ? icon('camera',14) : icon('calendar',14)}</button>
         </div></h3>
         ${calHTML}
-        ${isPhoto ? '' : legendHTML}
+        ${isPhoto ? '' : legendHTML}${!isPhoto ? holidayLegendHTML(ym) : ''}
       </div>
     </div>`;
   },
