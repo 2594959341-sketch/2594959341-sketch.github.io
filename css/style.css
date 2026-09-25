@@ -1467,6 +1467,17 @@ details[open] > summary .car{transform:rotate(180deg)}
 .novel-arc-num{font-size:24px;font-weight:800;color:var(--ink);line-height:1.1;letter-spacing:-0.5px}
 .novel-arc-num small{font-size:12px;font-weight:600;color:var(--sub);margin-left:1px}
 .novel-arc-lab{font-size:11px;color:var(--sub);margin-top:6px;line-height:1.3}
+/* 病假 / 生日 / 纪念日 专属马卡龙色（与普通休息薄荷绿、月经假粉区分） */
+.cal-sick{background:#A8CFE6}
+.cal-birth{background:#F6D98A}
+.cal-anni{background:#D3C2EA}
+/* 假期说明（可折叠，仅当月有对应假期才出现） */
+.holiday-legend{margin-top:10px;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:#fff}
+.hl-head{display:flex;justify-content:space-between;align-items:center;cursor:pointer;padding:8px 10px;font-size:12px;color:var(--ink);background:var(--light)}
+.hl-caret{color:var(--sub);font-size:11px}
+.hl-body{padding:8px 10px;display:flex;flex-direction:column;gap:8px}
+.hl-item{display:flex;align-items:flex-start;gap:8px;font-size:12px;line-height:1.45;color:var(--ink)}
+.hl-sw{display:inline-block;width:14px;height:14px;border-radius:4px;flex:none;margin-top:2px}
 
 /* ===== 目标系统日历（v264）：年→月→周 钻取 ===== */
 .goal-year-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:4px 0 16px}
