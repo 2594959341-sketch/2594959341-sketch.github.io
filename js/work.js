@@ -1023,13 +1023,11 @@ const Work = {
     const mensSet = menstrualSet();
     const todayIsRest = (S.get('workRest', []) || []).indexOf(todayStr()) >= 0;
     box.innerHTML = `<div class="card"><h3 style="font-size:14px;color:var(--sub);font-weight:600">创作日历 <span style="margin-left:auto"><button class="icon-btn" id="workCalRest" title="${todayIsRest ? '取消今日休息' : '今日休息'}（长按日历里那一天可补记 / 设月经假）" style="${todayIsRest ? 'color:#e74c3c' : ''}">${icon(todayIsRest ? 'sun' : 'moon',16)}</button></span></h3><div id="workCal"></div>
-      <div class="sp-rest-note"><span class="sp-rest-sq"></span>休息<span class="muted" style="font-size:11px;margin-left:6px">· 长按日历某天可补记</span></div>
-      <div class="sp-mens-note"><span class="sp-mens-sq"></span>月经假<span class="muted" style="font-size:11px;margin-left:6px">· 连续两天 · 与其他假不重叠</span></div>
       <div class="muted" style="margin-top:8px;display:flex;gap:14px">
         <span><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#7CB390;margin-right:4px"></span>视频</span>
         <span><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#F6C56E;margin-right:4px"></span>图文</span>
-      </div>${holidayLegendHTML(this.ym)}</div>`;
-    renderMonthCal(box.querySelector('#workCal'), { ym: this.ym, marks, restSet, menstrualSet: mensSet, onClick: ds => this.dayDialog(root, ds), onLongPress: ds => openRestMenu(ds, 'work', () => this.render(root), d => this.toggleRest(root, d)) });
+      </div><div id="workHl"></div></div>`;
+    renderMonthCal(box.querySelector('#workCal'), { ym: this.ym, marks, restSet, menstrualSet: mensSet, madeupSet: new Set(madeupSetInRange('2020-01-01', '2050-12-31')), legendEl: '#workHl', legendHTML: v => holidayLegendHTML(v), onClick: ds => this.dayDialog(root, ds), onLongPress: ds => openRestMenu(ds, 'work', () => this.render(root), d => this.toggleRest(root, d)) });
     const restBtn = box.querySelector('#workCalRest');
     if (restBtn) restBtn.onclick = () => this.toggleRest(root);
   },
