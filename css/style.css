@@ -1478,6 +1478,13 @@ details[open] > summary .car{transform:rotate(180deg)}
 .hl-body{padding:8px 10px;display:flex;flex-direction:column;gap:8px}
 .hl-item{display:flex;align-items:flex-start;gap:8px;font-size:12px;line-height:1.45;color:var(--ink)}
 .hl-sw{display:inline-block;width:14px;height:14px;border-radius:4px;flex:none;margin-top:2px}
+/* v340：补签卡专属色（杏色）+ 图例色块复用（休息绿/月经粉） */
+.cal-madeup{background:#F8CBA6;border-color:#eec49a}
+.cal-cell.cal-madeup .d,.rdcal-cell.cal-madeup .d{color:#7a4a1f}
+.cal-cell.cal-madeup.today{box-shadow:0 0 0 2px #111 inset}
+.rdcal-cell.cal-madeup.today{box-shadow:0 0 0 2px #111 inset}
+.cal-rest{background:#B5EAD7}
+.cal-mens{background:#FFB7C5}
 
 /* ===== 目标系统日历（v264）：年→月→周 钻取 ===== */
 .goal-year-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:4px 0 16px}
