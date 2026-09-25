@@ -966,7 +966,7 @@ const Daily = {
 
     root.innerHTML = `
       <div class="branch-title" style="display:flex;align-items:center;gap:8px">每日计划<button class="btn sm ghost" id="dCal" style="padding:5px 9px;font-size:12.5px;font-weight:500">${icon('calendar',16)}</button></div>
-      ${isHol ? '<div class="banner info" style="margin-bottom:10px">' + icon('sun', 14) + ' 今天是' + annualHolidayLabel(d) + '，已自动设为休息日，所有板块续火花不受影响，不用完成任何任务 🎂</div>' : ''}
+      ${isHol ? '<div class="banner info" style="margin-bottom:10px">' + icon('sun', 14) + (isSickLeave(d) ? ' 今天是病假，已自动设为休息日，所有板块连续天数与续火花不受影响，好好休息 🌿' : ' 今天是' + annualHolidayLabel(d) + '，已自动设为休息日，所有板块续火花不受影响，不用完成任何任务 🎂') + '</div>' : ''}
       <!-- 合并统计卡片 -->
       <div class="stat-combined">
         <div class="sc-half">
