@@ -1485,6 +1485,10 @@ details[open] > summary .car{transform:rotate(180deg)}
 .rdcal-cell.cal-madeup.today{box-shadow:0 0 0 2px #111 inset}
 .cal-rest{background:#B5EAD7}
 .cal-mens{background:#FFB7C5}
+/* v341：「今天」恰逢假期时背景被 .cal-cell.today 的 var(--light) 盖掉（today 优先级更高），此处以更高优先级夺回 */
+.cal-cell.today.cal-sick{background:#A8CFE6;box-shadow:0 0 0 2px #111 inset}
+.cal-cell.today.cal-birth{background:#F6D98A;box-shadow:0 0 0 2px #111 inset}
+.cal-cell.today.cal-anni{background:#D3C2EA;box-shadow:0 0 0 2px #111 inset}
 
 /* ===== 目标系统日历（v264）：年→月→周 钻取 ===== */
 .goal-year-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:4px 0 16px}
