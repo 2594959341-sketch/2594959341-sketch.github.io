@@ -209,9 +209,9 @@ const KG = {
     const _kgStData = S.get('mumu_streak', { items: [] });
     const _kgMadeup = [];
     (_kgStData.items || []).forEach(function(it){ if (it && it.type === 'kg' && it.madeup) Object.keys(it.madeup).forEach(function(d){ _kgMadeup.push(d); }); });
-    const restSet = new Set([].concat(S.get('kgRest', []) || [], S.get('menstrualRest', []) || [], _kgMadeup, annualHolidaySet('2020-01-01', '2050-12-31')));
-    // 日历用"不含月经假"的休息集：月经假单独走 menstrualSet 上粉色，避免被 rest 绿色覆盖（火花/连续天数仍用上面的 restSet）
-    const calRestSet = new Set([].concat(S.get('kgRest', []) || [], _kgMadeup, annualHolidaySet('2020-01-01', '2050-12-31')));
+    const restSet = new Set([].concat(S.get('kgRest', []) || [], S.get('menstrualRest', []) || [], _kgMadeup, annualHolidaySet('2020-01-01', '2050-12-31'), sickSetInRange('2020-01-01', '2050-12-31')));
+    // 日历用"不含月经假"的休息集：月经假单独走 menstrualSet 上粉色，病假走专属蓝色；均不中断连续天数（火花/连续天数仍用上面的 restSet）
+    const calRestSet = new Set([].concat(S.get('kgRest', []) || [], _kgMadeup, annualHolidaySet('2020-01-01', '2050-12-31'), sickSetInRange('2020-01-01', '2050-12-31')));
     const todayIsRest = (S.get('kgRest', []) || []).indexOf(todayStr()) >= 0;
     let streak = 0; let d = todayStr();
     if (!((logs[d] && logs[d].length) || restSet.has(d))) d = addDays(d, -1);
@@ -245,6 +245,7 @@ const KG = {
         <div class="sp-rest-note"><span class="sp-rest-sq"></span>休息<span class="muted" style="font-size:11px;margin-left:6px">· 长按日历某天可补记</span></div>
         <div class="sp-mens-note"><span class="sp-mens-sq"></span>月经假<span class="muted" style="font-size:11px;margin-left:6px">· 连续两天 · 与其他假不重叠</span></div>
         <div class="sp-legend collapsed" id="kgCalLegend">${legendHTML}</div>
+        ${holidayLegendHTML(todayStr().slice(0,7))}
       </div>
       <div class="card"><h3>学习热力图</h3><div id="kgHm"></div>
         <h3 class="section-gap">最近学习轨迹 <button class="icon-btn" id="kgPastTrails" title="往期备考计划学习轨迹" style="margin-left:auto">${icon('calendar',15)}</button></h3>
