@@ -242,10 +242,8 @@ const KG = {
       <div class="card">
         <div class="sp-today-head"><h3>学习日历</h3><button class="icon-btn" id="kgCalLegendToggle" title="折叠/展开科目图例">▾</button></div>
         <div id="kgMonthCal"></div>
-        <div class="sp-rest-note"><span class="sp-rest-sq"></span>休息<span class="muted" style="font-size:11px;margin-left:6px">· 长按日历某天可补记</span></div>
-        <div class="sp-mens-note"><span class="sp-mens-sq"></span>月经假<span class="muted" style="font-size:11px;margin-left:6px">· 连续两天 · 与其他假不重叠</span></div>
         <div class="sp-legend collapsed" id="kgCalLegend">${legendHTML}</div>
-        ${holidayLegendHTML(todayStr().slice(0,7))}
+        <div id="kgHl"></div>
       </div>
       <div class="card"><h3>学习热力图</h3><div id="kgHm"></div>
         <h3 class="section-gap">最近学习轨迹 <button class="icon-btn" id="kgPastTrails" title="往期备考计划学习轨迹" style="margin-left:auto">${icon('calendar',15)}</button></h3>
@@ -271,7 +269,7 @@ const KG = {
       arr.forEach(l => { const c = KG.subjectColor(KG.normSubject(l.subject)); if (!seen[c]) { seen[c] = 1; out.push(c); } });
       return out;
     }});
-    renderMonthCal(box.querySelector('#kgMonthCal'), { ym, marks: marksProxy, restSet: calRestSet, menstrualSet: menstrualSet(), onLongPress: ds => openRestMenu(ds, 'kaogong', () => this.render(root), d => this.toggleRest(root, d)) });
+    renderMonthCal(box.querySelector('#kgMonthCal'), { ym, marks: marksProxy, restSet: calRestSet, menstrualSet: menstrualSet(), madeupSet: new Set(madeupSetInRange('2020-01-01', '2050-12-31')), legendEl: '#kgHl', legendHTML: v => holidayLegendHTML(v), onLongPress: ds => openRestMenu(ds, 'kaogong', () => this.render(root), d => this.toggleRest(root, d)) });
     const calLegendTgl = box.querySelector('#kgCalLegendToggle');
     const calLegendEl = box.querySelector('#kgCalLegend');
     if (calLegendTgl) calLegendTgl.onclick = () => { calLegendEl.classList.toggle('collapsed'); calLegendTgl.textContent = calLegendEl.classList.contains('collapsed') ? '▾' : '▸'; };
