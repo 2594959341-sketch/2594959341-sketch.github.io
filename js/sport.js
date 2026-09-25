@@ -44,8 +44,8 @@ const Sport = {
 
   render_main_checkin(box, root) {
     const logs = this.logs();
-    const restSet = new Set([].concat(S.get('sportRest', []) || [], S.get('menstrualRest', []) || [], annualHolidaySet('2020-01-01', '2050-12-31'))); // 连续天数循环用：含月经假+年度假期（均不中断）
-    const calRestSet = new Set([].concat(S.get('sportRest', []) || [], annualHolidaySet('2020-01-01', '2050-12-31'))); // 日历绿休息集：排除月经假（月经假走粉色 menstrualSet）
+    const restSet = new Set([].concat(S.get('sportRest', []) || [], S.get('menstrualRest', []) || [], annualHolidaySet('2020-01-01', '2050-12-31'), sickSetInRange('2020-01-01', '2050-12-31'))); // 连续天数循环用：含月经假+年度假期+病假（均不中断）
+    const calRestSet = new Set([].concat(S.get('sportRest', []) || [], annualHolidaySet('2020-01-01', '2050-12-31'), sickSetInRange('2020-01-01', '2050-12-31'))); // 日历休息集：排除月经假（粉色 menstrualSet）；病假走专属蓝色
     const todayIsRest = (S.get('sportRest', []) || []).indexOf(todayStr()) >= 0;
     let streak = 0; let d = todayStr();
     if (!((logs[d] && logs[d].length) || restSet.has(d))) d = addDays(d, -1);
@@ -98,6 +98,7 @@ const Sport = {
         <div class="sp-rest-note"><span class="sp-rest-sq"></span>休息<span class="muted" style="font-size:11px;margin-left:6px">· 长按日历某天可补记</span></div>
         <div class="sp-mens-note"><span class="sp-mens-sq"></span>月经假<span class="muted" style="font-size:11px;margin-left:6px">· 连续两天 · 与其他假不重叠</span></div>
         <div class="sp-legend collapsed" id="spLegend">${legendHTML}</div>
+        ${holidayLegendHTML(ym)}
       </div>
 
       <div class="card"><h3>视图</h3>
