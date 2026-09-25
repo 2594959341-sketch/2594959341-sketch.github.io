@@ -654,7 +654,7 @@ const Growth = {
       } else {
         // 常规日历：线性框 + 日期居中 + 底部分类彩色小圆点
         const dots = calDots[ds] || [];
-        calHTML += `<div class="rdcal-cell${ds === todayStr() ? ' today' : ''}${dayHolidayClass(ds)}" title="${ds}" data-rdate="${ds}">
+        calHTML += `<div class="rdcal-cell${ds === todayStr() ? ' today' : ''}${dayHolidayClass(ds) || (isMadeupDate(ds) ? ' cal-madeup' : '')}" title="${ds}" data-rdate="${ds}">
           <span class="rdcal-num">${dd}</span>
           <span class="rdcal-dots">${dots.map(c => `<i style="background:${c.color}"></i>`).join('')}</span>
         </div>`;
