@@ -1039,7 +1039,7 @@ const Entertainment = {
     const entry = this._findEntry(id);
     if (!entry) { root.innerHTML = '<div class="empty">记录不见了~</div>'; return; }
     const type = entry.type;
-    const all = this.all().filter(r => r.title === entry.title && r.type === type).sort((a, b) => a.date.localeCompare(b.date));
+    const all = this.all().filter(r => r.title === entry.title && r.type === type).sort((a, b) => a.date.localeCompare(b.date) || ((a.createdAt || 0) - (b.createdAt || 0)));
     const isBook = ['小说', '漫画', '影视'].includes(type);
     const totalMin = all.reduce((s, r) => s + (Number(r.minutes) || 0), 0);
     const days = new Set(all.map(r => r.date)).size;
@@ -1153,7 +1153,7 @@ const Entertainment = {
         </div>
       </div>
       <div class="card">
-        <div class="fun-dt-cardhead"><h3>阅读轨迹</h3></div>
+        <div class="fun-dt-cardhead"><h3>${({ '影视': '观影轨迹', '小说': '阅读轨迹', '漫画': '看漫轨迹' })[type] || '轨迹'}</h3></div>
         <div class="fun-trail">${trailHTML || '<div class="empty">还没有记录~</div>'}</div>
       </div>
       ${this.navHTML(this.activeType !== '全部' ? this.activeType : type)}
