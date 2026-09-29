@@ -1,5 +1,5 @@
 /* ============ 首页 + 导航 ============ */
-window.APP_VER = 'mumu-v342'; // 当前前端版本（设置页可见，用于确认是否加载到最新代码）
+window.APP_VER = 'mumu-v343'; // 当前前端版本（设置页可见，用于确认是否加载到最新代码）
 const SR_LINKS = [
   { v: 'sport', n: '运动（任意跟练）' },
   { v: 'sport:', n: '运动（具体项目，选后填名）' },
@@ -114,20 +114,6 @@ const Home = {
       } else { it.auto = 0; }
     });
     if (srChanged) S.set('selfRescue', sr);
-    const srDay = Math.max(1, daysBetween(sr.start, d) + 1);
-    const srPct = Math.min(100, Math.round(srDay / 365 * 100));
-    const wk7 = weekDates(d);
-    const srActive = wk7.filter(dd => dd <= d && ((S.get('plans', {})[dd] || []).length || (S.get('workLogs', {})[dd] || []).length || (S.get('kgLogs', {})[dd] || []).length || (S.get('growthLogs', {})[dd] || []).length || (S.get('sportLogs', {})[dd] || []).length || (S.get('meals', {})[dd]) || (S.get('reviews', {})[dd] && S.get('reviews', {})[dd].text))).length;
-
-    const srHTML = `
-      <div class="card" id="srCard" style="margin-top:14px;cursor:pointer">
-        <div style="display:flex;justify-content:space-between;align-items:center">
-          <h3>${icon('rescue',18)} 365天自救计划 · 第 ${srDay} 天</h3>
-          <button class="btn sm ghost" id="srEdit">${icon('settings',16)} 设置</button>
-        </div>
-
-        <div class="muted" style="margin-top:10px">本周工作台活跃 <b>${srActive}</b>/7 天 · 这些专栏就是你的自救内容</div>
-      </div>`;
 
     const name = esc(S.get('name') || '木木');
     const hello = greetingWord();
@@ -168,8 +154,7 @@ const Home = {
         ${visible.slice(0, 6).map(c => `<div class="list-row"><span style="flex:1">${esc(c.n)}</span><span class="tag ${c.l <= 7 ? 'red' : c.l <= 30 ? 'amber' : 'green'}">${c.l === 0 ? '就是今天!' : '剩 ' + c.l + ' 天'}</span><button class="del" data-cdel="${esc(c.key)}" title="从看板隐藏">✕</button></div>`).join('') || '<div class="empty">暂无临近事项。去工作/考编板块建立计划后，这里会自动汇总。</div>'}
         ${hidden.length ? `<div class="muted" style="margin-top:8px;cursor:pointer" id="cdRestore">已隐藏 ${hidden.length} 项 · 点击恢复 ↺</div>` : ''}
         </div>
-      </div>
-      ${srHTML}`;
+      </div>`;
     this.updateDateTime();
     if (!this._dtTimer) this._dtTimer = setInterval(() => this.updateDateTime(), 30000);
     root.querySelectorAll('[data-go]').forEach(c => c.onclick = () => App.go(c.dataset.go));
@@ -179,10 +164,6 @@ const Home = {
     });
     const cdRestore = root.querySelector('#cdRestore');
     if (cdRestore) cdRestore.onclick = () => { S.set('countdownHidden', []); this.render(root); toast('已恢复全部倒计时 ↺'); };
-    const srCard = root.querySelector('#srCard');
-    if (srCard) srCard.onclick = (e) => { if (e.target.closest('#srEdit')) return; this.srDetail(root); };
-    const srEditBtn = root.querySelector('#srEdit');
-    if (srEditBtn) srEditBtn.onclick = (e) => { e.stopPropagation(); this.srEdit(root); };
     const cdHead = root.querySelector('#cdHead');
       if (cdHead) cdHead.onclick = () => {
       const b = root.querySelector('#cdBody'); const ch = root.querySelector('#cdChev');
