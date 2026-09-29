@@ -319,6 +319,7 @@ const Daily = {
     if ((S.get('sportLogs', {})[dd] || []).length) return true;
     if ((S.get('workLogs', {})[dd] || []).length) return true;
     if ((S.get('growthLogs', {})[dd] || []).length) return true;
+    if ((S.get('readLogs', {})[dd] || []).length) return true;
     if ((S.get('travelOut', {})[dd] || []).length) return true;
     return false;
   },
@@ -357,6 +358,10 @@ const Daily = {
           return matched.length > idx;
         }
         return ((S.get('workLogs', {})[date]) || []).length > 0;
+      }
+      if (mod === 'growth' && sub === '阅读') {
+        // 阅读记录存在 readLogs（与阅读页/阅读续火花同源），而非 growthLogs
+        return ((S.get('readLogs', {})[date]) || []).length > 0;
       }
       if (mod === 'growth') {
         const logs = (S.get('growthLogs', {})[date]) || [];
@@ -440,8 +445,12 @@ const Daily = {
     opts.push('</optgroup>');
     const ga = S.get('growthAreas', []);
     opts.push('<optgroup label="成长·领域">');
-    ga.forEach(a => opts.push(`<option value="growth:${esc(a)}" ${sel === 'growth:' + a ? 'selected' : ''}>${esc(a)}</option>`));
+    ga.forEach(a => { if (a === '阅读') return; opts.push(`<option value="growth:${esc(a)}" ${sel === 'growth:' + a ? 'selected' : ''}>${esc(a)}</option>`); });
     if (!ga.includes('英语')) opts.push(`<option value="growth:english"${sel === 'growth:english' ? ' selected' : ''}>英语（多邻国·技能）</option>`);
+    opts.push('</optgroup>');
+    // 阅读独立成组，便于从每日计划直接关联（阅读有专属页面与续火花）
+    opts.push('<optgroup label="阅读">');
+    opts.push(`<option value="growth:阅读" ${sel === 'growth:阅读' ? 'selected' : ''}>阅读打卡（每天读一点）</option>`);
     opts.push('</optgroup>');
     return opts.join('');
   },
@@ -485,6 +494,15 @@ const Daily = {
         logs[date].push({ id: uid(), type: (extra && extra.type === 'video') ? 'video' : 'article', topic: title, app: appOut, actId, note: '', req: {}, extra: extra || null, time: this._nowHM(), autoGen: true, srcId: srcId || undefined });
         S.set('workLogs', logs);
       } else if (mod === 'growth') {
+        if (sub === '阅读') {
+          // 阅读记录落 readLogs（与阅读页/阅读续火花同源），保证每日计划完成也能续火花
+          const rLogs = S.get('readLogs', {}); rLogs[date] = rLogs[date] || [];
+          if (srcId && rLogs[date].some(l => l.autoGen && l.srcId === srcId)) return;
+          const mins = (extra && extra.minutes != null) ? extra.minutes : 20;
+          rLogs[date].push({ id: uid(), book: title || '阅读打卡', cat: '', minutes: mins, finished: false, time: this._nowHM(), autoGen: true, srcId: srcId || undefined, date: date });
+          S.set('readLogs', rLogs);
+          return;
+        }
         const area = this.growthArea(link) || sub;
         const logs = S.get('growthLogs', {}); logs[date] = logs[date] || [];
         if (logs[date].some(l => l.area === area && l.autoGen)) return;
@@ -542,13 +560,16 @@ const Daily = {
   // 删除每日计划任务时，同步删除其自动写入关联专栏的记录（按 srcId 匹配）
   removeFromColumn(date, link, srcId, colId) {
     if (!link || !srcId) return;
-    const [mod] = link.split(':');
+    const [mod, sub] = link.split(':');
     const kill = (arr) => arr.filter(l => !(l.srcId === srcId || (colId && l.id === colId)));
     try {
       if (mod === 'sport') { const logs = S.get('sportLogs', {}); if (logs[date]) { logs[date] = kill(logs[date]); S.set('sportLogs', logs); } }
       else if (mod === 'kaogong') { const logs = S.get('kgLogs', {}); if (logs[date]) { logs[date] = kill(logs[date]); S.set('kgLogs', logs); } }
       else if (mod === 'work') { const logs = S.get('workLogs', {}); if (logs[date]) { logs[date] = kill(logs[date]); S.set('workLogs', logs); } }
-      else if (mod === 'growth') { const logs = S.get('growthLogs', {}); if (logs[date]) { logs[date] = kill(logs[date]); S.set('growthLogs', logs); } }
+      else if (mod === 'growth') {
+        if (sub === '阅读') { const rLogs = S.get('readLogs', {}); if (rLogs[date]) { rLogs[date] = kill(rLogs[date]); S.set('readLogs', rLogs); } }
+        else { const logs = S.get('growthLogs', {}); if (logs[date]) { logs[date] = kill(logs[date]); S.set('growthLogs', logs); } }
+      }
       else if (mod === 'travel') { const out = S.get('travelOut', {}); if (out[date]) { out[date] = kill(out[date]); S.set('travelOut', out); } }
       else if (mod === 'meals') {
         const slot = { b: 'breakfast', l: 'lunch', d: 'dinner' }[link.split(':')[1]];
@@ -1618,6 +1639,10 @@ const Daily = {
     if (mod === 'kaogong') {
       return `<div class="form-row"><label>科目</label><input id="npKSubj" value="言语"></div>
         <div class="muted" style="margin:-4px 0 12px">学习时长请在上方「预估时长」填写；完成任务时会被问实际学了多久</div>`;
+    }
+    if (mod === 'growth' && sub === '阅读') {
+      return `<div class="form-row"><label>阅读时长（分钟）</label><input id="npGMin" type="number" value="20"></div>
+        <div class="muted" style="margin:-4px 0 12px">上方「要做什么」可填书名；完成后自动记到阅读打卡，连续阅读天数也跟着涨 🔥</div>`;
     }
     if (mod === 'growth') {
       const ga = S.get('growthAreas', []);
