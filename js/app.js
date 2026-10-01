@@ -1,5 +1,5 @@
 /* ============ 首页 + 导航 ============ */
-window.APP_VER = 'mumu-v343'; // 当前前端版本（设置页可见，用于确认是否加载到最新代码）
+window.APP_VER = 'mumu-v345'; // 当前前端版本（设置页可见，用于确认是否加载到最新代码）
 const SR_LINKS = [
   { v: 'sport', n: '运动（任意跟练）' },
   { v: 'sport:', n: '运动（具体项目，选后填名）' },
@@ -590,6 +590,7 @@ const App = {
     if (btnSickLeave) btnSickLeave.onclick = () => { if (window.openSickLeaveDialog) openSickLeaveDialog(root); };
   },
   async init() {
+    try {
     await S.boot();   // 启动先把 IndexedDB 历史数据载入内存（首次自动迁移旧 localStorage 数据），确保后续 reconcile/render 基于最新数据
     if (window.Daily && Daily.fixWorkVideoType) Daily.fixWorkVideoType();
     if (window.Daily && Daily.reconcileReadingPlans) Daily.reconcileReadingPlans();
@@ -649,6 +650,11 @@ const App = {
     this.updateQuote();
     this._bindEdgeBack();
     this.go('home');
+    if (window.__mumuAppReady) window.__mumuAppReady();
+    } catch (e) {
+      console.error('App.init failed', e);
+      if (window.__mumuBootFail) window.__mumuBootFail((e && e.message) || '初始化失败');
+    }
   }
 };
 
