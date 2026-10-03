@@ -723,6 +723,82 @@ const Review = {
     cache.date = today; cache.suggest = suggest; S.set('loadSuggestCache', cache);
     return suggest;
   },
+  /* v346：按月精力推荐（统计·全部页专用）。
+     一月一推荐：同一个自然月内只算一次并缓存（loadSuggestCache.ym），跨月自动重算。
+     样本只用「当前月之前」的完整自然月（往期数据），本月不计入推荐依据。 */
+  monthRecSample() {
+    const days = this._allDays();
+    const plans = S.get('plans', {}) || {};
+    Object.keys(plans).forEach(d => { if (d && days.indexOf(d) < 0) days.push(d); });
+    days.sort();
+    return days;
+  },
+  monthLoadRecHTML() {
+    const curYM = todayStr().slice(0, 7);
+    const cache = S.get('loadSuggestCache', {}) || {};
+    // 一月一推荐：同月内直接复用上次结论，避免一天内随录入乱跳
+    if (cache.ym === curYM && cache.recHtml) return cache.recHtml;
+    if (!window.Daily || !Daily.dayLoadInfo) return '';
+    const cap = Daily.loadCap();
+    const map = {};
+    this.monthRecSample().forEach(d => {
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(d)) return;
+      const ym = d.slice(0, 7);
+      if (ym >= curYM) return;                      // 只取往期（排除本月与未来）
+      const m = map[ym] || (map[ym] = { ym: ym, total: 0, active: 0, planned: 0, done: 0, rechDays: 0, rechTotal: 0, overDays: 0 });
+      m.total++;
+      const info = Daily.dayLoadInfo(d);
+      m.planned += info.plannedLoad; m.done += info.doneLoad;
+      if (info.plannedLoad > 0 || info.doneLoad > 0) m.active++;
+      if (info.recharge > 0) { m.rechDays++; m.rechTotal += info.recharge; }
+      if (info.cap > 0 && info.plannedLoad >= info.cap) m.overDays++;
+    });
+    const yms = Object.keys(map).sort();
+    let stat = null;
+    if (yms.length) {
+      stat = yms.reduce((a, ym) => {
+        const m = map[ym];
+        a.total += m.total; a.active += m.active; a.planned += m.planned; a.done += m.done;
+        a.rechDays += m.rechDays; a.rechTotal += m.rechTotal; a.overDays += m.overDays;
+        return a;
+      }, { total: 0, active: 0, planned: 0, done: 0, rechDays: 0, rechTotal: 0, overDays: 0 });
+    }
+    let to = 6, msg = '', basis = '';
+    if (stat && stat.active > 0) {
+      const avgPlanned = Math.round(stat.planned / stat.active * 10) / 10;
+      const avgDone = Math.round(stat.done / stat.active * 10) / 10;
+      const rate = stat.planned > 0 ? stat.done / stat.planned : 0;
+      if (rate >= 0.85) to = Math.round(Math.max(avgDone * 1.35, avgPlanned * 1.12));
+      else if (rate < 0.6) to = Math.round(avgPlanned * 0.9);
+      else to = Math.round(avgDone * 1.2);
+      to = Math.max(4, Math.min(24, to));
+      const ymShow = yms[0].slice(2).replace('-', '/') + ' ~ ' + yms[yms.length - 1].slice(2).replace('-', '/');
+      basis = '依据：' + yms.length + ' 个完整月（' + ymShow + '）· 有排程 ' + stat.active + ' 天 · 日均已排 ' + avgPlanned + ' · 日均做到 ' + avgDone + ' · 做到率 ' + Math.round(rate * 100) + '%' + (stat.overDays ? ' · 排满 ' + stat.overDays + ' 天' : '');
+      if (to > cap + 1) msg = '按你过去的节奏（日均排 ' + avgPlanned + '、做到 ' + avgDone + '，基本都能做完），上限 ' + cap + ' 撑不满——试着放到 <b>' + to + '</b>，先排两天看看能不能顺手做完。';
+      else if (to < cap - 1) msg = '过去这些月你日均只排 ' + avgPlanned + '、做到 ' + avgDone + '，' + Math.round(rate * 100) + '% 的精力常没消耗掉。上限 ' + cap + ' 定高了，建议调到 <b>' + to + '</b>，先攒点成就感。';
+      else msg = '按你过去的节奏算，' + cap + ' 这个值刚好够用，先这么排；要是连续两天都排不满，再往上加一档。';
+      if (stat.rechDays) msg += '（期间你有 ' + stat.rechDays + ' 天充过电，共 ' + stat.rechTotal + ' 电）';
+    } else {
+      to = Math.max(4, Math.min(24, cap > 0 ? cap : 6));
+      msg = '还没有往期的完整月份可以参考——这个月先按 <b>6</b> 试几天，下个月起 ' + MUMU_ASSISTANT() + ' 就会按你的真实节奏给推荐值了。';
+      basis = '依据：暂无往期完整月份（只有本月记录），推荐值先取保守起步 6。';
+      to = 6;
+    }
+    const head = '<div class="card" style="margin-top:12px"><h3>' + icon('sun', 16) + ' 精力推荐 · ' + Number(curYM.slice(5)) + ' 月</h3>'
+      + '<div class="load-summary">'
+      + '<div style="text-align:center"><div class="stat-num">' + to + '</div><div class="stat-lab">建议上限</div></div>'
+      + '<div style="text-align:center"><div class="stat-num">' + cap + '</div><div class="stat-lab">当前上限</div></div>'
+      + '<div style="text-align:center"><div class="stat-num">' + (stat && stat.planned > 0 ? Math.round(stat.done / stat.planned * 100) : 0) + '%</div><div class="stat-lab">往期做到</div></div>'
+      + '<div style="text-align:center"><div class="stat-num">' + (stat ? stat.rechTotal : 0) + '</div><div class="stat-lab">累计充电</div></div>'
+      + '</div>'
+      + '<div class="banner info lb-suggest" style="margin-top:8px">'
+      + '<div class="lb-suggest-head"><span class="lb-suggest-ic">' + icon('leaf', 14) + '</span><span class="lb-suggest-title">' + MUMU_ASSISTANT() + '建议</span><span class="lb-suggest-fold">▾</span></div>'
+      + '<div class="lb-suggest-body"><div class="lb-suggest-msg" style="font-size:13px;line-height:1.7">' + msg + '</div>'
+      + '<div class="muted" style="font-size:12px;line-height:1.6;margin-top:6px">' + basis + '</div>'
+      + '<div class="lb-apply-row"><button class="btn sm" id="applyCap" data-cap="' + to + '">应用 ' + to + '</button></div></div></div></div>';
+    cache.ym = curYM; cache.value = to; cache.recHtml = head; S.set('loadSuggestCache', cache);
+    return head;
+  },
 
   // ===== 周总结可视化：每个分类一行 + 7天圆圈 =====
   // ===== 数据看板（v262）：8 个可视化组件集中呈现，本年度口径 =====
@@ -968,7 +1044,8 @@ const Review = {
           <div style="text-align:center"><div class="stat-num" style="font-size:15px">${weakest}</div><div class="stat-lab">待补强</div></div>
           <div style="text-align:center"><div class="stat-num">${days.length}</div><div class="stat-lab">记录天数</div></div>
         </div>
-      </div>`;
+      </div>
+      ${this.monthLoadRecHTML()}`;
     const gf = box.querySelector('[data-genfab]'); if (gf) gf.onclick = () => this.generateReport(gf.dataset.genfab, root);
     const et = box.querySelector('[data-energytoggle]'); if (et) et.onclick = () => { this._energyView = this._energyView === 'rech' ? 'load' : 'rech'; this.render(root); };
     const ro = box.querySelectorAll('[data-rechcat]'); if (ro) ro.forEach(el => el.onclick = () => this.rechCatModal(el.dataset.rechcat, JSON.parse(el.dataset.days)));
