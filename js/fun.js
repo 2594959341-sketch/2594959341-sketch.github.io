@@ -1,15 +1,17 @@
-/* ============ 娱乐档案（影视 / 小说 / 漫画 / 游戏） ============
+/* ============ 娱乐档案（影视 / 小说 / 漫画） ============
    设计原则：在现有枝枝喵上「长」出来的专栏，复用通用卡片/弹窗/图标，不重做界面。
    v191 重构：
    - 娱乐无子分支：侧栏「娱乐」一点开即「全部」页（展示 + 统计 + 近期在看）。
-   - 底部固定导航（不抖）：只有「全部」是房子图标、不显示文字；四类（影视/小说/漫画/游戏）各用专属图标 + 文字。
-   - 分类精简为 4 类：影视（影视剧/综艺/动漫/电影合并）、小说、漫画、游戏；旧类型自动归一。
+   - 底部固定导航（不抖）：只有「全部」是房子图标、不显示文字；三类（影视/小说/漫画）各用专属图标 + 文字。
+   - 分类精简为 3 类：影视（影视剧/综艺/动漫/电影合并）、小说、漫画；旧类型自动归一（「游戏」已下架，历史记录归档保留）。
    - 封面墙变成「全部」页上方的背景式半露斜放封面带，点击下拉进完整斜放封面墙。
    - 统计弱化：去掉「有没有打分」相关统计。
    - 封面日历变成「全部」里的一个日历图标，呈现所有带封面的记录（不限小说）；单独类型页也有日历（时间轴收入其中），点开看当日。
    - 单独类型页无标题：顶部「打卡 · 类型」+ 日历图标；主体只显示当下一周；小红书检测仅小说页。
    - 时间轴/记录均带标签显示。 */
-const FUN_TYPES = ['影视', '小说', '漫画', '游戏'];
+const FUN_TYPES = ['影视', '小说', '漫画'];
+const FUN_TYPES_ARCHIVE = ['游戏'];   // v347：游戏下架，历史记录归档保留（仅供内部归一/去重）
+const FUN_TYPES_ALL = FUN_TYPES.concat(FUN_TYPES_ARCHIVE);
 const FUN_COLORS = { '影视': '#8FB8E0', '小说': '#B8A4D4', '漫画': '#F4A6B8', '游戏': '#4FB0AE' };
 const FUN_ICONS = { '影视': 'film', '小说': 'book', '漫画': 'comic', '游戏': 'game' };
 const FUN_SHOW = ['影视', '漫画']; // 时长可自动推断的类型
@@ -58,9 +60,9 @@ function funColorHash(t) {
   for (let i = 0; i < (t || '').length; i++) h = (h * 31 + (t.charCodeAt(i) || 0)) >>> 0;
   return c[h % c.length];
 }
-// 数量单位：小说用「本」、游戏用「款」、其余用「部」
-function funUnit(t) { return t === '小说' ? '本' : (t === '游戏' ? '款' : '部'); }
-function funVerb(t) { return t === '游戏' ? '玩' : '读'; }
+// 数量单位：小说用「本」、其余用「部」
+function funUnit(t) { return t === '小说' ? '本' : '部'; }
+function funVerb(t) { return '读'; }
 // 环形图（时间占比）
 function svgDonut(segs, size, unit) {
   size = size || 120;
@@ -109,19 +111,19 @@ const Entertainment = {
     return changed;
   },
   // 按 (类型, 标题) 去重，保留「最新」那条（date 升序后取末位；createdAt 兜底）。
-  // 非 影视/小说/漫画/游戏 的记录（如随手记）保持原样不参与去重。
+  // 非 影视/小说/漫画 的记录（如随手记）保持原样不参与去重。
   dedupLatest(recs) {
     const sorted = recs.slice().sort((a, b) => a.date.localeCompare(b.date) || ((a.createdAt || 0) - (b.createdAt || 0)));
     const map = {};
     sorted.forEach(r => {
       const t = funNormType(r.type);
       const k = (t || '') + '|' + (r.title || '');
-      if (!FUN_TYPES.includes(t) || k === '|') { map['_raw_' + uid()] = r; return; }
+      if (!FUN_TYPES_ALL.includes(t) || k === '|') { map['_raw_' + uid()] = r; return; }
       map[k] = r;
     });
     return Object.values(map);
   },
-  // 一次性合并迁移：同名同类型（影视/小说/漫画/游戏）的多条记录合并为单条。
+  // 一次性合并迁移：同名同类型（影视/小说/漫画）的多条记录合并为单条。
   // latest-wins（状态/封面/进度等取最新），分钟数累加（保留总阅读/观看时长，与充电一致）。随手记等其它类型原样保留。
   normalizeMerge() {
     const L = this.logs();
@@ -131,7 +133,7 @@ const Entertainment = {
       (L[d] || []).forEach(r => {
         if (!r) return;
         const t = funNormType(r.type);
-        if (!FUN_TYPES.includes(t)) { (newL[d] = newL[d] || []).push(r); return; }
+        if (!FUN_TYPES_ALL.includes(t)) { (newL[d] = newL[d] || []).push(r); return; }
         const k = t + '|' + (r.title || '');
         if (k === '|') { (newL[d] = newL[d] || []).push(r); return; }
         (groups[k] = groups[k] || []).push({ date: d, rec: r });
@@ -203,7 +205,7 @@ const Entertainment = {
   },
   /* ============ 底部固定导航 ============ */
   navHTML(active) {
-    const items = ['影视', '小说', '全部', '漫画', '游戏'];
+    const items = ['影视', '小说', '全部', '漫画'];
     return `<div class="fun-nav">${items.map(t => {
       if (t === '全部') return `<button class="fun-nav-item fun-nav-home${'全部' === active ? ' on' : ''}" data-type="全部">${icon('home', 20)}</button>`;
       const ic = FUN_ICONS[t];
@@ -403,53 +405,7 @@ const Entertainment = {
       </div>
     </div>`;
   },
-  gameStatsHTML() {
-    const games = this.all().filter(r => r.type === '游戏');
-    if (!games.length) return `<div class="card"><div class="empty">还没有游戏打卡，去右下角 + 记录第一局~</div></div>`;
-    const map = {};
-    games.forEach(g => {
-      const k = (g.title || '未命名');
-      if (!map[k]) map[k] = { title: k, days: new Set(), totalMin: 0, last: '', icon: g.icon || '', rating: 0, playFor: g.playFor || '' };
-      const m = map[k];
-      m.days.add(g.date); m.totalMin += Number(g.minutes) || 0;
-      if (g.date > m.last) m.last = g.date;
-      if (!m.icon && g.icon) m.icon = g.icon;
-      if ((Number(g.rating) || 0) > 0) m.rating = g.rating;
-      if (g.playFor) m.playFor = g.playFor;
-    });
-    const arr = Object.values(map);
-    const playedCount = arr.length;
-    const selfCount = arr.filter(g => g.playFor === '自愿').length;
-    const contentCount = arr.filter(g => g.playFor === '创作').length;
-    const [mon, sun] = this.typeScopeRange();
-    const scopeCount = games.filter(g => g.date >= mon && g.date <= sun).length;
-    const freq = arr.filter(g => g.days.size >= 3).sort((a, b) => b.days.size - a.days.size);
-    const love = arr.slice().sort((a, b) => b.totalMin - a.totalMin).slice(0, 3).filter(g => g.totalMin > 0);
-    // 图标以「上传的游戏图标」为准；没有上传就用纯灰底占位，不再用线条图标
-    const iconHTML = (g) => g.icon ? `<img src="${esc(g.icon)}" class="fun-game-stat-ic" alt="">` : `<div class="fun-game-stat-ic" style="display:flex;align-items:center;justify-content:center;font-weight:700;font-size:16px;background:${funColorHash(g.title)}22;color:${funColorHash(g.title)}">${esc((g.title || '?').slice(0, 1))}</div>`;
-    const playForBadge = (g) => g.playFor ? `<span class="tag" style="background:${g.playFor === '自愿' ? '#E8F3EB' : '#FFF1E0'};color:#555;border:none;font-size:10px;padding:1px 6px;flex-shrink:0;margin-left:4px">${esc(g.playFor)}</span>` : '';
-    const gameRow = (g) => `<div class="fun-game-stat-row">
-        ${iconHTML(g)}
-        <div class="fun-game-stat-mid"><b>${esc(g.title || '未命名')}</b>
-          <div class="muted" style="font-size:11px">${g.rating ? this.starsHTML(g.rating) + ' · ' : ''}${g.days.size} 天打卡 · ${(g.totalMin / 60).toFixed(1)}h</div>
-        </div>
-        ${playForBadge(g)}
-      </div>`;
-    return `<div class="fun-stats-wrap">
-      <div class="card"><h3>游戏统计</h3>
-        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:4px;text-align:center">
-          <div><div class="stat-num">${playedCount}</div><div class="stat-lab">玩过(款)</div></div>
-          <div><div class="stat-num">${selfCount}</div><div class="stat-lab">自愿</div></div>
-          <div><div class="stat-num">${contentCount}</div><div class="stat-lab">创作</div></div>
-          <div><div class="stat-num">${scopeCount}</div><div class="stat-lab">${this.typeScopeLab()}打卡</div></div>
-        </div>
-      </div>
-      ${freq.length ? `<div class="card"><h3>常玩</h3>${freq.map(gameRow).join('')}</div>` : ''}
-      ${love.length ? `<div class="card"><h3>爱玩</h3>${love.map(gameRow).join('')}</div>` : ''}
-    </div>`;
-  },
   recentWatchingHTML(recs) {
-    // 游戏不像小说能「看完」，设定只呈现最近一周内的记录，避免一直挂在这
     const cut = (() => { const d = new Date(todayStr() + 'T00:00:00'); d.setDate(d.getDate() - 7); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); })();
     // 每个作品取「最新一条」记录判定状态：最新状态为已看完/已读完的，不再出现在「近期在看/在玩」
     const DONE = new Set(['看完', '已读完']);
@@ -457,7 +413,6 @@ const Entertainment = {
     recs.forEach(r => { const k = r.type + '|' + (r.title || ''); if (!latest[k] || r.date > latest[k].date) latest[k] = r; });
     const ws = Object.values(latest).filter(r => {
       if (this.isDouyinRec(r)) return false;   // 刷抖音不进「近期在看/在玩」
-      if (r.type === '游戏') return r.date >= cut;
       return !DONE.has(r.status);   // 最新记录未标记看完 → 视为在追
     }).sort((a, b) => b.date.localeCompare(a.date));
     if (ws.length > 5) ws.length = 5;
@@ -710,7 +665,7 @@ const Entertainment = {
     </div>`;
     this.bindType(root);
   },
-  /* ============ 类型页：小说→新设计；其他（影视/漫画/游戏）→恢复 v234 之前的"统计+周时间轴" ============ */
+  /* ============ 类型页：小说→新设计；其他（影视/漫画）→恢复 v234 之前的"统计+周时间轴" ============ */
   renderType(root) {
     this._root = root;
     const t = this.activeType;
@@ -723,19 +678,6 @@ const Entertainment = {
     const wkMin = es.reduce((s, r) => s + (Number(r.minutes) || 0), 0);
     const wkFin = es.filter(r => r.status === '看完').length;
     const scopeLab = this.typeScopeLab();
-    const isGame = t === '游戏';
-    const dateHead = `<div class="fun-date-head">
-        <button class="fun-wk-arrow" data-wkprev ${off <= -104 ? 'disabled' : ''}>‹</button>
-        <span class="fun-week-range">${this.typeScopeLabel()}</span>
-        <button class="fun-wk-arrow" data-wknext ${off >= 0 ? 'disabled' : ''}>›</button>
-        <button class="icon-btn" data-tl="1" title="年时间轴">${icon('calendar', 20)}</button>
-      </div>`;
-    if (isGame) {
-      const body = `${this.gameStatsHTML()}${dateHead}${this.weekHTML(t, off)}${this.fabHTML()}`;
-      root.innerHTML = `<div class="fun-archive">${body}${this.navHTML(t)}</div>`;
-      this.bindType(root);
-      return;
-    }
     const statCells = [
       `<div><b>${wkCount}</b><span>${scopeLab}记录</span></div>`,
       `<div><b>${Math.round(wkMin / 60 * 10) / 10}h</b><span>时长</span></div>`,
@@ -839,9 +781,9 @@ const Entertainment = {
     const timeTxt = this.fmtMin(l.minutes);
     const showStars = (Number(l.rating) || 0) > 0;
     const starHTML = showStars ? `<span class="rd-stars">${this.starsHTML(l.rating)}</span>` : '';
-    const thumb = (l.type === '游戏')
-      ? (l.icon ? `<img data-dtcover="${l.id}" src="${esc(l.icon)}" style="width:30px;height:42px;object-fit:cover;border-radius:5px;flex-shrink:0">` : `<div data-dtcover="${l.id}" class="fun-game-ic" style="width:30px;height:42px;background:${funColorHash(l.title)}22;color:${funColorHash(l.title)};font-weight:700;font-size:14px">${esc((l.title || '?').slice(0, 1))}</div>`)
-      : (l.cover ? `<img data-dtcover="${l.id}" src="${esc(l.cover)}" style="width:30px;height:42px;object-fit:cover;border-radius:5px;flex-shrink:0">` : `<div data-dtcover="${l.id}" class="fun-game-ic" style="width:30px;height:42px"></div>`);
+    const thumb = (l.icon || l.cover)
+      ? `<img data-dtcover="${l.id}" src="${esc(l.icon || l.cover)}" style="width:30px;height:42px;object-fit:cover;border-radius:5px;flex-shrink:0">`
+      : `<div data-dtcover="${l.id}" class="fun-game-ic" style="width:30px;height:42px"></div>`;
     // 第二行 = 评星 + 解释词（状态 · 日期 · 时长 · 进度），解释词小且淡
     const cap = [];
     if (isFinished) cap.push(isNovel ? '已读完' : '已看完');
@@ -863,15 +805,14 @@ const Entertainment = {
     const tags = entry.tags || [];
     openModal(`<button class="close-x" onclick="closeModal()">×</button>
       <div style="display:flex;gap:12px;align-items:flex-start">
-        ${(entry.type === '游戏' && entry.icon) ? `<img src="${esc(entry.icon)}" style="width:64px;height:90px;object-fit:cover;border-radius:8px;flex-shrink:0">` : (entry.type === '游戏' || !entry.cover) ? `<div class="fun-game-ic" style="width:64px;height:90px;border-radius:8px;background:${funColorHash(entry.title)}22;color:${funColorHash(entry.title)};font-weight:700;font-size:30px">${esc((entry.title || '?').slice(0, 1))}</div>` : `<img src="${esc(entry.cover)}" style="width:64px;height:90px;object-fit:cover;border-radius:8px;flex-shrink:0">`}
+        ${(entry.icon || entry.cover) ? `<img src="${esc(entry.icon || entry.cover)}" style="width:64px;height:90px;object-fit:cover;border-radius:8px;flex-shrink:0">` : `<div class="fun-game-ic" style="width:64px;height:90px;border-radius:8px;background:${funColorHash(entry.title)}22;color:${funColorHash(entry.title)};font-weight:700;font-size:30px">${esc((entry.title || '?').slice(0, 1))}</div>`}
         <div style="flex:1;min-width:0"><h3 style="margin:0">${esc(entry.title || '未命名')}</h3>
           <div style="display:flex;gap:6px;align-items:center;margin-top:6px;flex-wrap:wrap">
             <span class="tag" style="background:${this.typeColor(entry.type)};color:#fff;border:none;font-size:11px;padding:1px 8px">${esc(entry.type)}</span>
             ${tags.map(t => `<span class="tag" style="${FUN_TAG_HIDDEN.includes(t) && FUN_TAG_COLOR[t] ? 'background:' + FUN_TAG_COLOR[t] + ';color:#fff' : 'background:#eee;color:#444'};border:none;font-size:11px;padding:1px 7px">${esc(t)}</span>`).join('')}
           </div>
           <div class="muted" style="margin-top:6px;font-size:12px">${statusTxt} · ${entry.date}</div>
-          ${entry.type !== '游戏' && entry.rating ? `<div style="margin-top:4px;font-size:14px">${this.starsHTML(entry.rating)}</div>` : ''}
-          ${entry.type === '游戏' && entry.rating ? `<div style="margin-top:4px;font-size:14px">${this.starsHTML(entry.rating)}</div>` : ''}
+          ${entry.rating ? `<div style="margin-top:4px;font-size:14px">${this.starsHTML(entry.rating)}</div>` : ''}
           ${entry.minutes ? `<div class="muted" style="font-size:12px;margin-top:2px">耗时约 ${Math.round(entry.minutes / 60 * 10) / 10} 小时</div>` : ''}
         </div>
       </div>
@@ -1094,9 +1035,9 @@ const Entertainment = {
       return `<div class="fun-trail-item"><div class="fun-trail-dot" style="background:${this.typeColor(type)}"></div><div class="fun-trail-mid"><span class="fun-trail-date">${r.date.slice(5)}</span>${minTxt}${pr}${st}</div></div>`;
     }).join('');
 
-    const thumb = (type === '游戏')
-      ? (entry.icon ? `<img src="${esc(entry.icon)}" class="fun-dt-cover" alt="">` : `<div class="fun-dt-cover fun-dt-cover-ph" style="background:${funColorHash(entry.title)}22;color:${funColorHash(entry.title)}">${esc((entry.title || '?').slice(0, 1))}</div>`)
-      : (entry.cover ? `<img src="${esc(entry.cover)}" class="fun-dt-cover" alt="">` : `<div class="fun-dt-cover fun-dt-cover-ph"></div>`);
+    const thumb = (entry.icon || entry.cover)
+      ? `<img src="${esc(entry.icon || entry.cover)}" class="fun-dt-cover" alt="">`
+      : `<div class="fun-dt-cover fun-dt-cover-ph"></div>`;
 
     const statusTxt = entry.status || (isBook ? '在看' : '在玩');
     const isFinished = entry.status === '看完' || entry.status === '已读完';
@@ -1309,7 +1250,7 @@ const Entertainment = {
           </div>
           ${(r.tags && r.tags.length) ? `<div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:4px">${r.tags.map(t => `<span class="tag" style="background:#eee;color:#444;border:none;font-size:10px;padding:1px 6px">${esc(t)}</span>`).join('')}</div>` : ''}
         </div></div>`).join('');
-    const _u = es.every(r => r.type === '小说') ? '本' : (es.every(r => r.type === '游戏') ? '款' : '部');
+    const _u = es.every(r => r.type === '小说') ? '本' : '部';
     openModal(`<button class="close-x" onclick="closeModal()">×</button><h3>${date}${es.length > 1 ? ' · 共 ' + es.length + ' ' + _u : ''}</h3><div>${rows}</div>`);
     document.querySelectorAll('#ov [data-dayrec]').forEach(el => el.onclick = () => { const e = this._findEntry(el.dataset.dayrec); if (e) this.recordDetail(e); });
   },
@@ -1356,48 +1297,39 @@ const Entertainment = {
     if (ref) { const o = JSON.parse(decodeURIComponent(ref)); const arr = (this.logs()[o.date] || []); r = Object.assign(r, arr.find(x => x.id === o.id) || {}); r.type = funNormType(r.type); }
     else if (seed) { r = Object.assign(r, seed); r.type = funNormType(r.type || presetType || '影视'); r.date = todayStr(); r.id = uid(); r.createdAt = Date.now(); }
     const origTitle = r.title;  // 编辑已保存作品改名字时，用来把该作品全部历史记录一并改名
-    const isGame = () => r.type === '游戏';
     const isNovel = () => r.type === '小说';
     const tagsStr = (r.tags || []).join(' ');
     // 半星点击评分：点左半=半星，点右半=全星，再点同位=清零
     const starRateBox = (id, cur) => `<div id="${id}" class="star-rate" data-rate="${cur}">${[1, 2, 3, 4, 5].map(n => `<span data-rstar="${n}" style="position:relative;display:inline-block;width:1em;margin:0 -0.05em;color:#e0e0e0;font-size:20px;cursor:pointer;line-height:1">★<span style="position:absolute;left:0;top:0;overflow:hidden;white-space:nowrap;color:#F5C518;width:${cur >= n ? 100 : (cur >= n - 0.5 ? 50 : 0)}%">★</span></span>`).join('')}</div>`;
-    const coverBlock = isGame() ? ''
-      : `<div class="form-row"><label>封面图（链接或上传）</label><div style="display:flex;gap:6px"><input id="fCover" value="${esc(r.cover)}" placeholder="https://…" style="flex:1"><button class="btn sm ghost" id="fUp">上传</button></div><input id="fFile" type="file" accept="image/*" style="display:none"></div>
+    const coverBlock = `<div class="form-row"><label>封面图（链接或上传）</label><div style="display:flex;gap:6px"><input id="fCover" value="${esc(r.cover)}" placeholder="https://…" style="flex:1"><button class="btn sm ghost" id="fUp">上传</button></div><input id="fFile" type="file" accept="image/*" style="display:none"></div>
       <div id="fCoverPrev" style="margin:6px 0">${r.cover ? `<img src="${esc(r.cover)}" style="max-height:90px;border-radius:8px">` : ''}</div>`;
-    const totalBlock = isGame() ? '' : `<div style="display:flex;gap:8px">
+    const totalBlock = `<div style="display:flex;gap:8px">
         <div class="form-row" style="flex:1"><label>总量（集/话/季）</label><input id="fTotal" value="${esc(r.total)}"></div>
         <div class="form-row" style="flex:1"><label>进度（看到哪）</label><input id="fProg" value="${esc(r.progress)}"></div>
       </div>`;
-    const gameBlock = isGame() ? `<div id="fGameFields">
-        <div class="form-row"><label>游戏图标（方图）</label><div style="display:flex;gap:6px"><input id="fIcon" value="${esc(r.icon || '')}" placeholder="上传方图"><button class="btn sm ghost" id="fIconUp">上传</button></div><input id="fIconFile" type="file" accept="image/*" style="display:none"></div>
-        <div id="fIconPrev" style="margin:6px 0">${r.icon ? `<img src="${esc(r.icon)}" style="max-height:64px;border-radius:8px">` : ''}</div>
-        <div class="form-row"><label>游玩目的</label><select id="fPlayFor"><option value="自愿" ${r.playFor === '创作' ? '' : 'selected'}>自愿玩</option><option value="创作" ${r.playFor === '创作' ? 'selected' : ''}>为了创作/赚钱玩</option></select></div>
-        <div class="form-row"><label>给游戏评星（可随时改）</label>${starRateBox('fGameRateBox', r.rating || 0)}</div>
-        <div class="form-row"><label>本次玩了多久(分钟)</label><input id="fMin" type="number" value="${r.minutes || ''}"></div>
-      </div>` : '';
     const typed = presetType && FUN_TYPES.includes(presetType);
     const titleTxt = ref ? '编辑' : (typed ? '记录' + r.type : '打卡娱乐记录');
-    const typeSelHTML = `<div class="form-row"${typed ? ' style="display:none"' : ''}><label>类型</label><select id="fType">${FUN_TYPES.map(t => `<option ${t === r.type ? 'selected' : ''}>${t}</option>`).join('')}</select></div>`;
-    const totalWrapHTML = isGame() ? '' : `<div id="fTotalWrap">
+    const archOpts = FUN_TYPES_ARCHIVE.filter(x => x === r.type).map(t => `<option selected>${t}</option>`).join('');
+    const typeSelHTML = `<div class="form-row"${typed ? ' style="display:none"' : ''}><label>类型</label><select id="fType">${FUN_TYPES.map(t => `<option ${t === r.type ? 'selected' : ''}>${t}</option>`).join('')}${archOpts}</select></div>`;
+    const totalWrapHTML = `<div id="fTotalWrap">
         <div class="form-row"><label>总量（集/话/章）</label><input id="fTotal" value="${esc(r.total)}"></div>
         <div id="fProgWrap" style="${r.status === '看完' ? 'display:none' : ''}"><div class="form-row"><label>进度（看到哪）</label><input id="fProg" value="${esc(r.progress)}"></div></div>
       </div>`;
     const mediaTimeBlock = ['小说', '影视', '漫画'].includes(r.type) ? `<div class="form-row" id="fMediaTimeWrap"><label>${r.type === '小说' ? '本次读了多久（分钟）' : '本次看了多久（分钟）'}</label><input id="fMediaMin" type="number" value="${ref ? '' : (r.minutes || '')}" placeholder="如 40"></div>` : '';
     openModal(`<button class="close-x" onclick="closeModal()">×</button><h3>${icon('play', 18)} ${titleTxt}</h3>
       ${typeSelHTML}
-      <div class="form-row"><label>标题</label><input id="fTitle" value="${esc(r.title)}" placeholder="剧名 / 书名 / 游戏名"></div>
+      <div class="form-row"><label>标题</label><input id="fTitle" value="${esc(r.title)}" placeholder="剧名 / 书名 / 番名"></div>
       ${coverBlock}
-      ${isGame() ? '' : `<div class="form-row"><label>状态</label><select id="fStatus">${['想看', '在看', '看完'].map(s => `<option ${s === r.status ? 'selected' : ''}>${s}</option>`).join('')}</select></div>`}
+      <div class="form-row"><label>状态</label><select id="fStatus">${['想看', '在看', '看完'].map(s => `<option ${s === r.status ? 'selected' : ''}>${s}</option>`).join('')}</select></div>
       ${totalWrapHTML}
       <div class="form-row"><label>标签（空格分隔，如 治愈 悬疑 下饭）</label><input id="fTags" value="${esc(tagsStr)}" placeholder="治愈 悬疑"></div>
       <div id="fCatWrap" style="${r.type === '影视' ? '' : 'display:none'}"><div class="form-row"><label>分类（影视）</label><select id="fCat">${['电视剧', '电影', '综艺', '短剧', 'AI漫剧', '动漫', '纪录片', '其他'].map(c => `<option ${c === (r.cat || '') ? 'selected' : ''}>${c}</option>`).join('')}</select></div></div>
       ${mediaTimeBlock}
-      ${gameBlock}
       <div class="form-row"><label>日期</label><input id="fDate" type="date" value="${r.date}"></div>
-      ${isGame() ? '' : `<div id="fReviewBox" style="${r.status === '看完' ? '' : 'display:none'}">
+      <div id="fReviewBox" style="${r.status === '看完' ? '' : 'display:none'}">
         <div class="form-row"><label>看完打分</label>${starRateBox('fRateBox', r.rating || 0)}<input id="fRating" type="hidden" value="${r.rating || 0}"></div>
         <div class="form-row"><label>观后感</label><textarea id="fReview" rows="3" placeholder="写点感受吧~">${esc(r.review || '')}</textarea></div>
-      </div>`}
+      </div>}
       <div style="display:flex;gap:8px;margin-top:10px;justify-content:flex-end">
         <button class="btn ghost" onclick="closeModal()">取消</button>
         <button class="btn" id="fSave">保存</button>
@@ -1406,8 +1338,7 @@ const Entertainment = {
     typeSel.onchange = () => {
       r.type = typeSel.value;
       const cw = document.getElementById('fCatWrap'); if (cw) cw.style.display = (r.type === '影视') ? '' : 'none';
-      const gf = document.getElementById('fGameFields'); if (gf) gf.style.display = isGame() ? '' : 'none';
-      const needMedia = ['小说', '影视', '漫画'].includes(r.type);
+        const needMedia = ['小说', '影视', '漫画'].includes(r.type);
       let mtb = document.getElementById('fMediaTimeWrap');
       if (needMedia && !mtb) { const tagsRow = document.getElementById('fTags').closest('.form-row'); const div = document.createElement('div'); div.className = 'form-row'; div.id = 'fMediaTimeWrap'; div.innerHTML = '<label>' + (r.type === '小说' ? '本次读了多久（分钟）' : '本次看了多久（分钟）') + '</label><input id="fMediaMin" type="number" placeholder="如 40">'; if (tagsRow) tagsRow.after(div); }
       else if (mtb) { mtb.style.display = needMedia ? '' : 'none'; }
@@ -1420,12 +1351,6 @@ const Entertainment = {
       const cover = document.getElementById('fCover'), prev = document.getElementById('fCoverPrev'), file = document.getElementById('fFile');
       fUp.onclick = () => file.click();
       file.onchange = () => { const f = file.files[0]; if (!f) return; const fr = new FileReader(); fr.onload = () => { const raw = fr.result; if (typeof shrinkImage === 'function') { shrinkImage(raw, 1000, 0.82).then(small => { const v = small || raw; cover.value = v; prev.innerHTML = `<img src="${v}" style="max-height:90px;border-radius:8px">`; }).catch(() => { cover.value = raw; prev.innerHTML = `<img src="${raw}" style="max-height:90px;border-radius:8px">`; }); } else { cover.value = raw; prev.innerHTML = `<img src="${raw}" style="max-height:90px;border-radius:8px">`; } }; fr.readAsDataURL(f); };
-    }
-    const fIconUp = document.getElementById('fIconUp');
-    if (fIconUp) {
-      const iconIn = document.getElementById('fIcon'), iconPrev = document.getElementById('fIconPrev'), iconFile = document.getElementById('fIconFile');
-      fIconUp.onclick = () => iconFile.click();
-      iconFile.onchange = () => { const f = iconFile.files[0]; if (!f) return; const fr = new FileReader(); fr.onload = () => { const raw = fr.result; if (typeof shrinkImage === 'function') { shrinkImage(raw, 600, 0.82).then(small => { const v = small || raw; iconIn.value = v; iconPrev.innerHTML = `<img src="${v}" style="max-height:64px;border-radius:8px">`; }).catch(() => { iconIn.value = raw; iconPrev.innerHTML = `<img src="${raw}" style="max-height:64px;border-radius:8px">`; }); } else { iconIn.value = raw; iconPrev.innerHTML = `<img src="${raw}" style="max-height:64px;border-radius:8px">`; } }; fr.readAsDataURL(f); };
     }
     // 半星评分通用绑定：点左半=半星、点右半=全星、再点同位=清零；和阅读打分同一套逻辑
     const renderStars = (box, v) => {
@@ -1458,7 +1383,6 @@ const Entertainment = {
       renderStars(box, Number(box.dataset.rate) || 0);
     };
     bindStarRate('fRateBox', 'fRating', null);
-    bindStarRate('fGameRateBox', null, null);
 
     // 同名记录记忆：写名字即带出上一次的基础信息（封面/图标/评分等），只填空字段，方便只改想改的
     const applyMemory = () => {
@@ -1469,16 +1393,7 @@ const Entertainment = {
         .filter(x => funNormType(x.type) === type && (x.title || '') === title)
         .sort((a, b) => b.date.localeCompare(a.date))[0];
       if (!mem) return;
-      if (type === '游戏') {
-        const fi = document.getElementById('fIcon');
-        if (fi && !fi.value.trim() && mem.icon) {
-          fi.value = mem.icon;
-          const fp = document.getElementById('fIconPrev'); if (fp) fp.innerHTML = `<img src="${esc(mem.icon)}" style="max-height:64px;border-radius:8px">`;
-        }
-        const gbox = document.getElementById('fGameRateBox');
-        if (gbox && !(Number(gbox.dataset.rate) || 0) && (Number(mem.rating) || 0) > 0) renderStars(gbox, mem.rating);
-        const pf = document.getElementById('fPlayFor'); if (pf && !pf.value) pf.value = mem.playFor || '自愿';
-      } else {
+      {
         const fc = document.getElementById('fCover');
         if (fc && !fc.value.trim() && mem.cover) {
           fc.value = mem.cover;
@@ -1498,16 +1413,16 @@ const Entertainment = {
       const type = typeSel.value;
       const newTitle = document.getElementById('fTitle').value.trim();
       // 分钟框为空（编辑媒体作品时被刻意清空，见 1385 行）→ 沿用原时长，避免「空=0」被误判为进度编辑而额外建记录（v277 修复）
-      const _rawMin = isGame() ? document.getElementById('fMin').value : document.getElementById('fMediaMin')?.value;
+      const _rawMin = document.getElementById('fMediaMin')?.value;
       const minutes = (_rawMin === '' || _rawMin == null) ? (Number(r.minutes) || 0) : (Number(_rawMin) || 0);
       const tags = (document.getElementById('fTags').value.trim().split(/\s+/).filter(Boolean));
       const coverVal = document.getElementById('fCover') ? document.getElementById('fCover').value.trim() : '';
-      const fStatus = isGame() ? '' : (document.getElementById('fStatus') ? document.getElementById('fStatus').value : '');
+      const fStatus = document.getElementById('fStatus') ? document.getElementById('fStatus').value : '';
       const fProgRaw = document.getElementById('fProg') ? document.getElementById('fProg').value.trim() : '';
       const fTotalRaw = document.getElementById('fTotal') ? document.getElementById('fTotal').value.trim() : '';
       // 选「看完」必须填总量（章/集/话），否则详情页无法显示「全书 X 章 · 已看完」
       if (fStatus === '看完' && !fTotalRaw) { toast('已看完需要填写总量（章/集/话）'); return; }
-      // 小说/影视/漫画：编辑=在历史基础上「新增一条本次记录」（累积轨迹，旧记录保留）；游戏：保持就地覆盖旧记录。
+      // 小说/影视/漫画：编辑=在历史基础上「新增一条本次记录」（累积轨迹，旧记录保留）；其它类型（含归档的游戏）保持就地覆盖旧记录。
       const isBook = ['小说', '影视', '漫画'].includes(r.type);
       // 仅「进度类」字段（状态/进度/总量/时长）的编辑才追加为一条新轨迹/打卡记录；
       // 其余元数据编辑（改名/标签/封面/感想/改日期等）原地更新现有记录，不计入打卡次数，避免轨迹与次数错位。
@@ -1518,8 +1433,8 @@ const Entertainment = {
         id: appendRec ? uid() : (r.id || uid()), type, title: newTitle,
         cover: coverVal, total: document.getElementById('fTotal') ? document.getElementById('fTotal').value.trim() : '',
         progress: fStatus === '看完' ? '' : fProgRaw,         status: fStatus,
-        rating: isGame() ? (Number((document.getElementById('fGameRateBox') || {}).dataset?.rate) || 0) : (Number(document.getElementById('fRating')?.value) || 0), review: isGame() ? '' : (document.getElementById('fReview') ? document.getElementById('fReview').value.trim() : ''),
-        minutes, imgs: [], playFor: isGame() ? (document.getElementById('fPlayFor')?.value || '自愿') : '', icon: isGame() ? (document.getElementById('fIcon')?.value.trim() || '') : '',
+        rating: Number(document.getElementById('fRating')?.value) || 0, review: document.getElementById('fReview') ? document.getElementById('fReview').value.trim() : '',
+        minutes, imgs: [], playFor: r.type === '游戏' ? (r.playFor || '') : '', icon: r.type === '游戏' ? (r.icon || '') : '',  // 归档游戏记录：编辑时保住原「游玩目的/图标」不丢
         cat: r.type === '影视' ? (document.getElementById('fCat') ? document.getElementById('fCat').value : '') : '',
         tags,
         createdAt: appendRec ? Date.now() : (r.createdAt || Date.now())
