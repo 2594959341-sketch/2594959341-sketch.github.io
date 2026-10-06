@@ -155,7 +155,7 @@ const Freq = {
       { k: 'travel', label: '出行', sub: false, tip: '当天有外出记录即自动计次' },
       {
         k: 'fun', label: '娱乐', sub: 'select', subLabel: '娱乐类型', tip: '记录对应类型的娱乐即自动计次',
-        options: [['', '任意'], ['小说', '小说'], ['影视', '影视'], ['漫画', '漫画'], ['游戏', '游戏']]
+        options: [['', '任意'], ['小说', '小说'], ['影视', '影视'], ['漫画', '漫画']]
       },
       {
         k: 'meals', label: '三餐', sub: 'select', subLabel: '餐次', tip: '打卡对应餐次即自动计次',
