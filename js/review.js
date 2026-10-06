@@ -844,7 +844,6 @@ const Review = {
       const novelN = funWorks('小说'); if (novelN) add('novel', '小说', 'novel', di, novelN, '本');
       const movieN = funWorks('影视'); if (movieN) add('movie', '影视', 'movie', di, movieN, '部');
       const comicN = funWorks('漫画'); if (comicN) add('comic', '漫画', 'comic', di, comicN, '部');
-      const gameN = funWorks('游戏'); if (gameN) add('fun', '游戏', 'fun', di, gameN, '款');
     });
     return rows;
   },
@@ -892,7 +891,7 @@ const Review = {
   },
   // 项目 → 稳定颜色（小说固定为蓝色，符合用户指定）
   _projColor(pr, key) {
-    const FIX = { '小说': '#8FB8E0', '影视': '#F4A6B8', '漫画': '#F2A65A', '游戏': '#E08BA0', '创作': '#F6AFC4', '阅读': '#C2A8E0', '成长': '#C2A8E0' };
+    const FIX = { '小说': '#8FB8E0', '影视': '#F4A6B8', '漫画': '#F2A65A', '创作': '#F6AFC4', '阅读': '#C2A8E0', '成长': '#C2A8E0' };
     if (FIX[pr]) return FIX[pr];
     const PAL = ['#8FB8E0', '#7CB390', '#F6C56E', '#F4A6B8', '#B8A4D4', '#4FB0AE', '#F2A65A', '#9BD0C9', '#C58AB0', '#A8B5C4'];
     let h = 0; for (let i = 0; i < pr.length; i++) h = (h * 31 + pr.charCodeAt(i)) >>> 0;
@@ -1351,13 +1350,13 @@ const Review = {
     const mealRate = mealTotal ? Math.round(mealOn / mealTotal * 100) : 0;
 
     // 娱乐概览（按作品去重）
-    const funCount = { 小说: 0, 影视: 0, 漫画: 0, 游戏: 0 };
+    const funCount = { 小说: 0, 影视: 0, 漫画: 0 };
     days.forEach(d => {
-      const seen = { 小说: new Set(), 影视: new Set(), 漫画: new Set(), 游戏: new Set() };
+      const seen = { 小说: new Set(), 影视: new Set(), 漫画: new Set() };
       (funLogsAll[d] || []).forEach(r => { const t = (window.Entertainment && window.Entertainment.funNormType) ? window.Entertainment.funNormType(r.type) : r.type; if (seen[t]) { const k = (r.title || '').trim(); if (k) seen[t].add(k); } });
       Object.keys(seen).forEach(k => funCount[k] += seen[k].size);
     });
-    const funSegs = ['小说', '影视', '漫画', '游戏'].filter(k => funCount[k] > 0).map(k => ({ label: k, value: funCount[k], color: { 小说: '#C58AB0', 影视: '#F4A6B8', 漫画: '#F2A65A', 游戏: '#E08BA0' }[k] }));
+    const funSegs = ['小说', '影视', '漫画'].filter(k => funCount[k] > 0).map(k => ({ label: k, value: funCount[k], color: { 小说: '#C58AB0', 影视: '#F4A6B8', 漫画: '#F2A65A' }[k] }));
     const funTotal = funSegs.reduce((s, x) => s + x.value, 0);
 
     const hwN = scope === 'week' ? 14 : (scope === 'month' ? 18 : 50);
@@ -1458,7 +1457,7 @@ const Review = {
       });
       byDay[d] = cell;
     });
-    const TYPES = [{ k: '小说', c: '#8FB8E0' }, { k: '影视', c: '#F4A6B8' }, { k: '漫画', c: '#F2A65A' }, { k: '游戏', c: '#E08BA0' }];
+    const TYPES = [{ k: '小说', c: '#8FB8E0' }, { k: '影视', c: '#F4A6B8' }, { k: '漫画', c: '#F2A65A' }];
     const present = TYPES.filter(t => days.some(d => byDay[d] && byDay[d][t.k]));
     if (!present.length) return '<div class="card" style="margin-top:12px"><h3>' + icon('film', 16) + ' 娱乐时间曲线</h3><div class="empty">这段时间还没有娱乐记录</div></div>';
     const axis = this._funAxis || 'time';
@@ -1594,7 +1593,7 @@ const Review = {
         const isFun = (window.Growth && window.Growth.readCat) ? window.Growth.readCat(l).key === 'fun' : (l && (l.cat === 'fun' || l.cat === '娱乐'));
         if (!isFun) add('growth:阅读', '阅读', 'growth', di, 1);
       });
-      // 娱乐：小说 / 影视 / 漫画 / 游戏 各占一行，数字 = 当天「作品数」（同一作品去重，一天更新多次也只算 1）
+      // 娱乐：小说 / 影视 / 漫画 各占一行，数字 = 当天「作品数」（同一作品去重，一天更新多次也只算 1）
       // 必须走 normFunType，否则旧类型（动漫/电视剧/漫话）会漏统计
       const funWorks = (t) => {
         const set = new Set();
@@ -1608,10 +1607,9 @@ const Review = {
       const novelN = funWorks('小说'); if (novelN) add('novel', '小说', 'novel', di, novelN, '本');
       const movieN = funWorks('影视'); if (movieN) add('movie', '影视', 'movie', di, movieN, '部');
       const comicN = funWorks('漫画'); if (comicN) add('comic', '漫画', 'comic', di, comicN, '部');
-      const gameN = funWorks('游戏'); if (gameN) add('fun', '游戏', 'fun', di, gameN, '款');
     });
 
-    // 排序：三餐/运动/创作/学习/成长/出行/小说/影视/漫画/游戏；运动·成长·学习内部按子部分展开（阅读置顶）
+    // 排序：三餐/运动/创作/学习/成长/出行/小说/影视/漫画；运动·成长·学习内部按子部分展开（阅读置顶）
     const baseEmoji = { meals: icon('meal', 16), sport: icon('running', 16), work: icon('creation', 16), kaogong: icon('book', 16), growth: icon('sprout', 16), travel: icon('map', 16), novel: icon('reading', 16), movie: icon('film', 16), comic: icon('comic', 16), fun: icon('game', 16) };
     const baseOrder = ['meals', 'sport', 'work', 'kaogong', 'growth', 'travel', 'novel', 'movie', 'comic', 'fun'];
     const ordered = [];
