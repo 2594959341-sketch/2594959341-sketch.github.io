@@ -847,23 +847,75 @@ const Entertainment = {
     this.bindSub(root);
   },
   /* ============ 小说专属封面墙（两排 · 仅小说封面 · 按日期倒序，排序参考娱乐统计封面墙） ============ */
-  /* ============ 媒体封面墙（悬浮标题+返回，封面从顶开始；小说/影视/漫画共用） ============ */
+  /* ============ 媒体书架（影视/小说/漫画共用：一本本竖排，点完结看观后感+详情） ============ */
   renderMediaWall(root) {
     this._root = root;
     const t = this._wallType || this.activeType || '小说';
-    const covers = this.dedupLatest(this.all().filter(r => r.type === t && r.cover)).sort((a, b) => b.date.localeCompare(a.date));
-    const grid = covers.length
-      ? covers.map(r => `<div class="nwall-cell" data-dtcover="${r.id}"><img class="nwall-img" src="${esc(r.cover)}" alt=""><div class="nwall-cap">${esc(r.title || '未命名')}</div></div>`).join('')
-      : '<div class="empty">还没有' + esc(t) + '封面，去记一本带封面的吧~</div>';
+    const books = this.dedupLatest(this.all().filter(r => r.type === t)).sort((a, b) => b.date.localeCompare(a.date));
+    const shelf = books.length
+      ? `<div class="fun-shelf">` + books.map(r => {
+          const finished = r.status === '看完' || r.status === '已读完';
+          const cover = r.cover ? `<img class="fs-book-cover" src="${esc(r.cover)}" alt="">` : `<div class="fs-book-cover fs-book-ph">${esc((r.title || '未命名').slice(0, 1))}</div>`;
+          const stars = (finished && r.rating) ? `<span class="fs-book-stars">${this.starsHTML(r.rating)}</span>` : '';
+          const badge = finished ? `<span class="fs-book-done">已看完</span>` : '';
+          const statusLab = finished ? '已看完' : (r.status || '在看');
+          return `<div class="fs-book" data-fnshelf="${r.id}">
+            ${cover}
+            <div class="fs-book-info">
+              <div class="fs-book-title">《${esc(r.title || '未命名')}》${badge}</div>
+              <div class="fs-book-meta">${esc(statusLab)}${stars}</div>
+            </div>
+            <div class="fs-book-arrow">${icon('chevronRight', 18)}</div>
+          </div>`;
+        }).join('') + `</div>`
+      : '<div class="empty">还没有' + esc(t) + '记录，去记一本吧~</div>';
     root.innerHTML = `<div class="fun-sub nwall-page">
       <div class="nwall-overlay">
-        <span class="nwall-title">${esc(t)}封面墙</span>
+        <span class="nwall-title">${esc(t)}书架</span>
         <button class="icon-btn fun-back nwall-back" data-back="1" title="返回">${icon('chevronLeft', 20)}</button>
       </div>
-      <div class="nwall-grid">${grid}</div>
+      <div class="fun-shelf-wrap">${shelf}</div>
       ${this.navHTML(t)}
     </div>`;
     this.bindSub(root);
+    this.bindShelf(root);
+  },
+  /* 书架行交互：点完结->看观后感+详情；点未完结->进详情；长按->操作菜单 */
+  bindShelf(root) {
+    root.querySelectorAll('[data-fnshelf]').forEach(el => {
+      const entry = this._findEntry(el.dataset.fnshelf);
+      if (!entry) return;
+      const finished = entry.status === '看完' || entry.status === '已读完';
+      el.onclick = (e) => {
+        if (el._lpFired) { el._lpFired = false; return; }
+        if (finished) this.showFinishedSheet(entry); else this.openDetail(entry.id);
+      };
+      let lp = null;
+      const start = () => { el._lpFired = false; if (lp) clearTimeout(lp); lp = setTimeout(() => { el._lpFired = true; this.entryActionSheet(entry); }, 550); };
+      const cancel = () => { if (lp) { clearTimeout(lp); lp = null; } };
+      el.addEventListener('touchstart', start, { passive: true });
+      el.addEventListener('touchend', cancel);
+      el.addEventListener('touchmove', cancel);
+      el.addEventListener('mousedown', start);
+      el.addEventListener('mouseup', cancel);
+      el.addEventListener('mouseleave', cancel);
+    });
+  },
+  /* 完结作品：查看观后感 + 进详情页 */
+  showFinishedSheet(entry) {
+    const stars = entry.rating ? this.starsHTML(entry.rating) : '';
+    openModal(`<button class="close-x" onclick="closeModal()">×</button>
+      <h3>${icon('book', 18)} 《${esc(entry.title || '未命名')}》</h3>
+      <div style="margin:8px 0;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        ${stars ? `<span style="font-size:15px">${stars}</span>` : ''}
+        <span class="tag" style="background:${this.typeColor(entry.type)};color:#fff;border:none;font-size:11px;padding:1px 8px">已看完</span>
+      </div>
+      <div class="muted" style="font-size:11px;margin:10px 0 4px">观后感</div>
+      <div style="white-space:pre-wrap;line-height:1.75;font-size:14px">${entry.review ? esc(entry.review) : '（还没有写观后感~）'}</div>
+      <div style="margin-top:16px;display:flex;gap:8px;justify-content:flex-end">
+        <button class="btn ghost" onclick="closeModal()">关闭</button>
+        <button class="btn" onclick="closeModal();window.Entertainment.openDetail('${entry.id}')">查看作品详情</button>
+      </div>`);
   },
   /* ============ 时间轴（单类型：年/月聚合 OR 周聚合，可切换；月份标签与周视图对齐到左列） ============ */
   openTimeline(scope) { this._savedView = { activeType: this.activeType, _view: this._view }; this._tlScope = scope; this._view = 'timeline'; this.render(this._root); },
@@ -1298,6 +1350,7 @@ const Entertainment = {
     else if (seed) { r = Object.assign(r, seed); r.type = funNormType(r.type || presetType || '影视'); r.date = todayStr(); r.id = uid(); r.createdAt = Date.now(); }
     const origTitle = r.title;  // 编辑已保存作品改名字时，用来把该作品全部历史记录一并改名
     const isNovel = () => r.type === '小说';
+    const lockNovel = isNovel() && (r.status === '看完' || r.status === '已读完');
     const tagsStr = (r.tags || []).join(' ');
     // 半星点击评分：点左半=半星，点右半=全星，再点同位=清零
     const starRateBox = (id, cur) => `<div id="${id}" class="star-rate" data-rate="${cur}">${[1, 2, 3, 4, 5].map(n => `<span data-rstar="${n}" style="position:relative;display:inline-block;width:1em;margin:0 -0.05em;color:#e0e0e0;font-size:20px;cursor:pointer;line-height:1">★<span style="position:absolute;left:0;top:0;overflow:hidden;white-space:nowrap;color:#F5C518;width:${cur >= n ? 100 : (cur >= n - 0.5 ? 50 : 0)}%">★</span></span>`).join('')}</div>`;
@@ -1330,6 +1383,7 @@ const Entertainment = {
         <div class="form-row"><label>看完打分</label>${starRateBox('fRateBox', r.rating || 0)}<input id="fRating" type="hidden" value="${r.rating || 0}"></div>
         <div class="form-row"><label>观后感</label><textarea id="fReview" rows="3" placeholder="写点感受吧~">${esc(r.review || '')}</textarea></div>
       </div>}
+      ${lockNovel ? '<div class="muted" style="font-size:12px;margin:8px 0 2px;color:#a07fb0">已看完 · 仅书名 / 评星 / 标签 / 观后感可改，其余（含日期）已锁定</div>' : ''}
       <div style="display:flex;gap:8px;margin-top:10px;justify-content:flex-end">
         <button class="btn ghost" onclick="closeModal()">取消</button>
         <button class="btn" id="fSave">保存</button>
@@ -1383,9 +1437,14 @@ const Entertainment = {
       renderStars(box, Number(box.dataset.rate) || 0);
     };
     bindStarRate('fRateBox', 'fRating', null);
+    if (lockNovel) {
+      ['fType', 'fCover', 'fStatus', 'fTotal', 'fProg', 'fCat', 'fMediaMin', 'fDate'].forEach(id => { const el = document.getElementById(id); if (el) el.disabled = true; });
+      const _up = document.getElementById('fUp'); if (_up) _up.disabled = true;
+    }
 
     // 同名记录记忆：写名字即带出上一次的基础信息（封面/图标/评分等），只填空字段，方便只改想改的
     const applyMemory = () => {
+      if (lockNovel) return;
       const type = typeSel.value;
       const title = (document.getElementById('fTitle').value || '').trim();
       if (!title) return;
@@ -1462,9 +1521,14 @@ const Entertainment = {
   },
   entryActionSheet(entry) {
     const ref = encodeURIComponent(JSON.stringify({ date: entry.date, id: entry.id }));
+    const finished = entry.status === '看完' || entry.status === '已读完';
+    const detailBtn = `<button class="btn ghost" onclick="closeModal();window.Entertainment.openDetail('${entry.id}')">查看作品详情</button>`;
+    const reviewBtn = finished ? `<button class="btn" onclick="closeModal();window.Entertainment.showFinishedSheet(window.Entertainment._findEntry('${entry.id}'))">查看观后感</button>` : '';
     openModal(`<button class="close-x" onclick="closeModal()">×</button>
       <h3>操作</h3>
       <div style="display:flex;flex-direction:column;gap:10px;margin-top:12px">
+        ${detailBtn}
+        ${reviewBtn}
         <button class="btn" onclick="closeModal();window.Entertainment.editModal('${ref}')">编辑</button>
         <button class="btn ghost" style="color:#e35d5d" onclick="closeModal();window.Entertainment.del('${ref}')">删除</button>
       </div>`);
