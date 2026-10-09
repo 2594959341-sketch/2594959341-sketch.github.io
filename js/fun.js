@@ -803,6 +803,8 @@ const Entertainment = {
   recordDetail(entry) {
     const statusTxt = entry.status === '看完' ? '已看完' : (entry.status === '想看' ? '想看' : (entry.progress ? '在看 · 看到 ' + entry.progress : '在看'));
     const tags = entry.tags || [];
+    const workAll = this.all().filter(r => (r.title || '') === (entry.title || '') && funNormType(r.type) === funNormType(entry.type));
+    const workMin = workAll.reduce((s, r) => s + (Number(r.minutes) || 0), 0);
     openModal(`<button class="close-x" onclick="closeModal()">×</button>
       <div style="display:flex;gap:12px;align-items:flex-start">
         ${(entry.icon || entry.cover) ? `<img src="${esc(entry.icon || entry.cover)}" style="width:64px;height:90px;object-fit:cover;border-radius:8px;flex-shrink:0">` : `<div class="fun-game-ic" style="width:64px;height:90px;border-radius:8px;background:${funColorHash(entry.title)}22;color:${funColorHash(entry.title)};font-weight:700;font-size:30px">${esc((entry.title || '?').slice(0, 1))}</div>`}
@@ -813,7 +815,7 @@ const Entertainment = {
           </div>
           <div class="muted" style="margin-top:6px;font-size:12px">${statusTxt} · ${entry.date}</div>
           ${entry.rating ? `<div style="margin-top:4px;font-size:14px">${this.starsHTML(entry.rating)}</div>` : ''}
-          ${entry.minutes ? `<div class="muted" style="font-size:12px;margin-top:2px">耗时约 ${Math.round(entry.minutes / 60 * 10) / 10} 小时</div>` : ''}
+          ${entry.minutes ? `<div class="muted" style="font-size:12px;margin-top:2px">本次耗时约 ${Math.round(entry.minutes / 60 * 10) / 10} 小时${workAll.length > 1 ? ' · 累计 ' + (Math.round(workMin / 60 * 10) / 10) + ' 小时（共 ' + workAll.length + ' 次）' : ''}</div>` : ''}
         </div>
       </div>
       ${entry.review ? `<div style="margin-top:12px"><div class="muted" style="font-size:11px;margin-bottom:4px">观后感</div><div style="white-space:pre-wrap;font-size:13px">${esc(entry.review)}</div></div>` : ''}
@@ -939,14 +941,15 @@ const Entertainment = {
     let body;
     if (view === 'year') {
       const y = this._tlYear;
-      const es = this.dedupLatest(allEs.filter(r => r.date.slice(0, 4) === y));
+      const yearAll = allEs.filter(r => r.date.slice(0, 4) === y);
+      const es = this.dedupLatest(yearAll);
       if (!es.length) {
         body = `<div class="empty">${y} 年还没有「${esc(t)}」记录，去打卡第一笔~</div>`;
       } else {
         const byMonth = {};
-        es.forEach(r => { const m = r.date.slice(0, 7); (byMonth[m] = byMonth[m] || []).push(r); });
+        yearAll.forEach(r => { const m = r.date.slice(0, 7); (byMonth[m] = byMonth[m] || []).push(r); });
         const months = Object.keys(byMonth).sort();
-        const totalMin = es.reduce((s, r) => s + (Number(r.minutes) || 0), 0);
+        const totalMin = yearAll.reduce((s, r) => s + (Number(r.minutes) || 0), 0);
         const monthBlocks = months.map(m => {
           const arr = byMonth[m];
           const mm = Number(m.slice(5, 7));
@@ -970,8 +973,9 @@ const Entertainment = {
       // 周视图：复用 weekHTML，加上左右切换 + 周汇总
       const off = this._tlWeekOff || 0;
       const [mon, sun] = this.weekRangeOff(off);
-      const es = this.dedupLatest(allEs.filter(r => r.date >= mon && r.date <= sun));
-      const totalMin = es.reduce((s, r) => s + (Number(r.minutes) || 0), 0);
+      const weekAll = allEs.filter(r => r.date >= mon && r.date <= sun);
+      const es = this.dedupLatest(weekAll);
+      const totalMin = weekAll.reduce((s, r) => s + (Number(r.minutes) || 0), 0);
       const weekHead = `<div class="fun-tl-week-head">
         <button class="fun-wk-arrow" data-wkprev ${off <= -104 ? 'disabled' : ''}>‹</button>
         <span class="fun-week-range">${mon.slice(5)} ~ ${sun.slice(5)}</span>
