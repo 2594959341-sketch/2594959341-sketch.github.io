@@ -903,17 +903,20 @@ const Entertainment = {
       el.addEventListener('mouseleave', cancel);
     });
   },
-  /* 完结作品：查看观后感 + 进详情页 */
+  /* 完结作品：查看观后感 + 进详情页（累计时长 + 看完标签黑白色） */
   showFinishedSheet(entry) {
     const stars = entry.rating ? this.starsHTML(entry.rating) : '';
+    const workAll = this.all().filter(r => (r.title || '') === (entry.title || '') && funNormType(r.type) === funNormType(entry.type));
+    const workMin = workAll.reduce((s, r) => s + (Number(r.minutes) || 0), 0);
     openModal(`<button class="close-x" onclick="closeModal()">×</button>
       <h3>${icon('book', 18)} 《${esc(entry.title || '未命名')}》</h3>
       <div style="margin:8px 0;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
         ${stars ? `<span style="font-size:15px">${stars}</span>` : ''}
-        <span class="tag" style="background:${this.typeColor(entry.type)};color:#fff;border:none;font-size:11px;padding:1px 8px">已看完</span>
+        <span class="tag" style="background:#333;color:#fff;border:none;font-size:11px;padding:1px 8px">已看完</span>
+        ${workMin ? `<span class="muted" style="font-size:12px">累计时长 ${this.fmtMin(workMin)}</span>` : ''}
       </div>
       <div class="muted" style="font-size:11px;margin:10px 0 4px">观后感</div>
-      <div style="white-space:pre-wrap;line-height:1.75;font-size:14px">${entry.review ? esc(entry.review) : '（还没有写观后感~）'}</div>
+      <div style="white-space:pre-wrap;line-height:1.75;font-size:14px">${entry.review ? esc(entry.review) : '还没写观后感~'}</div>
       <div style="margin-top:16px;display:flex;gap:8px;justify-content:flex-end">
         <button class="btn ghost" onclick="closeModal()">关闭</button>
         <button class="btn" onclick="closeModal();window.Entertainment.openDetail('${entry.id}')">查看作品详情</button>
@@ -1387,7 +1390,7 @@ const Entertainment = {
         <div class="form-row"><label>看完打分</label>${starRateBox('fRateBox', r.rating || 0)}<input id="fRating" type="hidden" value="${r.rating || 0}"></div>
         <div class="form-row"><label>观后感</label><textarea id="fReview" rows="3" placeholder="写点感受吧~">${esc(r.review || '')}</textarea></div>
       </div>}
-      ${lockNovel ? '<div class="muted" style="font-size:12px;margin:8px 0 2px;color:#a07fb0">已看完 · 仅书名 / 评星 / 标签 / 观后感可改，其余（含日期）已锁定</div>' : ''}
+      ${lockNovel ? '<div class="muted" style="font-size:12px;margin:8px 0 2px;color:#a07fb0">已看完 · 仅书名 / 评星 / 标签 / 观后感可改，其余含日期已锁定</div>' : ''}
       <div style="display:flex;gap:8px;margin-top:10px;justify-content:flex-end">
         <button class="btn ghost" onclick="closeModal()">取消</button>
         <button class="btn" id="fSave">保存</button>
