@@ -1443,7 +1443,7 @@ details[open] > summary .car{transform:rotate(180deg)}
 .fs-book-ph{display:flex;align-items:center;justify-content:center;font-size:26px;font-weight:700;color:#bbb;background:#f0f0f0}
 .fs-book-info{flex:1;min-width:0}
 .fs-book-title{font-size:15px;font-weight:600;display:flex;align-items:center;gap:6px}
-.fs-book-done{font-size:10px;color:#fff;background:#7bb38a;border-radius:10px;padding:1px 7px;font-weight:500;flex-shrink:0}
+.fs-book-done{font-size:10px;color:#fff;background:#333;border-radius:10px;padding:1px 7px;font-weight:500;flex-shrink:0}
 .fs-book-meta{font-size:12px;color:var(--muted,#888);margin-top:4px;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
 .fs-book-stars{font-size:12px}
 .fs-book-arrow{color:var(--muted,#bbb);flex-shrink:0}
