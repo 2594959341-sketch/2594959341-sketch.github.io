@@ -1389,7 +1389,7 @@ const Entertainment = {
       <div id="fReviewBox" style="${r.status === '看完' ? '' : 'display:none'}">
         <div class="form-row"><label>看完打分</label>${starRateBox('fRateBox', r.rating || 0)}<input id="fRating" type="hidden" value="${r.rating || 0}"></div>
         <div class="form-row"><label>观后感</label><textarea id="fReview" rows="3" placeholder="写点感受吧~">${esc(r.review || '')}</textarea></div>
-      </div>}
+      </div>
       ${lockNovel ? '<div class="muted" style="font-size:12px;margin:8px 0 2px;color:#a07fb0">已看完 · 仅书名 / 评星 / 标签 / 观后感可改，其余含日期已锁定</div>' : ''}
       <div style="display:flex;gap:8px;margin-top:10px;justify-content:flex-end">
         <button class="btn ghost" onclick="closeModal()">取消</button>
