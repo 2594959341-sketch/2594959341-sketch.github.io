@@ -746,6 +746,7 @@ const Entertainment = {
     const [mon, sun] = this.weekRangeOff(off || 0);
     const es = this.dedupLatest(this.all().filter(r => r.type === type && r.date >= mon && r.date <= sun)).sort((a, b) => a.date.localeCompare(b.date));
     if (!es.length) return `<div class="empty">本周还没有${esc(type)}记录，点右下角「+」记一笔~</div>`;
+    const workMin = {}; this.all().filter(r => r.type === type).forEach(r => { const k = r.title; workMin[k] = (workMin[k] || 0) + (Number(r.minutes) || 0); });
     const days = {}; es.forEach(r => { (days[r.date] = days[r.date] || []).push(r); });
     const order = Object.keys(days).sort();
     return `<div class="fun-axis">${order.map(d => `<div class="fun-axis-item">
@@ -753,7 +754,7 @@ const Entertainment = {
       <div class="fun-axis-mid"><div class="fun-axis-dot"></div></div>
       <div class="fun-axis-right">
         <div class="fun-axis-date">${d.slice(5)}</div>
-        ${days[d].map(l => this.entryRowHTML(l, false, true)).join('')}
+        ${days[d].map(l => this.entryRowHTML(l, false, true, workMin[l.title])).join('')}
       </div>
     </div>`).join('')}</div>`;
   },
@@ -770,7 +771,7 @@ const Entertainment = {
     }
     return s;
   },
-  entryRowHTML(l, showType, hideDate) {
+  entryRowHTML(l, showType, hideDate, totalMin) {
     const tags = (l.tags || []).filter(t => !FUN_TAG_HIDDEN.includes(t));
     const tagHTML = tags.length ? `<div class="rd-tl-tags">
       ${tags.slice(0, 4).map(t => `<span class="tag" style="background:#eee;color:#444;border:none;font-size:10px;padding:1px 6px">${esc(t)}</span>`).join('')}
@@ -778,7 +779,7 @@ const Entertainment = {
     const typeTag = showType ? `<span class="tag" style="background:${this.typeColor(l.type)};color:#fff;border:none;font-size:10px;padding:1px 6px;margin-left:2px">${esc(l.type)}</span>` : '';
     const isFinished = l.status === '看完' || l.status === '已读完';
     const isNovel = l.type === '小说';
-    const timeTxt = this.fmtMin(l.minutes);
+    const timeTxt = this.fmtMin(totalMin != null ? totalMin : l.minutes);
     const showStars = (Number(l.rating) || 0) > 0;
     const starHTML = showStars ? `<span class="rd-stars">${this.starsHTML(l.rating)}</span>` : '';
     const thumb = (l.icon || l.cover)
@@ -815,7 +816,7 @@ const Entertainment = {
           </div>
           <div class="muted" style="margin-top:6px;font-size:12px">${statusTxt} · ${entry.date}</div>
           ${entry.rating ? `<div style="margin-top:4px;font-size:14px">${this.starsHTML(entry.rating)}</div>` : ''}
-          ${entry.minutes ? `<div class="muted" style="font-size:12px;margin-top:2px">本次耗时约 ${Math.round(entry.minutes / 60 * 10) / 10} 小时${workAll.length > 1 ? ' · 累计 ' + (Math.round(workMin / 60 * 10) / 10) + ' 小时（共 ' + workAll.length + ' 次）' : ''}</div>` : ''}
+          ${workMin ? `<div class="muted" style="font-size:12px;margin-top:2px">累计时长 ${this.fmtMin(workMin)}${workAll.length > 1 ? ' · 共 ' + workAll.length + ' 次' : ''}</div>` : ''}
         </div>
       </div>
       ${entry.review ? `<div style="margin-top:12px"><div class="muted" style="font-size:11px;margin-bottom:4px">观后感</div><div style="white-space:pre-wrap;font-size:13px">${esc(entry.review)}</div></div>` : ''}
@@ -951,21 +952,24 @@ const Entertainment = {
       } else {
         const byMonth = {};
         yearAll.forEach(r => { const m = r.date.slice(0, 7); (byMonth[m] = byMonth[m] || []).push(r); });
+        const workMin = {};
+        yearAll.forEach(r => { const k = r.title; workMin[k] = (workMin[k] || 0) + (Number(r.minutes) || 0); });
         const months = Object.keys(byMonth).sort();
         const totalMin = yearAll.reduce((s, r) => s + (Number(r.minutes) || 0), 0);
         const monthBlocks = months.map(m => {
           const arr = byMonth[m];
+          const rows = this.dedupLatest(arr);
           const mm = Number(m.slice(5, 7));
           const label = monthNames[mm - 1] + '月';
           const mMin = arr.reduce((s, r) => s + (Number(r.minutes) || 0), 0);
           const mTime = mMin ? ` · 共计 ${Math.round(mMin / 60 * 10) / 10} 小时` : '';
-          // 修复 bug：月份标签移到左列（与周时间轴对齐），不再"悬空"在右列
+          // 修复 bug：月份标签移到左列（与周时间轴对齐），不再"悬空"在右列；同一作品每月只显示一次（取最新一条），时长显示该作品累计
           return `<div class="fun-axis-item">
             <div class="fun-axis-left">${label}</div>
             <div class="fun-axis-mid"><div class="fun-axis-dot"></div></div>
             <div class="fun-axis-right">
               <div class="fun-axis-date">${funVerb(t)}了 ${new Set(arr.map(r => r.title)).size} ${unit}${mTime}</div>
-              ${arr.map(r => this.entryRowHTML(r, false, false)).join('')}
+              ${rows.map(r => this.entryRowHTML(r, false, false, workMin[r.title])).join('')}
             </div>
           </div>`;
         }).join('');
