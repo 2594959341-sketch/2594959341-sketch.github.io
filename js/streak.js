@@ -28,7 +28,11 @@ const Streak = {
   // 某天是否「真实打卡」（按项目类型反查现有日志）
   isDone(item, date) {
     // 空数组不算打卡（!![] 为 true，必须判长度）
-    if (item.type === 'work') return (S.get('workLogs', {})[date] || []).length > 0 || (S.get('writeLogs', {})[date] || []).length > 0;
+    if (item.type === 'work') {
+      if (item.sub === 'write') return (S.get('writeLogs', {})[date] || []).length > 0;
+      if (item.sub === 'game') return (S.get('workLogs', {})[date] || []).some(l => (l.type || '') !== 'writing');
+      return (S.get('workLogs', {})[date] || []).length > 0 || (S.get('writeLogs', {})[date] || []).length > 0;
+    }
     if (item.type === 'kg') return (S.get('kgLogs', {})[date] || []).some(l => kgNorm(l.subject) === kgNorm(item.ref));
     if (item.type === 'sport') return (S.get('sportLogs', {})[date] || []).some(l => sportNorm(l.project) === sportNorm(item.ref));
     if (item.type === 'growth') return (S.get('growthLogs', {})[date] || []).some(l => (l.area || '').trim() === (item.ref || '').trim());
@@ -61,12 +65,16 @@ const Streak = {
     d.items.forEach(it => byId[it.id] = it);
     const base = () => ({ makeup: 0, rest: {}, madeup: {}, done: {} });
     const seed = [
-      { id: 'work', type: 'work', name: '创作', ref: '' },
+      { id: 'work:game', type: 'work', sub: 'game', name: '游戏', ref: '' },
+      { id: 'work:write', type: 'work', sub: 'write', name: '写作', ref: '' },
       { id: 'kg:言语', type: 'kg', name: '学习·言语', ref: '言语' },
       { id: 'sport:大小脸改善', type: 'sport', name: '大小脸改善', ref: '大小脸改善' },
       { id: 'sport:天鹅颈', type: 'sport', name: '天鹅颈', ref: '天鹅颈' }
     ];
     seed.forEach(s => { if (!byId[s.id]) { byId[s.id] = Object.assign(base(), s); d.items.push(byId[s.id]); } });
+    // v361：拆分「创作」火花为「游戏」+「写作」，移除旧的合并项（避免多出一张「创作」卡）
+    if (byId['work']) { delete byId['work']; }
+    d.items = d.items.filter(x => x.id !== 'work');
     // 自动发现：学习各科目、运动各项目（日志里出现过就进续火花，后续新增项目自动进入）
     const kgSubs = {};
     Object.values(S.get('kgLogs', {}) || {}).forEach(arr => (arr || []).forEach(l => { if (l.subject) kgSubs[kgNorm(l.subject)] = 1; }));
