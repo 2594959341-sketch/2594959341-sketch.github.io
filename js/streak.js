@@ -28,7 +28,7 @@ const Streak = {
   // 某天是否「真实打卡」（按项目类型反查现有日志）
   isDone(item, date) {
     // 空数组不算打卡（!![] 为 true，必须判长度）
-    if (item.type === 'work') return (S.get('workLogs', {})[date] || []).length > 0;
+    if (item.type === 'work') return (S.get('workLogs', {})[date] || []).length > 0 || (S.get('writeLogs', {})[date] || []).length > 0;
     if (item.type === 'kg') return (S.get('kgLogs', {})[date] || []).some(l => kgNorm(l.subject) === kgNorm(item.ref));
     if (item.type === 'sport') return (S.get('sportLogs', {})[date] || []).some(l => sportNorm(l.project) === sportNorm(item.ref));
     if (item.type === 'growth') return (S.get('growthLogs', {})[date] || []).some(l => (l.area || '').trim() === (item.ref || '').trim());
