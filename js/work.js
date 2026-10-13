@@ -1546,6 +1546,7 @@ const Work = {
   render_writing(body, root) {
     if (this._matLib) { this.materialLibPage(root); return; }
     if (this._transcribe) { this.render_transcribe(root); return; }
+    if (this._cockpit) { this.cockpitPage(root); return; }
     body.innerHTML = this.writingPage(root);
     this.bindWritingEvents(root);
   },
@@ -1592,7 +1593,7 @@ const Work = {
           <button class="del" data-delwrlog="${l.id}">✕</button></div>`).join('')
       : '<div class="empty">今天还没记录码字</div>';
     return `<div style="display:flex;flex-direction:column;gap:12px">
-      ${this.cockpitHTML()}
+      ${this.cockpitEntryHTML()}
       <div class="card">
         <h3>今日码字 <button class="btn sm" id="writeLogBtn" style="margin-left:auto">＋ 记录</button></h3>
         <div class="stat-combined">
@@ -1600,13 +1601,6 @@ const Work = {
           <div class="sc-half"><b>${totalWords}</b><span class="muted">累计字数</span></div>
         </div>
         <div id="wrTodayList" style="margin-top:10px;display:flex;flex-direction:column;gap:8px">${todayListHTML}</div>
-      </div>
-      <div class="card">
-        <h3>我的书</h3>
-        <div class="form-row"><label>小说名字</label><input id="wvName" value="${esc(N.bookName)}" placeholder="在写哪本书？"></div>
-        <div class="form-row"><label>发布网站</label><div id="wvSites" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:4px">${(N.sites || []).map((s, i) => `<span class="tag blue">${esc(s)} <a style="cursor:pointer" data-delsite="${i}">✕</a></span>`).join('')}</div>
-          <div style="display:flex;gap:6px;margin-top:4px"><input id="wvNewSite" placeholder="如：番茄小说" style="flex:1"><button class="btn sm ghost" id="wvAddSite">＋</button></div></div>
-        <button class="btn sm" id="wvSaveMeta" style="margin-top:8px">保存书信息</button>
       </div>
       <div class="grid2">
         <div class="card"><h3>抄书库 <button class="btn sm ghost" id="wvTrans" style="margin-left:auto">进入</button></h3>
@@ -1630,7 +1624,7 @@ const Work = {
     const wrCal = root.querySelector('#wrCal');
     if (wrCal) this.renderWriteCal(wrCal, root);
     root.querySelector('#writeLogBtn').onclick = () => this.writeDialog(root);
-    this.bindCockpit(root);
+    const cpEnter = root.querySelector('#cpEnter'); if (cpEnter) cpEnter.onclick = () => { this._cockpit = true; this.render(root); };
     const todayList = root.querySelector('#wrTodayList');
     if (todayList) todayList.querySelectorAll('[data-delwrlog]').forEach(b => b.onclick = () => {
       const logs = S.get('writeLogs', {}); const td = todayStr();
@@ -1640,18 +1634,6 @@ const Work = {
       S.set('writeLogs', logs);
       const N = this.novel(); N.totalWords = Math.max(0, (N.totalWords || 0) - (rec ? (rec.words || 0) : 0)); S.set('novel', N);
       this.render(root); toast('已删除该记录');
-    });
-    root.querySelector('#wvSaveMeta').onclick = () => {
-      const N = this.novel(); N.bookName = root.querySelector('#wvName').value.trim();
-      S.set('novel', N); this.render(root); toast('书信息已保存');
-    };
-    root.querySelector('#wvAddSite').onclick = () => {
-      const v = root.querySelector('#wvNewSite').value.trim(); if (!v) return;
-      const N = this.novel(); N.sites = N.sites || [];
-      if (!N.sites.includes(v)) { N.sites.push(v); S.set('novel', N); this.render(root); }
-    };
-    root.querySelectorAll('[data-delsite]').forEach(b => b.onclick = () => {
-      const N = this.novel(); N.sites.splice(Number(b.dataset.delsite), 1); S.set('novel', N); this.render(root);
     });
     const transBtn = root.querySelector('#wvTrans');
     if (transBtn) transBtn.onclick = () => { this._transcribe = true; this.render(root); };
@@ -1782,7 +1764,21 @@ const Work = {
     return { rem, days, ds };
   },
   daysBetween(a, b) { if (!a || !b) return 0; return Math.round((new Date(b) - new Date(a)) / 86400000); },
-  cockpitHTML() {
+  /* 写作页上的紧凑入口：显示摘要，点一下进入填写页 */
+  cockpitEntryHTML() {
+    const N = this.novel();
+    const pct = this.novelPct(); const act = this.novelAct(pct); const eta = this.novelEta();
+    const etaTxt = eta ? ('剩 <b>' + eta.days + '</b> 天 · 约 ' + eta.ds) : '设目标后自动测算';
+    return '<div class="card cp-enter" id="cpEnter">'
+      + '<div style="display:flex;align-items:center;justify-content:space-between">'
+      + '<h3 style="margin:0">' + icon('target', 16) + ' 小说驾驶舱</h3><span class="muted">点击编辑 ›</span></div>'
+      + '<div class="muted" style="margin-top:6px">《' + (esc(N.bookName) || '未命名') + '》 · ' + (N.type || '类型?') + ' · ' + (N.pov || '视角?') + '</div>'
+      + '<div class="cp-actbar" style="position:relative;height:10px;border-radius:6px;background:linear-gradient(90deg,#cfe8d4 0 25%,#f3e2c0 25% 75%,#d8cfe8 75% 100%);border:1px solid var(--line);margin:8px 0"><div style="position:absolute;left:' + pct + '%;top:-3px;bottom:-3px;width:2px;background:#333"></div></div>'
+      + '<div class="muted" style="font-size:12px">进度 ' + pct + '% · 第' + act.act + '幕·' + act.beat + ' · ' + etaTxt + ' · 阶段：' + (N.phase || '构思') + '</div>'
+      + '</div>';
+  },
+  /* 填写页内容（子视图内渲染） */
+  cockpitEditorHTML() {
     const N = this.novel();
     const goal = this.novelGoal(); const total = this.sumWords(); const pct = this.novelPct();
     const act = this.novelAct(pct); const eta = this.novelEta();
@@ -1803,11 +1799,11 @@ const Work = {
     else if (cur === '修改中') phaseNote = '<div class="banner info" style="margin:8px 0">改稿中<button class="btn sm" id="cpRevDone">完成修改</button></div>';
     else if (cur === '已修改') phaseNote = '<div class="banner info" style="margin:8px 0">改完啦，可以上传啦（发布顾问下阶段接入）<button class="btn sm" id="cpPub">去上传</button></div>';
     const sel = (opts, v) => opts.map(t => '<option ' + (t === v ? 'selected' : '') + '>' + t + '</option>').join('');
-    return '<div class="card">'
-      + '<h3>' + icon('target', 16) + ' 小说驾驶舱</h3>'
+    const sitesTags = (N.sites || []).map((s2, i) => '<span class="tag blue">' + esc(s2) + ' <a style="cursor:pointer" data-delsite="' + i + '">✕</a></span>').join('');
+    return ''
+      + '<div class="form-row"><label>书名</label><input id="cpName" value="' + esc(N.bookName) + '" placeholder="在写哪本书？"></div>'
       + '<div class="grid2">'
       + '<div>'
-      + '<div class="form-row"><label>书名</label><input id="cpName" value="' + esc(N.bookName) + '" placeholder="在写哪本书？"></div>'
       + '<div class="form-row"><label>类型</label><select id="cpType">' + sel(['言情', '悬疑', '玄幻', '科幻', '现实主义', '其它'], N.type) + '</select></div>'
       + '<div class="form-row"><label>视角</label><select id="cpPov">' + sel(['第一人称', '第三人称限知', '第三人称全知', '多视角'], N.pov) + '</select></div>'
       + '<div class="form-row"><label>结构</label><select id="cpStruct">' + sel(['三幕', '四幕', '起承转合', '自由'], N.structure) + '</select></div>'
@@ -1817,21 +1813,28 @@ const Work = {
       + '<div class="form-row"><label>篇幅设定</label><select id="cpLenMode">' + sel(['words', 'chapters'], N.lenMode).replace('>words<', '>按字数<').replace('>chapters<', '>按章数×每章字数<') + '</select></div>'
       + goalRows
       + '<div class="form-row"><label>日均目标</label><input type="number" id="cpDailyGoal" value="' + (N.dailyGoal || '') + '" placeholder="如：1000"></div>'
-      + '<button class="btn sm" id="cpSave" style="margin-top:4px">保存设定</button>'
-      + '</div>'
-      + '</div>'
+      + '</div></div>'
+      + '<div class="form-row"><label>发布网站</label><div id="cpSites" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:4px">' + sitesTags + '</div><div style="display:flex;gap:6px;margin-top:4px"><input id="cpSite" placeholder="如：番茄小说" style="flex:1"><button class="btn sm ghost" id="cpAddSite">＋</button></div></div>'
       + '<div class="banner" style="margin:10px 0 4px">' + etaTxt + '</div>'
       + '<div class="cp-actbar" style="position:relative;height:12px;border-radius:6px;background:linear-gradient(90deg,#cfe8d4 0 25%,#f3e2c0 25% 75%,#d8cfe8 75% 100%);border:1px solid var(--line)"><div style="position:absolute;left:' + pct + '%;top:-3px;bottom:-3px;width:2px;background:#333"></div></div>'
       + '<div class="muted" style="font-size:12px;margin-top:4px">第一幕 25% · 第二幕 50% · 第三幕 25%　|　当前：第' + act.act + '幕·' + act.beat + '（约 ' + pct + '%）</div>'
       + '<div style="margin-top:10px"><div class="muted" style="font-size:12px;margin-bottom:4px">写作阶段（点任一步可跳转）</div><div class="cp-phase">' + steps + '</div></div>'
       + phaseNote
-      + '</div>';
+      + '<button class="btn" id="cpSave" style="width:100%;margin-top:10px">保存设定</button>';
+  },
+  cockpitPage(root) {
+    const N = this.novel();
+    root.innerHTML = '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">'
+      + '<span class="branch-title" style="margin:0;padding:0;border:none;font-size:20px">小说驾驶舱</span>'
+      + '<button class="icon-btn" id="cpBack" title="返回写作">' + icon('chevronLeft', 18) + '</button></div>'
+      + '<div class="card" style="margin:0">' + this.cockpitEditorHTML() + '</div>';
+    this.bindCockpit(root);
   },
   bindCockpit(root) {
     const box = root;
     const persist = () => {
       const N = this.novel();
-      N.bookName = (box.querySelector('#cpName') || {}).value ? box.querySelector('#cpName').value.trim() : N.bookName;
+      if (box.querySelector('#cpName')) N.bookName = box.querySelector('#cpName').value.trim();
       if (box.querySelector('#cpType')) N.type = box.querySelector('#cpType').value;
       if (box.querySelector('#cpPov')) N.pov = box.querySelector('#cpPov').value;
       if (box.querySelector('#cpStruct')) N.structure = box.querySelector('#cpStruct').value;
@@ -1843,8 +1846,11 @@ const Work = {
       if (box.querySelector('#cpDailyGoal')) N.dailyGoal = Number(box.querySelector('#cpDailyGoal').value) || 0;
       S.set('novel', N); return N;
     };
+    const back = box.querySelector('#cpBack'); if (back) back.onclick = () => { this._cockpit = false; this.render(root); };
     const sv = box.querySelector('#cpSave'); if (sv) sv.onclick = () => { persist(); this.render(root); toast('设定已保存'); };
     const lm = box.querySelector('#cpLenMode'); if (lm) lm.onchange = () => { const N = persist(); N.lenMode = lm.value; S.set('novel', N); this.render(root); };
+    const addSite = box.querySelector('#cpAddSite'); if (addSite) addSite.onclick = () => { const v = box.querySelector('#cpSite').value.trim(); if (!v) return; const N = this.novel(); N.sites = N.sites || []; if (!N.sites.includes(v)) { N.sites.push(v); S.set('novel', N); this.render(root); } };
+    box.querySelectorAll('[data-delsite]').forEach(b => b.onclick = () => { const N = this.novel(); N.sites.splice(Number(b.dataset.delsite), 1); S.set('novel', N); this.render(root); });
     box.querySelectorAll('.cp-step').forEach(b => b.onclick = () => { const N = this.novel(); N.phase = b.dataset.phase; S.set('novel', N); this.render(root); });
     const done = box.querySelector('#cpDone'); if (done) done.onclick = () => { const N = this.novel(); N.phase = '已完结'; S.set('novel', N); this.render(root); toast('恭喜完结！'); };
     const rest = box.querySelector('#cpRest'); if (rest) rest.onclick = () => { const N = this.novel(); N.phase = '休息周'; N.restStart = todayStr(); S.set('novel', N); this.render(root); };
