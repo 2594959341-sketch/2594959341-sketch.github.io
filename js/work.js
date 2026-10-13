@@ -72,7 +72,7 @@ const Work = {
 
   workNavHTML() {
     const cur = this.tool || '';
-    const items = [['', '剪视频'], ['writing', '写作']];
+    const items = [['', '游戏'], ['writing', '写作']];
     return `<div class="subnav">${items.map(([k, l]) => `<button class="${cur === k ? 'on' : ''}" data-wsub="${k}">${l}</button>`).join('')}</div>`;
   },
   bindWorkNav(root) {
