@@ -300,6 +300,7 @@ const Growth = {
       </div>`).join('') : '<div class="empty">停车场空着，把想学的念头先丢这儿</div>';
     const cardHTML = cards.length ? cards.map(c => this.skillCardSummary(c)).join('') : '<div class="empty">还没有进行中的学习卡片</div>';
     return `
+      ${this.skillWallHTML()}
       <div style="margin-bottom:18px">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
           <h3 style="margin:0">想法停车场</h3><span class="muted" style="font-size:12px">先存放，不催促</span>
@@ -1821,9 +1822,9 @@ const Growth = {
     this._skOpen = card.id; this.render(root);
     toast('已升级为学习卡片，去做第0步调研吧');
   },
-  badgeWall() {
+  badgeItemsHTML() {
     const lib = this.skillLib();
-    const items = lib.map(sk => {
+    return lib.map(sk => {
       const cm = this.skillCombinedMinutes(sk.name);
       const lv = this.skillLevelOf(cm);
       const locked = cm <= 0;
@@ -1834,10 +1835,20 @@ const Growth = {
         + '<div class="badge-lv">' + (locked ? '未点亮' : ('Lv' + lv.lv + ' · ' + lv.name)) + '</div>'
         + '</div>';
     }).join('');
+  },
+  badgeWall() {
     return `<div class="card badge-wall-card">
       <div class="sk-detail-head"><h3>${icon('award',18)} 技能徽章墙</h3><button class="icon-btn" id="badgeBack" title="返回">${icon('back',18)}</button></div>
       <div class="muted" style="margin:4px 0 12px;font-size:12px">每点亮一个阶段，徽章就更亮一点。坚持练习，让这面墙越来越炫酷。</div>
-      <div class="badge-wall">${items}</div>
+      <div class="badge-wall">${this.badgeItemsHTML()}</div>
+    </div>`;
+  },
+  skillWallHTML() {
+    return `<div class="sk-section" style="margin-bottom:18px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+        <h3 style="margin:0">技能墙</h3><span class="muted" style="font-size:12px">点亮阶段，徽章更炫</span>
+      </div>
+      <div class="badge-wall" style="background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px">${this.badgeItemsHTML()}</div>
     </div>`;
   },
   bindBadgeEvents(root) {
