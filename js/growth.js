@@ -21,7 +21,7 @@ const Growth = {
           this.bindGrowthNav(root);
           return;
         }
-        if (this._skOpen) {
+        if (this._skOpen && this.skillCards().some(x => x.id === this._skOpen)) {
           root.innerHTML = `<div id="gwBody"></div>`;
           root.querySelector('#gwBody').innerHTML = this.skillDetail(this._skOpen);
           this.bindSkillDetailEvents(root);
@@ -147,7 +147,7 @@ const Growth = {
   },
 
   growthNavHTML() {
-    const items = [['skill', '技能'], ['reading', '阅读']];
+    const items = [['skill', '技能'], ['english', '英语'], ['reading', '阅读']];
     return `<div class="subnav">${items.map(([k, l]) => `<button class="${this.sub === k ? 'on' : ''}" data-gsub="${k}">${l}</button>`).join('')}</div>`;
   },
   bindGrowthNav(root) {
@@ -181,6 +181,10 @@ const Growth = {
   },
   saveSkillLib(lib) { S.set('mumu_skillLib', lib); },
   skillLogs() { return S.get('mumu_skillLogs', {}); },
+  skillCards() { return S.get('mumu_skillCards', []); },
+  saveSkillCards(a) { S.set('mumu_skillCards', a); },
+  ideaPark() { return S.get('mumu_ideaPark', []); },
+  saveIdeaPark(a) { S.set('mumu_ideaPark', a); },
   // 累计分钟 → 自动等级（新手 → 上手5h → 熟练20h → 精通50h → 达人100h）
   SKILL_LEVELS() {
     return [
@@ -286,37 +290,47 @@ const Growth = {
     return '<div class="mini-bar"><i style="width:' + Math.max(0, Math.min(100, pct)) + '%"></i></div>';
   },
   skillPage() {
-    const lib = this.skillLib();
-    const tiles = lib.map(sk => {
-      const cm = this.skillCombinedMinutes(sk.name);
-      const lv = this.skillLevelOf(cm);
-      const locked = cm <= 0;
-      const isEng = sk.name === '英语';
-      const h = cm >= 60 ? (cm / 60).toFixed(1) + 'h' : cm + 'm';
-      const cls = locked ? 'badge-locked' : 'badge-lv' + lv.lv;
-      const attr = isEng ? 'data-skeng="1"' : 'data-skopen="' + esc(sk.name) + '"';
-      return '<div class="sk-tile ' + (isEng ? 'sk-tile-eng ' : '') + (locked ? 'sk-tile-locked' : '') + '" ' + attr + '>'
-        + '<div class="sk-badge ' + cls + '">' + (locked ? '🔒' : '★') + '</div>'
-        + '<div class="sk-tile-name">' + esc(sk.name) + '</div>'
-        + '<div class="sk-tile-cat">' + esc(sk.cat || '') + '</div>'
-        + '<div class="sk-tile-lv">Lv' + lv.lv + ' · ' + lv.name + '</div>'
-        + '<div class="sk-tile-min">' + h + '</div>'
-        + '</div>';
-    }).join('');
-    let h = '<div class="sk-top">'
-      + '<button class="sk-badge-btn" id="skBadge">' + icon('award', 16) + ' 徽章墙</button>'
-      + '</div>';
-    h += '<div class="sk-grid">' + tiles + '<div class="sk-tile sk-tile-add" id="skAddTile">＋</div></div>';
-    h += '<div class="sk-foot"><button class="sk-fbtn" id="skAdd">＋ 新技能</button><button class="sk-fbtn ghost" id="skManage">管理</button></div>';
-    return h;
+    const cards = this.skillCards();
+    const ideas = this.ideaPark();
+    const ideaHTML = ideas.length ? ideas.map(it => `
+      <div style="display:flex;gap:8px;align-items:flex-start;padding:10px 0;border-top:1px solid var(--line)">
+        <div style="flex:1;font-size:14px">${esc(it.text)}</div>
+        <button class="btn sm" data-ideaup="${it.id}">升级</button>
+        <button class="btn sm ghost del" data-ideadel="${it.id}">删</button>
+      </div>`).join('') : '<div class="empty">停车场空着，把想学的念头先丢这儿</div>';
+    const cardHTML = cards.length ? cards.map(c => this.skillCardSummary(c)).join('') : '<div class="empty">还没有进行中的学习卡片</div>';
+    return `
+      <div style="margin-bottom:18px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+          <h3 style="margin:0">想法停车场</h3><span class="muted" style="font-size:12px">先存放，不催促</span>
+        </div>
+        <div style="background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 12px">${ideaHTML}</div>
+        <div style="display:flex;gap:8px;margin-top:8px">
+          <input id="ideaInput" placeholder="有个想学的念头？先记下来…" style="flex:1">
+          <button class="btn sm" id="ideaAdd">放进停车场</button>
+        </div>
+      </div>
+      <div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+          <h3 style="margin:0">进行中</h3>
+          <button class="btn sm" id="scNew">＋ 新建学习卡片</button>
+        </div>
+        <div id="skCards">${cardHTML}</div>
+      </div>`;
   },
   bindSkillEvents(root) {
-    root.querySelectorAll('[data-skopen]').forEach(b => b.onclick = () => { this._skOpen = b.dataset.skopen; this.render(root); });
-    root.querySelectorAll('[data-skeng]').forEach(b => b.onclick = () => { this.sub = 'english'; this._skOpen = null; this._skBadge = false; this.render(root); });
-    const add = root.querySelector('#skAdd'); if (add) add.onclick = () => this.skillEditDialog(root, null);
-    const addTile = root.querySelector('#skAddTile'); if (addTile) addTile.onclick = () => this.skillEditDialog(root, null);
-    const mg = root.querySelector('#skManage'); if (mg) mg.onclick = () => this.skillManageDialog(root);
-    const bw = root.querySelector('#skBadge'); if (bw) bw.onclick = () => { this._skBadge = true; this.render(root); };
+    root.querySelectorAll('[data-scopen]').forEach(b => b.onclick = () => { this._skOpen = b.dataset.scopen; this.render(root); });
+    root.querySelectorAll('[data-ideaup]').forEach(b => b.onclick = () => this.ideaUpgrade(root, b.dataset.ideaup));
+    root.querySelectorAll('[data-ideadel]').forEach(b => b.onclick = () => {
+      const id = b.dataset.ideadel; this.saveIdeaPark(this.ideaPark().filter(x => x.id !== id)); this.render(root); toast('已从停车场移除');
+    });
+    const newBtn = root.querySelector('#scNew'); if (newBtn) newBtn.onclick = () => this.scNewCard(root);
+    const ideaAdd = root.querySelector('#ideaAdd'); if (ideaAdd) ideaAdd.onclick = () => {
+      const inp = root.querySelector('#ideaInput'); if (!inp) return;
+      const text = inp.value.trim(); if (!text) return toast('先写个念头');
+      const park = this.ideaPark(); park.push({ id: 'id_' + Date.now(), text: text, created: todayStr() });
+      this.saveIdeaPark(park); this.render(root);
+    };
   },
   skillCheckIn(root, name) {
     openModal('<button class="close-x" onclick="closeModal()">×</button><h3>' + esc(name) + ' · 打卡</h3>'
@@ -1560,57 +1574,252 @@ const Growth = {
     };
   },
   // ===== 技能详情页 / 徽章墙（v270）=====
-  skillDetail(name) {
-    const cm = this.skillCombinedMinutes(name);
-    const lv = this.skillLevelOf(cm);
-    const m = this.skillMinutes(name);
-    const days = this.skillDays(name);
-    const isEng = name === '英语';
-    const totalH = m / 60;
-    const ring = this.ringSVG(lv.pct, 'Lv' + lv.lv, lv.name);
-    const lib = this.skillLib();
-    const sk = lib.find(x => x.name === name);
-    const cat = sk ? (sk.cat || '') : '';
-    const lg = this.skillLogs();
-    const recs = [];
-    Object.keys(lg).sort().reverse().slice(0, 7).forEach(d => (lg[d] || []).forEach(r => { if (r.skill === name) recs.push({ d: d, r: r }); }));
-    const recHTML = recs.length ? recs.map(x => `<div class="list-row"><span class="muted" style="flex-shrink:0">${x.d.slice(5)}</span><span style="flex:1">${esc(x.r.note || '练习')}</span><span class="muted">${x.r.minutes}分</span></div>`).join('')
-      : '<div class="empty">还没有打卡记录，点上面的「打卡」开始吧</div>';
-    return `<div class="card sk-detail">
-      <div class="sk-detail-head">
-        <h3>${esc(name)} <span class="tag">${esc(cat)}</span></h3>
-        <button class="icon-btn" id="skBack" title="返回">${icon('back',18)}</button>
-      </div>
-      <div class="sk-detail-level">${ring}
-        <div>
-          <div><b>Lv${lv.lv} · ${lv.name}</b></div>
-          <div class="muted">${lv.next ? '距 ' + lv.next.name + ' ' + Math.ceil(lv.toNext / 60) + ' 小时' : '已满级'}</div>
-          <div class="muted">累计 ${totalH >= 1 ? totalH.toFixed(1) + ' 小时' : m + ' 分钟'} · ${days} 天</div>
+  skillDetail(id) {
+    const c = this.skillCards().find(x => x.id === id);
+    if (!c) return '<div class="card">卡片不存在或已删除</div>';
+    const r = c.research || {};
+    const tasks = (c.plan && c.plan.tasks) || [];
+    const future = (c.plan && c.plan.future) || '';
+    const fb = c.feedback || [];
+    const STAGES = ['research', 'plan', 'doing', 'adjust', 'done'];
+    const stageBtns = STAGES.map(st => `<button class="btn sm ${c.stage === st ? 'on' : ''}" data-stage="${st}" style="margin:2px">${this.scStageLabel(st)}</button>`).join('');
+    const taskHTML = tasks.length ? tasks.map(t => `
+      <div style="display:flex;align-items:center;gap:8px;padding:6px 0">
+        <label style="flex:1;display:flex;gap:8px;align-items:center;font-size:14px">
+          <input type="checkbox" data-sct="${t.id}" ${t.done ? 'checked' : ''}> <span style="${t.done ? 'text-decoration:line-through;color:#999' : ''}">${esc(t.text)}</span>
+        </label>
+        <button class="btn sm ghost del" data-sctdel="${t.id}">×</button>
+      </div>`).join('') : '<div class="empty">还没拆好小任务</div>';
+    const fbHTML = fb.length ? fb.slice().reverse().map(f => `
+      <div style="padding:7px 0;border-top:1px solid var(--line);font-size:13px">
+        <span class="tag" style="margin-right:6px">${this.scFbTag(f.type)}</span><span>${esc(f.text)}</span>
+        <span class="muted" style="margin-left:6px">${esc(f.date || '')}</span>
+      </div>`).join('') : '<div class="empty">还没反馈（摆烂了也记一笔）</div>';
+    return `
+      <div class="card" style="padding:14px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+          <h3 style="margin:0">学习卡片</h3>
+          <button class="icon-btn" id="scBack" title="返回">${icon('back', 18)}</button>
         </div>
-      </div>
-      ${isEng ? `<div class="eng-bars" style="margin:10px 0"><div class="eng-bar-row"><span class="eb-label">学习时长</span>${this.miniBar(lv.pct)}<span class="eb-val">${totalH >= 1 ? totalH.toFixed(1) + 'h' : m + 'm'}</span></div></div>` : ''}
-      <button class="btn" id="skCheck" style="width:100%;margin:4px 0 12px">${icon('check',14)} 打卡</button>
-      <div class="muted" style="margin:4px 0 6px;font-size:13px;font-weight:600">最近打卡</div>
-      <div class="sk-detail-rec">${recHTML}</div>
-      <div class="sk-detail-ops">
-        <button class="btn sm ghost" id="skRename">改名</button>
-        <button class="btn sm ghost del" id="skDel">删除</button>
-      </div>
-    </div>`;
+
+        <div style="margin-bottom:14px">
+          <div style="font-weight:600;margin-bottom:6px">① 我想学什么 + 为什么</div>
+          <textarea id="scGoal" placeholder="想学什么（一句话）" style="width:100%;margin-bottom:6px">${esc(c.goal || '')}</textarea>
+          <textarea id="scWhy" placeholder="为什么想学？觉得酷 / 想装逼 / 实用都如实记" style="width:100%">${esc(c.why || '')}</textarea>
+        </div>
+
+        <div style="margin-bottom:14px">
+          <div style="font-weight:600;margin-bottom:6px">② 第 0 步调研（零成本）</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+            <div><label class="muted" style="font-size:12px">这东西到底是什么（大白话）</label><textarea id="scRWhat" style="width:100%">${esc(r.what || '')}</textarea></div>
+            <div><label class="muted" style="font-size:12px">要花多少钱 / 设备</label><textarea id="scRCost" style="width:100%">${esc(r.cost || '')}</textarea></div>
+            <div><label class="muted" style="font-size:12px">从零到小成果大概多久</label><textarea id="scRTime" style="width:100%">${esc(r.time || '')}</textarea></div>
+            <div><label class="muted" style="font-size:12px">免费资源</label><textarea id="scRFree" style="width:100%">${esc(r.free || '')}</textarea></div>
+          </div>
+          <button class="btn sm ghost" id="scAi" style="margin-top:8px">${icon('spark', 14)} AI 帮我做第0步调研</button>
+        </div>
+
+        <div style="margin-bottom:14px">
+          <div style="font-weight:600;margin-bottom:6px">③ 滚动式计划</div>
+          <div id="scTasks">${taskHTML}</div>
+          <div style="display:flex;gap:8px;margin:6px 0">
+            <input id="scTaskInput" placeholder="拆一个小到不可能失败的任务" style="flex:1">
+            <button class="btn sm" id="scTaskAdd">添加</button>
+          </div>
+          <label class="muted" style="font-size:12px">远期（一两句就够）</label>
+          <textarea id="scFuture" placeholder="以后再说的事，简单记" style="width:100%">${esc(future)}</textarea>
+        </div>
+
+        <div style="margin-bottom:14px">
+          <div style="font-weight:600;margin-bottom:6px">④ 进度反馈与调整</div>
+          <div id="scFbLog" style="max-height:180px;overflow:auto">${fbHTML}</div>
+          <textarea id="scFb" placeholder="记录反馈：今天进展 / 卡住了 / 摆烂了都行" style="width:100%;margin-top:6px"></textarea>
+          <div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap">
+            <button class="btn sm" data-fbadj="note">记一笔</button>
+            <button class="btn sm ghost" data-fbadj="smaller">切更小</button>
+            <button class="btn sm ghost" data-fbadj="advance">推进</button>
+            <button class="btn sm ghost" data-fbadj="pivot">调方向</button>
+          </div>
+        </div>
+
+        <div style="margin-bottom:14px">
+          <div style="font-weight:600;margin-bottom:6px">当前阶段</div>
+          <div class="sc-stages">${stageBtns}</div>
+        </div>
+
+        <button class="btn" id="scSave" style="width:100%">保存</button>
+      </div>`;
   },
   bindSkillDetailEvents(root) {
-    const back = root.querySelector('#skBack'); if (back) back.onclick = () => { this._skOpen = null; this.render(root); };
-    const check = root.querySelector('#skCheck'); if (check) check.onclick = () => this.skillCheckIn(root, this._skOpen);
-    const ren = root.querySelector('#skRename'); if (ren) ren.onclick = () => { const sk = this.skillLib().find(x => x.name === this._skOpen); this.skillEditDialog(root, sk); };
-    const del = root.querySelector('#skDel'); if (del) del.onclick = () => {
-      const name = this._skOpen; const lib = this.skillLib(); const t = lib.find(x => x.name === name); if (!t) return;
-      if (!window.confirm('删除技能「' + name + '」？打卡记录也会一并删除。')) return;
-      this.saveSkillLib(lib.filter(x => x.name !== name));
-      const lg = this.skillLogs(); let ch = false;
-      Object.keys(lg).forEach(d => { const b = (lg[d] || []).length; lg[d] = (lg[d] || []).filter(r => r.skill !== name); if (lg[d].length !== b) ch = true; if (!lg[d].length) delete lg[d]; });
-      if (ch) S.set('mumu_skillLogs', lg);
-      this._skOpen = null; this.render(root); toast('已删除「' + name + '」');
-    };
+    const back = root.querySelector('#scBack'); if (back) back.onclick = () => { this._skOpen = null; this.render(root); };
+    const save = root.querySelector('#scSave'); if (save) save.onclick = () => this.scSave(root);
+    const addTask = root.querySelector('#scTaskAdd'); if (addTask) addTask.onclick = () => this.scAddTask(root);
+    const ai = root.querySelector('#scAi'); if (ai) ai.onclick = () => this.scAiResearch(root);
+    root.querySelectorAll('[data-sct]').forEach(b => b.onchange = () => this.scToggleTask(root, b.dataset.sct, b.checked));
+    root.querySelectorAll('[data-sctdel]').forEach(b => b.onclick = () => this.scDelTask(root, b.dataset.sctdel));
+    root.querySelectorAll('[data-stage]').forEach(b => b.onclick = () => this.scSetStage(root, b.dataset.stage));
+    root.querySelectorAll('[data-fbadj]').forEach(b => b.onclick = () => this.scAddFeedback(root, b.dataset.fbadj));
+  },
+  scStageLabel(s) { const M = { park: '停车场', research: '第0步调研', plan: '规划中', doing: '进行中', adjust: '调整中', done: '已完成' }; return M[s] || s || ''; },
+  scFbTag(t) { const M = { note: '反馈', smaller: '切更小', advance: '推进', pivot: '调方向' }; return M[t] || '反馈'; },
+  scCompletion(c) {
+    c = c || {};
+    if (c.stage === 'done') return 100;
+    const r = c.research || {};
+    let p = 0;
+    const rf = [r.what, r.cost, r.time, r.free].filter(x => (x || '').trim()).length;
+    p += rf / 4 * 20;
+    const tasks = (c.plan && c.plan.tasks) || [];
+    if (tasks.length) { const d = tasks.filter(t => t.done).length; p += d / tasks.length * 60; }
+    if ((c.feedback || []).length) p += 20;
+    return Math.round(Math.min(100, p));
+  },
+  skillCardSummary(c) {
+    const pct = this.scCompletion(c);
+    const fb = (c.feedback || []).slice(-1)[0];
+    const fbText = fb ? fb.text : '暂无反馈';
+    return `
+      <div class="sk-card" data-scopen="${c.id}" style="background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:10px">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px">
+          <div style="font-weight:600;font-size:15px">${esc(c.goal || '（未命名）')}</div>
+          <span class="tag" style="flex-shrink:0">${this.scStageLabel(c.stage)}</span>
+        </div>
+        <div class="muted" style="font-size:13px;margin:6px 0">最近反馈：${esc(fbText)}</div>
+        <div style="height:6px;background:var(--line);border-radius:6px;overflow:hidden;margin:4px 0">
+          <div style="height:100%;background:var(--accent, #3a7);width:${pct}%"></div>
+        </div>
+        <div class="muted" style="font-size:12px">完成度 ${pct}%</div>
+      </div>`;
+  },
+  scGather(root) {
+    const id = this._skOpen;
+    const cards = this.skillCards();
+    let c = cards.find(x => x.id === id);
+    if (!c) c = { id: id, created: todayStr(), stage: 'research', feedback: [], plan: { tasks: [] }, research: {} };
+    const g = root.querySelector('#scGoal'); if (g) c.goal = g.value;
+    const w = root.querySelector('#scWhy'); if (w) c.why = w.value;
+    const rr = c.research || {};
+    const a = root.querySelector('#scRWhat'); if (a) rr.what = a.value;
+    const b = root.querySelector('#scRCost'); if (b) rr.cost = b.value;
+    const t = root.querySelector('#scRTime'); if (t) rr.time = t.value;
+    const f = root.querySelector('#scRFree'); if (f) rr.free = f.value;
+    c.research = rr;
+    const fu = root.querySelector('#scFuture'); if (fu) c.plan = Object.assign(c.plan || {}, { future: fu.value });
+    return c;
+  },
+  _scPut(c) {
+    const cards = this.skillCards();
+    const i = cards.findIndex(x => x.id === c.id);
+    if (i >= 0) cards[i] = c; else cards.push(c);
+    this.saveSkillCards(cards);
+  },
+  scSave(root) {
+    const c = this.scGather(root);
+    this._scPut(c);
+    toast('已保存');
+    this.render(root);
+  },
+  scToggleTask(root, id, checked) {
+    const c = this.scGather(root);
+    (c.plan.tasks || []).forEach(t => { if (t.id === id) t.done = checked; });
+    this._scPut(c);
+    this.render(root);
+  },
+  scAddTask(root) {
+    const inp = root.querySelector('#scTaskInput'); if (!inp) return;
+    const text = inp.value.trim(); if (!text) return toast('写个小任务');
+    const c = this.scGather(root);
+    c.plan = c.plan || {}; c.plan.tasks = c.plan.tasks || [];
+    c.plan.tasks.push({ id: 't_' + Date.now(), text: text, done: false });
+    this._scPut(c);
+    this.render(root);
+  },
+  scDelTask(root, id) {
+    const c = this.scGather(root);
+    if (c.plan && c.plan.tasks) c.plan.tasks = c.plan.tasks.filter(t => t.id !== id);
+    this._scPut(c);
+    this.render(root);
+  },
+  scSetStage(root, stage) {
+    const c = this.scGather(root);
+    c.stage = stage;
+    this._scPut(c);
+    this.render(root);
+  },
+  scAddFeedback(root, type) {
+    const ta = root.querySelector('#scFb'); if (!ta) return;
+    const text = ta.value.trim();
+    if (!text && type === 'note') return toast('写点反馈吧');
+    const c = this.scGather(root);
+    c.feedback = c.feedback || [];
+    const def = { smaller: '切更小', advance: '推进', pivot: '调方向' }[type] || '';
+    c.feedback.push({ id: 'f_' + Date.now(), type: type, text: text || def, date: todayStr() });
+    if (type === 'advance' && (c.stage === 'research' || c.stage === 'plan')) c.stage = 'doing';
+    if (type === 'pivot') c.stage = 'adjust';
+    if (type === 'smaller') c.stage = 'plan';
+    this._scPut(c);
+    this.render(root);
+  },
+  scAiPick(out, a, b) {
+    const i = out.indexOf(a); if (i < 0) return '';
+    const j = out.indexOf(b, i + 1);
+    const seg = j < 0 ? out.slice(i + a.length) : out.slice(i + a.length, j);
+    return seg.trim();
+  },
+  scAiResearch(root) {
+    const key = S.get('mumu_llm');
+    if (!key) { toast('还没配置 AI 钥匙，去「设置」填 DeepSeek Key'); return; }
+    const c = this.scGather(root);
+    const topic = (c.goal || '').trim() || (c.why || '').trim();
+    if (!topic) { toast('先写「想学什么」再让 AI 调研'); return; }
+    const btn = root.querySelector('#scAi');
+    if (btn) { btn.disabled = true; btn.textContent = '调研中…'; }
+    const sys = '你是学习规划助手。用大白话、结构清晰地回答，分四点：1)这东西到底是什么；2)需要什么设备、花多少钱；3)从零到做出一个小成果大概多久；4)列出3-5个免费学习资源（只写名称即可）。零成本优先。';
+    const usr = '我想学：' + topic + (c.why ? ('。动机：' + c.why) : '');
+    fetch('https://api.deepseek.com/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key },
+      body: JSON.stringify({ model: 'deepseek-chat', messages: [{ role: 'system', content: sys }, { role: 'user', content: usr }], temperature: 0.7 })
+    }).then(r => r.json()).then(d => {
+      const out = (d.choices && d.choices[0] && d.choices[0].message && d.choices[0].message.content) || '';
+      if (!out) { toast('AI 没回内容，稍后重试'); if (btn) { btn.disabled = false; btn.textContent = 'AI 帮我做第0步调研'; } return; }
+      const cc = this.scGather(root);
+      const R = cc.research || {};
+      R.what = (R.what ? R.what + '\n' : '') + this.scAiPick(out, '1)', '2)');
+      R.cost = (R.cost ? R.cost + '\n' : '') + this.scAiPick(out, '2)', '3)');
+      R.time = (R.time ? R.time + '\n' : '') + this.scAiPick(out, '3)', '4)');
+      R.free = (R.free ? R.free + '\n' : '') + this.scAiPick(out, '4)', '5)');
+      cc.research = R;
+      this._scPut(cc);
+      this.render(root);
+    }).catch(e => { toast('AI 调研失败：' + (e && e.message ? e.message : e)); if (btn) { btn.disabled = false; btn.textContent = 'AI 帮我做第0步调研'; } });
+  },
+  scNewCard(root) {
+    openModal('<button class="close-x" onclick="closeModal()">×</button><h3>新建学习卡片</h3>'
+      + '<div class="form-row"><label>我想学什么</label><textarea id="ncGoal" placeholder="一句话说清想学啥"></textarea></div>'
+      + '<div class="form-row"><label>为什么想学（选填）</label><textarea id="ncWhy" placeholder="觉得酷 / 想装逼 / 实用都行"></textarea></div>'
+      + '<button class="btn" id="ncOk">创建</button>');
+    setTimeout(() => {
+      const ok = document.getElementById('ncOk'); if (!ok) return;
+      ok.onclick = () => {
+        const goal = document.getElementById('ncGoal').value.trim();
+        if (!goal) return toast('写个想学的内容吧');
+        const cards = this.skillCards();
+        const card = { id: 'sc_' + Date.now(), goal: goal, why: document.getElementById('ncWhy').value.trim(), stage: 'research', created: todayStr(), research: {}, plan: { tasks: [] }, feedback: [] };
+        cards.push(card); this.saveSkillCards(cards);
+        closeModal(); this._skOpen = card.id; this.render(root);
+      };
+    }, 0);
+  },
+  ideaUpgrade(root, id) {
+    const park = this.ideaPark();
+    const it = park.find(x => x.id === id); if (!it) return;
+    const cards = this.skillCards();
+    const card = { id: 'sc_' + Date.now(), goal: it.text, why: '', stage: 'research', created: todayStr(), research: {}, plan: { tasks: [] }, feedback: [] };
+    cards.push(card); this.saveSkillCards(cards);
+    this.saveIdeaPark(park.filter(x => x.id !== id));
+    this._skOpen = card.id; this.render(root);
+    toast('已升级为学习卡片，去做第0步调研吧');
   },
   badgeWall() {
     const lib = this.skillLib();
