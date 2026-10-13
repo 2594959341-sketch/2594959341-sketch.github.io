@@ -1808,3 +1808,7 @@ body.modal-open .pv-dl{display:none!important}
 .cp-phase{display:flex;flex-wrap:wrap;gap:4px;margin:4px 0}
 .cp-step{padding:4px 10px;border-radius:999px;font-size:12px;border:1px solid var(--line);color:var(--sub);background:transparent;cursor:pointer}
 .cp-step.on{background:var(--accent);color:#fff;border-color:var(--accent)}
+
+/* 小说驾驶舱入口卡（点击进入填写页） */
+.cp-enter{cursor:pointer;transition:box-shadow .15s}
+.cp-enter:active{box-shadow:0 0 0 2px var(--accent)}
