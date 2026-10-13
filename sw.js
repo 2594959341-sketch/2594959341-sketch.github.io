@@ -5,7 +5,7 @@
  *   · png/    = cat（当前枝枝喵）
  *   · zhiya/  = zhiya（旧版枝丫）
  */
-const CACHE = 'mumu-v361';
+const CACHE = 'mumu-v362';
 const CAT = [
   'icon-192.png','icon-512.png','icon-maskable-512.png','apple-touch-180.png','logo-64.png','splash-kitty.png',
   'mood-great.png','mood-ok.png','mood-tired.png','mood-over.png',
@@ -16,17 +16,17 @@ const ZHIYA = [
   'icon-192.png','icon-512.png','icon-maskable-512.png','apple-touch-180.png','logo-64.png','avatar-42.png','splash.png'
 ];
 const CORE = [
-  'index.html?v=mumu-v361', 'manifest.json?v=mumu-v361', 'icon.svg?v=mumu-v361', 'css/style.css?v=mumu-v361', 'css/travel.css?v=mumu-v361',
-  'js/app.js?v=mumu-v361', 'js/core.js?v=mumu-v361', 'js/daily.js?v=mumu-v361', 'js/work.js?v=mumu-v361', 'js/kaogong.js?v=mumu-v361',
-  'js/growth.js?v=mumu-v361', 'js/sport.js?v=mumu-v361', 'js/meals.js?v=mumu-v361', 'js/review.js?v=mumu-v361', 'js/travel.js?v=mumu-v361',
-  'js/finance.js?v=mumu-v361', 'js/fun.js?v=mumu-v361', 'js/theme.js?v=mumu-v361', 'js/streak.js?v=mumu-v361', 'js/freq.js?v=mumu-v361',
-  'js/data/incentives.js?v=mumu-v361', 'js/data/shizheng.js?v=mumu-v361', 'js/data/kaogong.js?v=mumu-v361',
-  'js/data/growth.js?v=mumu-v361', 'js/data/sport.js?v=mumu-v361', 'js/data/watch_games.js?v=mumu-v361', 'js/data/kepu.js?v=mumu-v361',
-  'js/data/chinamap.js?v=mumu-v361',
+  'index.html?v=mumu-v362', 'manifest.json?v=mumu-v362', 'icon.svg?v=mumu-v362', 'css/style.css?v=mumu-v362', 'css/travel.css?v=mumu-v362',
+  'js/app.js?v=mumu-v362', 'js/core.js?v=mumu-v362', 'js/daily.js?v=mumu-v362', 'js/work.js?v=mumu-v362', 'js/kaogong.js?v=mumu-v362',
+  'js/growth.js?v=mumu-v362', 'js/sport.js?v=mumu-v362', 'js/meals.js?v=mumu-v362', 'js/review.js?v=mumu-v362', 'js/travel.js?v=mumu-v362',
+  'js/finance.js?v=mumu-v362', 'js/fun.js?v=mumu-v362', 'js/theme.js?v=mumu-v362', 'js/streak.js?v=mumu-v362', 'js/freq.js?v=mumu-v362',
+  'js/data/incentives.js?v=mumu-v362', 'js/data/shizheng.js?v=mumu-v362', 'js/data/kaogong.js?v=mumu-v362',
+  'js/data/growth.js?v=mumu-v362', 'js/data/sport.js?v=mumu-v362', 'js/data/watch_games.js?v=mumu-v362', 'js/data/kepu.js?v=mumu-v362',
+  'js/data/chinamap.js?v=mumu-v362',
   // 枝枝喵 · cat 主题（png/）
-  ...CAT.map(n => 'assets/kitty/png/' + n + '?v=mumu-v361'),
+  ...CAT.map(n => 'assets/kitty/png/' + n + '?v=mumu-v362'),
   // 枝枝喵 · zhiya 主题（zhiya/）旧版枝丫
-  ...ZHIYA.map(n => 'assets/kitty/zhiya/' + n + '?v=mumu-v361')
+  ...ZHIYA.map(n => 'assets/kitty/zhiya/' + n + '?v=mumu-v362')
 ];
 
 self.addEventListener('install', e => {
