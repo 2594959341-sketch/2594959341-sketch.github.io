@@ -1466,7 +1466,7 @@ const Work = {
   },
 
   /* ---------- 写小说 ---------- */
-  novel() { return S.get('novel', { bookName: '', goalWords: 0, totalWords: 0, daily: {}, clips: [], materials: [], sites: [],
+  novel() { return S.get('novel', { bookName: '', goalWords: 0, totalWords: 0, daily: {}, clips: [], materials: [], sites: [], chaptersData: [],
     type: '', lenMode: 'words', chapters: 0, wordsPerChapter: 0, pov: '', structure: '三幕', ending: '', dailyGoal: 0, phase: '构思', restStart: '',
     chars: [], outline: { acts: [], chapters: [], scenes: [] }, world: {} }); },
   render_novel(box, root) {
@@ -1546,6 +1546,7 @@ const Work = {
   render_writing(body, root) {
     if (this._matLib) { this.materialLibPage(root); return; }
     if (this._transcribe) { this.render_transcribe(root); return; }
+    if (this._tpl) { this.templatePage(root); return; }
     if (this._cockpit) { this.cockpitPage(root); return; }
     body.innerHTML = this.writingPage(root);
     this.bindWritingEvents(root);
@@ -1827,7 +1828,8 @@ const Work = {
       + '<div class="muted" style="font-size:12px;margin-top:4px">第一幕 25% · 第二幕 50% · 第三幕 25%　|　当前：第' + act.act + '幕·' + act.beat + '（约 ' + pct + '%）</div>'
       + '<div style="margin-top:10px"><div class="muted" style="font-size:12px;margin-bottom:4px">写作阶段（点任一步可跳转）</div><div class="cp-phase">' + steps + '</div></div>'
       + phaseNote
-      + '<button class="btn" id="cpSave" style="width:100%;margin-top:10px">保存设定</button>';
+      + '<button class="btn ghost" id="cpTpl" style="width:100%;margin-top:10px">' + icon('list', 16) + ' 长文结构化模板（章节一句话 + 场景设定）›</button>'
+      + '<button class="btn" id="cpSave" style="width:100%;margin-top:8px">保存设定</button>';
   },
   cockpitPage(root) {
     const N = this.novel();
@@ -1855,6 +1857,7 @@ const Work = {
     };
     const back = box.querySelector('#cpBack'); if (back) back.onclick = () => { this._cockpit = false; this.render(root); };
     const sv = box.querySelector('#cpSave'); if (sv) sv.onclick = () => { persist(); this.render(root); toast('设定已保存'); };
+    const tpl = box.querySelector('#cpTpl'); if (tpl) tpl.onclick = () => { this._tpl = true; this.render(root); };
     const lm = box.querySelector('#cpLenMode'); if (lm) lm.onchange = () => { const N = persist(); N.lenMode = lm.value; S.set('novel', N); this.render(root); };
     const addSite = box.querySelector('#cpAddSite'); if (addSite) addSite.onclick = () => { const v = box.querySelector('#cpSite').value.trim(); if (!v) return; const N = this.novel(); N.sites = N.sites || []; if (!N.sites.includes(v)) { N.sites.push(v); S.set('novel', N); this.render(root); } };
     box.querySelectorAll('[data-delsite]').forEach(b => b.onclick = () => { const N = this.novel(); N.sites.splice(Number(b.dataset.delsite), 1); S.set('novel', N); this.render(root); });
@@ -1864,6 +1867,39 @@ const Work = {
     const rev = box.querySelector('#cpRev'); if (rev) rev.onclick = () => { const N = this.novel(); N.phase = '修改中'; S.set('novel', N); this.render(root); };
     const revd = box.querySelector('#cpRevDone'); if (revd) revd.onclick = () => { const N = this.novel(); N.phase = '已修改'; S.set('novel', N); this.render(root); };
     const pub = box.querySelector('#cpPub'); if (pub) pub.onclick = () => { const N = this.novel(); N.phase = '上传'; S.set('novel', N); this.render(root); toast('发布顾问下阶段接入'); };
+  },
+
+
+  templatePage(root) {
+    const N = this.novel();
+    N.chaptersData = N.chaptersData || [];
+    const cards = N.chaptersData.map((c, i) => this.chapterCard(c, i)).join('');
+    root.innerHTML = '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">'
+      + '<span class="branch-title" style="margin:0;padding:0;border:none;font-size:20px">长文结构化模板</span>'
+      + '<button class="icon-btn" id="tplBack" title="返回">' + icon('chevronLeft', 18) + '</button></div>'
+      + '<div class="muted" style="margin-bottom:12px;font-size:12px;line-height:1.6">口袋写作先写大概，提炼到这里一目了然：每章一句话总结 + 场景设定（不堆字）。</div>'
+      + (cards || '<div class="empty">还没有章节，点下面「＋ 新增章节」开始梳理大纲。</div>')
+      + '<button class="btn" id="tplAdd" style="width:100%;margin-top:4px">＋ 新增章节</button>';
+    this.bindTemplate(root);
+  },
+  chapterCard(c, i) {
+    const sc = c.scene || {};
+    const f = (key, label) => '<div class="tpl-f"><label>' + label + '</label><input data-ch="' + i + '" data-sc="' + key + '" value="' + esc(sc[key] || '') + '" placeholder="' + label + '"></div>';
+    return '<div class="card tpl-ch">'
+      + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px"><b>第 ' + c.n + ' 章</b><button class="del" data-delch="' + i + '">✕</button></div>'
+      + '<div class="form-row" style="margin-bottom:8px"><label>一句话总结</label><input data-ch="' + i + '" data-f="one" value="' + esc(c.one || '') + '" placeholder="这章讲什么？一句话"></div>'
+      + '<div class="tpl-scene">'
+      + f('goal', '本章目标') + f('chars', '出场人物') + f('place', '地点') + f('conflict', '冲突')
+      + f('turn', '转折') + f('hook', '结尾钩子') + f('fix', '待修')
+      + '</div></div>';
+  },
+  bindTemplate(root) {
+    const box = root;
+    const back = box.querySelector('#tplBack'); if (back) back.onclick = () => { this._tpl = false; this.render(root); };
+    box.querySelectorAll('[data-f]').forEach(inp => inp.oninput = () => { const N = this.novel(); const i = Number(inp.dataset.ch); N.chaptersData[i][inp.dataset.f] = inp.value; S.set('novel', N); });
+    box.querySelectorAll('[data-sc]').forEach(inp => inp.oninput = () => { const N = this.novel(); const i = Number(inp.dataset.ch); N.chaptersData[i].scene = N.chaptersData[i].scene || {}; N.chaptersData[i].scene[inp.dataset.sc] = inp.value; S.set('novel', N); });
+    const add = box.querySelector('#tplAdd'); if (add) add.onclick = () => { const N = this.novel(); N.chaptersData = N.chaptersData || []; const next = (N.chaptersData.reduce((m, c) => Math.max(m, Number(c.n) || 0), 0)) + 1; N.chaptersData.push({ n: next, one: '', scene: {} }); S.set('novel', N); this.render(root); };
+    box.querySelectorAll('[data-delch]').forEach(b => b.onclick = () => { const N = this.novel(); N.chaptersData.splice(Number(b.dataset.delch), 1); S.set('novel', N); this.render(root); });
   },
 
   writeDialog(root) {
