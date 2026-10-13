@@ -1820,3 +1820,9 @@ body.modal-open .pv-dl{display:none!important}
 .cp-stats{display:flex;flex-wrap:wrap;gap:8px 18px;word-break:break-word}
 .cp-stats>div{display:flex;flex-direction:column;min-width:46px}
 .cp-stats .muted{font-size:11px}
+
+/* v358 长文结构化模板：章节一句话 + 场景设定，2列网格一目了然（不堆字） */
+.tpl-ch .tpl-scene{display:grid;grid-template-columns:1fr 1fr;gap:8px 10px;margin-top:2px}
+.tpl-f{display:flex;flex-direction:column;min-width:0}
+.tpl-f label{font-size:11px;color:var(--muted);margin-bottom:2px}
+.tpl-f input{font-size:13px;padding:6px 8px}
