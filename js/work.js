@@ -1567,7 +1567,7 @@ const Work = {
       const arr = wLogs[ds] || [];
       const wsum = arr.reduce((s, l) => s + (l.words || 0), 0);
       if (wsum > 0) {
-        html += '<div class="cal-cell wr-fill" data-date="' + ds + '"><span class="wr-words">' + wsum + '</span></div>';
+        html += '<div class="cal-cell wr-fill' + (ds === today ? ' today' : '') + '" data-date="' + ds + '"><span class="d">' + d + '</span><span class="wr-words">' + wsum + '</span></div>';
       } else {
         html += '<div class="cal-cell' + (ds === today ? ' today' : '') + '" data-date="' + ds + '"><div class="d">' + d + '</div></div>';
       }
@@ -1768,13 +1768,17 @@ const Work = {
   cockpitEntryHTML() {
     const N = this.novel();
     const pct = this.novelPct(); const act = this.novelAct(pct); const eta = this.novelEta();
-    const etaTxt = eta ? ('剩 <b>' + eta.days + '</b> 天 · 约 ' + eta.ds) : '设目标后自动测算';
     return '<div class="card cp-enter" id="cpEnter">'
       + '<div style="display:flex;align-items:center;justify-content:space-between">'
       + '<h3 style="margin:0">' + icon('target', 16) + ' 小说驾驶舱</h3><span class="muted">点击编辑 ›</span></div>'
       + '<div class="muted" style="margin-top:6px">《' + (esc(N.bookName) || '未命名') + '》 · ' + (N.type || '类型?') + ' · ' + (N.pov || '视角?') + '</div>'
-      + '<div class="cp-actbar" style="position:relative;height:10px;border-radius:6px;background:linear-gradient(90deg,#cfe8d4 0 25%,#f3e2c0 25% 75%,#d8cfe8 75% 100%);border:1px solid var(--line);margin:8px 0"><div style="position:absolute;left:' + pct + '%;top:-3px;bottom:-3px;width:2px;background:#333"></div></div>'
-      + '<div class="muted" style="font-size:12px">进度 ' + pct + '% · 第' + act.act + '幕·' + act.beat + ' · ' + etaTxt + ' · 阶段：' + (N.phase || '构思') + '</div>'
+      + '<div class="cp-stats">'
+      + '<div><span class="muted">进度</span><b>' + pct + '%</b></div>'
+      + '<div><span class="muted">阶段</span><b>' + (N.phase || '构思') + '</b></div>'
+      + '<div><span class="muted">当前</span><b>第' + act.act + '幕·' + act.beat + '</b></div>'
+      + '<div><span class="muted">预计</span><b>' + (eta ? ('剩' + eta.days + '天·' + eta.ds) : '设目标后测') + '</b></div>'
+      + '</div>'
+      + '<div class="cp-actbar" style="position:relative;height:10px;border-radius:6px;background:linear-gradient(90deg,#cfe8d4 0 25%,#f3e2c0 25% 75%,#d8cfe8 75% 100%);border:1px solid var(--line);margin-top:8px"><div style="position:absolute;left:' + pct + '%;top:-3px;bottom:-3px;width:2px;background:#333"></div></div>'
       + '</div>';
   },
   /* 填写页内容（子视图内渲染） */
@@ -1790,8 +1794,11 @@ const Work = {
         + '<div class="form-row"><label>每章字数</label><input type="number" id="cpWpc" value="' + (N.wordsPerChapter || '') + '" placeholder="如：3000"></div>'
         + '<div class="muted">目标字数 = 章数 × 每章字数 = <b>' + goal + '</b> 字</div>'
       : '<div class="form-row"><label>目标字数</label><input type="number" id="cpGoal" value="' + (N.goalWords || '') + '" placeholder="如：200000（20万字）"></div>';
-    let etaTxt = '设好目标字数与日均目标后自动测算';
-    if (eta) etaTxt = '已写 <b>' + total + '</b> / 目标 <b>' + goal + '</b> · 还差 <b>' + eta.rem + '</b> 字<br>按日均 <b>' + N.dailyGoal + '</b> 字，预计还需 <b>' + eta.days + '</b> 天，约 <b>' + eta.ds + '</b> 完结';
+    const cpStats = '<div><span class="muted">已写</span><b>' + total + '</b></div>'
+      + '<div><span class="muted">目标</span><b>' + goal + '</b></div>'
+      + '<div><span class="muted">还差</span><b>' + (eta ? eta.rem : '—') + '</b></div>'
+      + '<div><span class="muted">日均</span><b>' + (N.dailyGoal || '—') + '</b></div>'
+      + '<div><span class="muted">预计还需</span><b>' + (eta ? (eta.days + ' 天 · ' + eta.ds) : '设日均后测') + '</b></div>';
     let phaseNote = '';
     if (['构思', '准备', '写作中'].includes(cur) && goal && total >= goal) phaseNote = '<div class="banner info" style="margin:8px 0">已达目标字数！<button class="btn sm" id="cpDone">标记完结</button></div>';
     else if (cur === '已完结') phaseNote = '<div class="banner info" style="margin:8px 0">写完啦，休息一下～<button class="btn sm" id="cpRest">开始休息周</button></div>';
@@ -1815,7 +1822,7 @@ const Work = {
       + '<div class="form-row"><label>日均目标</label><input type="number" id="cpDailyGoal" value="' + (N.dailyGoal || '') + '" placeholder="如：1000"></div>'
       + '</div></div>'
       + '<div class="form-row"><label>发布网站</label><div id="cpSites" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:4px">' + sitesTags + '</div><div style="display:flex;gap:6px;margin-top:4px"><input id="cpSite" placeholder="如：番茄小说" style="flex:1"><button class="btn sm ghost" id="cpAddSite">＋</button></div></div>'
-      + '<div class="banner" style="margin:10px 0 4px">' + etaTxt + '</div>'
+      + '<div class="cp-stats" style="margin:10px 0 4px">' + cpStats + '</div>'
       + '<div class="cp-actbar" style="position:relative;height:12px;border-radius:6px;background:linear-gradient(90deg,#cfe8d4 0 25%,#f3e2c0 25% 75%,#d8cfe8 75% 100%);border:1px solid var(--line)"><div style="position:absolute;left:' + pct + '%;top:-3px;bottom:-3px;width:2px;background:#333"></div></div>'
       + '<div class="muted" style="font-size:12px;margin-top:4px">第一幕 25% · 第二幕 50% · 第三幕 25%　|　当前：第' + act.act + '幕·' + act.beat + '（约 ' + pct + '%）</div>'
       + '<div style="margin-top:10px"><div class="muted" style="font-size:12px;margin-bottom:4px">写作阶段（点任一步可跳转）</div><div class="cp-phase">' + steps + '</div></div>'
