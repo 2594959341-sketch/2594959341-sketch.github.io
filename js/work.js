@@ -1399,18 +1399,16 @@ const Work = {
       if (closeBtn) closeBtn.onclick = () => closeModal();
       return;
     }
-    // 未完成 / 未截止 → 编辑弹窗（4 行：名称 / 截止日期 / 发布平台 / 达标要求；平台目标按所选平台自动生成，含视频/图文）
+    // 未完成 / 未截止 → 编辑弹窗（名称 / 截止日期 / 发布平台；各平台目标含视频/图文，且每行单独填达标要求）
     const src = existing || pre;
     const initReq = src.req || (src.targets && src.targets[0] && src.targets[0].req) || '';
     const initPlats = (src.platforms && src.platforms.length) ? src.platforms.slice() : ((src.targets && src.targets.length) ? src.targets.map(t => t.app) : ['小红书']);
     let selPlats = initPlats.slice();
     let rows = selPlats.map(p => { const ex = (src.targets || []).find(t => t.app === p); return ex ? this.normTarget(ex) : { app: p, total: 1, type: '', req: initReq }; });
-    const acReqVal = () => (document.getElementById('acReq') ? document.getElementById('acReq').value.trim() : initReq);
     openModal(`<button class="close-x" onclick="closeModal()">×</button><h3>${icon('target',18)} 新活动创作计划</h3>
       <div class="form-row"><label>活动名称</label><input id="acName" value="${esc(pre.name || '')}" placeholder="例如：造梦西游4十周年激励"></div>
       <div class="form-row"><label>截止日期</label><input type="date" id="acDl" value="${esc(pre.deadline || '')}"></div>
       <div class="form-row"><label>发布平台</label><div id="acPlats" style="display:flex;flex-wrap:wrap;gap:2px">${this.PLATS.map(p => `<button type="button" class="chip" data-p="${esc(p)}" style="border:1px solid var(--line);background:${selPlats.includes(p) ? 'var(--accent)' : 'transparent'};color:${selPlats.includes(p) ? '#fff' : 'inherit'};border-radius:999px;padding:4px 12px;font-size:13px;cursor:pointer;margin:3px">${esc(p)}</button>`).join('')}</div></div>
-      <div class="form-row"><label>达标要求</label><input id="acReq" value="${esc(initReq)}" placeholder="如：播放1000+ / 上首页 / 10赞以上"></div>
       <div class="muted" style="margin:6px 0 4px">各平台目标（按所选平台自动生成）：选「视频」或「图文」决定该平台交哪种产出、填几篇；打卡与结算都按这里来。</div>
       <div id="acRows"></div>
       <button class="btn" id="acOk" style="width:100%;margin-top:6px">创建计划</button>`);
@@ -1418,8 +1416,7 @@ const Work = {
     const syncRows = () => {
       const seen = new Set(selPlats);
       rows = rows.filter(r => seen.has(r.app));
-      const reqV = acReqVal();
-      selPlats.forEach(p => { if (!rows.find(r => r.app === p)) rows.push({ app: p, total: 1, type: '', req: reqV }); });
+      selPlats.forEach(p => { if (!rows.find(r => r.app === p)) rows.push({ app: p, total: 1, type: '', req: '' }); });
       paint();
     };
     const paint = () => {
@@ -1432,10 +1429,12 @@ const Work = {
             <option value="图文" ${r.type === '图文' ? 'selected' : ''}>图文</option>
           </select>
           <label style="font-size:13px;white-space:nowrap">几篇<input type="number" class="ac-t" data-i="${i}" value="${r.total || 0}" min="0" style="width:52px;margin:0 3px">篇</label>
+          <input class="ac-req" data-i="${i}" value="${esc(r.req || '')}" placeholder="达标要求" style="flex:1;min-width:90px">
           <button class="del ac-del" data-i="${i}" title="移除该平台">✕</button>
         </div>`).join('');
       rowsBox.querySelectorAll('.ac-type').forEach(s => s.onchange = e => { rows[+e.target.dataset.i].type = e.target.value; });
       rowsBox.querySelectorAll('.ac-t').forEach(s => s.oninput = e => rows[+e.target.dataset.i].total = Number(e.target.value) || 0);
+      rowsBox.querySelectorAll('.ac-req').forEach(s => s.oninput = e => rows[+e.target.dataset.i].req = e.target.value.trim());
       rowsBox.querySelectorAll('.ac-del').forEach(b => b.onclick = () => {
         const p = rows[+b.dataset.i].app;
         selPlats = selPlats.filter(x => x !== p);
@@ -1455,14 +1454,11 @@ const Work = {
       else { selPlats.push(p); c.classList.add('on'); c.style.background = 'var(--accent)'; c.style.color = '#fff'; }
       syncRows();
     });
-    const reqInp = document.getElementById('acReq');
-    if (reqInp) reqInp.oninput = () => { const v = reqInp.value.trim(); rows.forEach(r => r.req = v); };
     paint();
     document.getElementById('acOk').onclick = () => {
       const name = document.getElementById('acName').value.trim(); if (!name) return toast('给计划起个名字');
       if (!selPlats.length) return toast('至少选一个发布平台');
-      const req = document.getElementById('acReq').value.trim();
-      const targets = rows.map(r => ({ app: r.app, total: Number(r.total) || 0, video: 0, article: 0, type: r.type || '', req }));
+      const targets = rows.map(r => ({ app: r.app, total: Number(r.total) || 0, video: 0, article: 0, type: r.type || '', req: (r.req || '').trim() }));
       if (existing) { existing.name = name; existing.deadline = document.getElementById('acDl').value; existing.targets = targets; S.set('workActs', raw); }
       else { raw.unshift({ id: uid(), name, deadline: document.getElementById('acDl').value, targets }); S.set('workActs', raw); }
       closeModal(); this.tool = null; this.render(root); toast(existing ? '计划已更新' : '计划已创建，打卡时记得选对平台');
