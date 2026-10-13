@@ -440,7 +440,7 @@ const Daily = {
       acts.forEach(a => opts.push(`<option value="work:act:${esc(a.id)}" ${sel === 'work:act:' + a.id ? 'selected' : ''}>${esc(a.name)}</option>`));
     }
     opts.push(`<option value="work:today" ${sel === 'work:today' ? 'selected' : ''}>今日产出打卡（不指定活动）</option>`);
-    opts.push(`<option value="work:video" ${sel === 'work:video' ? 'selected' : ''}>剪视频打卡（记录类型/平台/活动/时长）</option>`);
+    opts.push(`<option value="work:video" ${sel === 'work:video' ? 'selected' : ''}>游戏打卡（记录类型/平台/活动/时长）</option>`);
     opts.push(`<option value="work:write" ${sel === 'work:write' ? 'selected' : ''}>写作打卡（只记字数）</option>`);
     opts.push('</optgroup>');
     const ga = S.get('growthAreas', []);
