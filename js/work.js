@@ -1546,6 +1546,7 @@ const Work = {
   render_writing(body, root) {
     if (this._matLib) { this.materialLibPage(root); return; }
     if (this._transcribe) { this.render_transcribe(root); return; }
+    if (this._adv) { this.advisorPage(root); return; }
     if (this._tpl) { this.templatePage(root); return; }
     if (this._cockpit) { this.cockpitPage(root); return; }
     body.innerHTML = this.writingPage(root);
@@ -1829,6 +1830,7 @@ const Work = {
       + '<div style="margin-top:10px"><div class="muted" style="font-size:12px;margin-bottom:4px">写作阶段（点任一步可跳转）</div><div class="cp-phase">' + steps + '</div></div>'
       + phaseNote
       + '<button class="btn ghost" id="cpTpl" style="width:100%;margin-top:10px">' + icon('list', 16) + ' 长文结构化模板（章节一句话 + 场景设定）›</button>'
+      + '<button class="btn ghost" id="cpAdv" style="width:100%;margin-top:8px">' + icon('upload', 16) + ' 发布平台顾问（推荐上传哪）›</button>'
       + '<button class="btn" id="cpSave" style="width:100%;margin-top:8px">保存设定</button>';
   },
   cockpitPage(root) {
@@ -1858,6 +1860,7 @@ const Work = {
     const back = box.querySelector('#cpBack'); if (back) back.onclick = () => { this._cockpit = false; this.render(root); };
     const sv = box.querySelector('#cpSave'); if (sv) sv.onclick = () => { persist(); this.render(root); toast('设定已保存'); };
     const tpl = box.querySelector('#cpTpl'); if (tpl) tpl.onclick = () => { this._tpl = true; this.render(root); };
+    const adv = box.querySelector('#cpAdv'); if (adv) adv.onclick = () => { this._adv = true; this.render(root); };
     const lm = box.querySelector('#cpLenMode'); if (lm) lm.onchange = () => { const N = persist(); N.lenMode = lm.value; S.set('novel', N); this.render(root); };
     const addSite = box.querySelector('#cpAddSite'); if (addSite) addSite.onclick = () => { const v = box.querySelector('#cpSite').value.trim(); if (!v) return; const N = this.novel(); N.sites = N.sites || []; if (!N.sites.includes(v)) { N.sites.push(v); S.set('novel', N); this.render(root); } };
     box.querySelectorAll('[data-delsite]').forEach(b => b.onclick = () => { const N = this.novel(); N.sites.splice(Number(b.dataset.delsite), 1); S.set('novel', N); this.render(root); });
@@ -1902,6 +1905,53 @@ const Work = {
     box.querySelectorAll('[data-delch]').forEach(b => b.onclick = () => { const N = this.novel(); N.chaptersData.splice(Number(b.dataset.delch), 1); S.set('novel', N); this.render(root); });
   },
 
+
+  advisorPage(root) {
+    const N = this.novel();
+    N.sites = N.sites || [];
+    const rec = this.advRec(N.type);
+    const recLine = rec.length ? ('优先推荐：<b>' + rec.join(' · ') + '</b>') : '先在驾驶舱设好「类型」，我再给建议';
+    const phaseNote = (N.phase === '已修改' || N.phase === '上传')
+      ? '这本已进入可上传阶段，按下面建议挑平台即可。'
+      : '建议先把书写完、改好（到「已修改」阶段）再上传；下面是提前规划。';
+    const cards = PLATFORMS.map(p => {
+      const picked = N.sites.indexOf(p.name) >= 0;
+      const tags = (p.tags || []).map(t => '<span class="tag blue">' + esc(t) + '</span>').join('');
+      return '<div class="card adv-card">'
+        + '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px"><b>' + esc(p.name) + '</b>' + (picked ? '<span class="tag">已选</span>' : '') + '</div>'
+        + '<div style="margin:6px 0">' + tags + '</div>'
+        + '<div class="muted" style="font-size:12px;line-height:1.7">适合：' + esc(p.fit) + '<br>签约：' + esc(p.sign) + '<br>日更：' + esc(p.upd) + '<br>亮点：' + esc(p.pros) + '<br>注意：' + esc(p.cons) + '</div>'
+        + (picked ? '' : '<button class="btn sm ghost" data-pl="' + esc(p.name) + '" style="margin-top:8px">选为发布平台</button>')
+        + '</div>';
+    }).join('');
+    root.innerHTML = '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">'
+      + '<span class="branch-title" style="margin:0;padding:0;border:none;font-size:20px">发布平台顾问</span>'
+      + '<button class="icon-btn" id="advBack" title="返回">' + icon('chevronLeft', 18) + '</button></div>'
+      + '<div class="banner info" style="margin-bottom:10px">《' + (esc(N.bookName) || '未命名') + '》 · 类型：' + (N.type || '未设') + '<br>' + recLine + '<br><span class="muted">' + phaseNote + '</span></div>'
+      + cards;
+    this.bindAdvisor(root);
+  },
+  advRec(type) {
+    const map = {
+      '言情': ['晋江文学城', '番茄小说'],
+      '悬疑': ['番茄小说', '知乎盐选', '豆瓣阅读'],
+      '玄幻': ['起点中文网', '番茄小说'],
+      '科幻': ['起点中文网', '豆瓣阅读'],
+      '现实主义': ['豆瓣阅读', '晋江文学城'],
+      '其它': ['番茄小说', '晋江文学城']
+    };
+    return map[type] || map['其它'];
+  },
+  bindAdvisor(root) {
+    const box = root;
+    const back = box.querySelector('#advBack'); if (back) back.onclick = () => { this._adv = false; this.render(root); };
+    box.querySelectorAll('[data-pl]').forEach(b => b.onclick = () => {
+      const v = b.dataset.pl; const N = this.novel(); N.sites = N.sites || [];
+      if (!N.sites.includes(v)) { N.sites.push(v); S.set('novel', N); toast('已加入发布平台：' + v); }
+      this.render(root);
+    });
+  },
+
   writeDialog(root) {
     const N = this.novel();
     openModal(`<button class="close-x" onclick="closeModal()">×</button><h3>${icon('edit',18)} 记录今日码字</h3>
@@ -1926,6 +1976,14 @@ const Work = {
   },
 };
 window.Modules.work = { render: r => Work.render(r) };
+const PLATFORMS = [
+  { name:'晋江文学城', tags:['女频','签约','免费+VIP'], fit:'言情 / 纯爱 / 无CP / 现实', sign:'签约上架，编辑审', upd:'日更 3000-6000 字', pros:'女频老牌、社区粘性高、长尾好', cons:'新人需熬签约、版权约较严' },
+  { name:'番茄小说', tags:['免费','算法','全平台'], fit:'爽文 / 悬疑 / 言情 / 玄幻', sign:'免费+广告分账，平台签约', upd:'日更 4000+ 字', pros:'流量大、全勤稳、新人友好', cons:'靠读完率，竞争极卷' },
+  { name:'起点中文网', tags:['男频','付费','长篇'], fit:'玄幻 / 科幻 / 男频悬疑', sign:'付费订阅，签约', upd:'日更 2000-4000 字', pros:'付费天花板高、体系成熟', cons:'男频极卷、需长期稳定' },
+  { name:'豆瓣阅读', tags:['品质','编辑审'], fit:'现实 / 文艺 / 悬疑', sign:'编辑制、签约上架', upd:'稳定更新即可', pros:'调性高、编辑把关、口碑好', cons:'流量偏小' },
+  { name:'知乎盐选', tags:['短篇','故事','变现快'], fit:'悬疑 / 短篇 / 脑洞', sign:'盐选专栏 / 短篇签约', upd:'按专栏节奏', pros:'短篇变现快、适合悬疑', cons:'需强钩子、篇幅受限' },
+  { name:'七猫免费小说', tags:['免费','全平台'], fit:'女频 / 男频爽文', sign:'免费分账签约', upd:'日更 4000+ 字', pros:'流量大、全勤', cons:'免费模式、竞争大' }
+];
 window.Work = Work;
 
 /* 收入统一格式化：保留2位小数，避免浮点累加后位数过长 */
