@@ -1466,7 +1466,9 @@ const Work = {
   },
 
   /* ---------- 写小说 ---------- */
-  novel() { return S.get('novel', { bookName: '', goalWords: 0, totalWords: 0, daily: {}, clips: [], materials: [], sites: [] }); },
+  novel() { return S.get('novel', { bookName: '', goalWords: 0, totalWords: 0, daily: {}, clips: [], materials: [], sites: [],
+    type: '', lenMode: 'words', chapters: 0, wordsPerChapter: 0, pov: '', structure: '三幕', ending: '', dailyGoal: 0, phase: '构思', restStart: '',
+    chars: [], outline: { acts: [], chapters: [], scenes: [] }, world: {} }); },
   render_novel(box, root) {
     const N = this.novel();
     const today = todayStr();
@@ -1582,7 +1584,7 @@ const Work = {
     const todayMats = (N.materials || []).map((m, i) => ({ m, i })).filter(x => x.m.date === todayStr());
     const todayLogs = wLogs[todayStr()] || [];
     const todayWords = todayLogs.reduce((s, l) => s + (l.words || 0), 0);
-    const totalWords = N.totalWords || 0;
+    const totalWords = this.sumWords();
     // 今日码字记录（可单独删除）——需求14：试验时填的数字要能删
     const todayListHTML = todayLogs.length
       ? todayLogs.map(l => `<div class="list-row" style="align-items:flex-start">
@@ -1590,6 +1592,7 @@ const Work = {
           <button class="del" data-delwrlog="${l.id}">✕</button></div>`).join('')
       : '<div class="empty">今天还没记录码字</div>';
     return `<div style="display:flex;flex-direction:column;gap:12px">
+      ${this.cockpitHTML()}
       <div class="card">
         <h3>今日码字 <button class="btn sm" id="writeLogBtn" style="margin-left:auto">＋ 记录</button></h3>
         <div class="stat-combined">
@@ -1627,6 +1630,7 @@ const Work = {
     const wrCal = root.querySelector('#wrCal');
     if (wrCal) this.renderWriteCal(wrCal, root);
     root.querySelector('#writeLogBtn').onclick = () => this.writeDialog(root);
+    this.bindCockpit(root);
     const todayList = root.querySelector('#wrTodayList');
     if (todayList) todayList.querySelectorAll('[data-delwrlog]').forEach(b => b.onclick = () => {
       const logs = S.get('writeLogs', {}); const td = todayStr();
@@ -1758,6 +1762,97 @@ const Work = {
     };
   },
 
+
+  /* ============ 小说驾驶舱（构思/目标/ETA/三幕进度/状态机） ============ */
+  sumWords() { const logs = S.get('writeLogs', {}); let t = 0; for (const d in logs) for (const l of logs[d]) t += (l.words || 0); return t; },
+  novelGoal() { const N = this.novel(); return N.lenMode === 'chapters' ? (Number(N.chapters) || 0) * (Number(N.wordsPerChapter) || 0) : (Number(N.goalWords) || 0); },
+  novelPct() { const g = this.novelGoal(); return g ? Math.min(100, Math.round(this.sumWords() / g * 100)) : 0; },
+  novelAct(pct) {
+    const p = pct / 100;
+    if (p < 0.25) { const t = p / 0.25; return { act: 1, beat: t < 0.4 ? '日常' : t < 0.7 ? '激励事件' : '进入新局势' }; }
+    if (p < 0.75) { const t = (p - 0.25) / 0.5; const beats = ['尝试', '失败', '中点转折', '危机', '低谷']; return { act: 2, beat: beats[Math.min(4, Math.floor(t * 5))] }; }
+    const t = (p - 0.75) / 0.25; const beats = ['觉醒', '最终行动', '高潮', '结局']; return { act: 3, beat: beats[Math.min(3, Math.floor(t * 4))] };
+  },
+  novelEta() {
+    const g = this.novelGoal(); const total = this.sumWords(); const dg = Number(this.novel().dailyGoal) || 0;
+    if (!g || !dg) return null;
+    const rem = Math.max(0, g - total); const days = Math.ceil(rem / dg);
+    const d = new Date(); d.setDate(d.getDate() + days);
+    const ds = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+    return { rem, days, ds };
+  },
+  daysBetween(a, b) { if (!a || !b) return 0; return Math.round((new Date(b) - new Date(a)) / 86400000); },
+  cockpitHTML() {
+    const N = this.novel();
+    const goal = this.novelGoal(); const total = this.sumWords(); const pct = this.novelPct();
+    const act = this.novelAct(pct); const eta = this.novelEta();
+    const PH = ['构思', '准备', '写作中', '已完结', '休息周', '修改中', '已修改', '上传'];
+    const cur = N.phase || '构思';
+    const steps = PH.map(p => '<button class="cp-step' + (p === cur ? ' on' : '') + '" data-phase="' + p + '">' + p + '</button>').join('');
+    const goalRows = N.lenMode === 'chapters'
+      ? '<div class="form-row"><label>章数</label><input type="number" id="cpChapters" value="' + (N.chapters || '') + '" placeholder="如：20"></div>'
+        + '<div class="form-row"><label>每章字数</label><input type="number" id="cpWpc" value="' + (N.wordsPerChapter || '') + '" placeholder="如：3000"></div>'
+        + '<div class="muted">目标字数 = 章数 × 每章字数 = <b>' + goal + '</b> 字</div>'
+      : '<div class="form-row"><label>目标字数</label><input type="number" id="cpGoal" value="' + (N.goalWords || '') + '" placeholder="如：200000（20万字）"></div>';
+    let etaTxt = '设好目标字数与日均目标后自动测算';
+    if (eta) etaTxt = '已写 <b>' + total + '</b> / 目标 <b>' + goal + '</b> · 还差 <b>' + eta.rem + '</b> 字<br>按日均 <b>' + N.dailyGoal + '</b> 字，预计还需 <b>' + eta.days + '</b> 天，约 <b>' + eta.ds + '</b> 完结';
+    let phaseNote = '';
+    if (['构思', '准备', '写作中'].includes(cur) && goal && total >= goal) phaseNote = '<div class="banner info" style="margin:8px 0">已达目标字数！<button class="btn sm" id="cpDone">标记完结</button></div>';
+    else if (cur === '已完结') phaseNote = '<div class="banner info" style="margin:8px 0">写完啦，休息一下～<button class="btn sm" id="cpRest">开始休息周</button></div>';
+    else if (cur === '休息周') { const left = Math.max(0, 7 - this.daysBetween(N.restStart, todayStr())); phaseNote = left > 0 ? '<div class="banner info" style="margin:8px 0">休息周：还剩 <b>' + left + '</b> 天（别写，充电）</div>' : '<div class="banner info" style="margin:8px 0">休息够了，可以改稿了<button class="btn sm" id="cpRev">开始修改</button></div>'; }
+    else if (cur === '修改中') phaseNote = '<div class="banner info" style="margin:8px 0">改稿中<button class="btn sm" id="cpRevDone">完成修改</button></div>';
+    else if (cur === '已修改') phaseNote = '<div class="banner info" style="margin:8px 0">改完啦，可以上传啦（发布顾问下阶段接入）<button class="btn sm" id="cpPub">去上传</button></div>';
+    const sel = (opts, v) => opts.map(t => '<option ' + (t === v ? 'selected' : '') + '>' + t + '</option>').join('');
+    return '<div class="card">'
+      + '<h3>' + icon('target', 16) + ' 小说驾驶舱</h3>'
+      + '<div class="grid2">'
+      + '<div>'
+      + '<div class="form-row"><label>书名</label><input id="cpName" value="' + esc(N.bookName) + '" placeholder="在写哪本书？"></div>'
+      + '<div class="form-row"><label>类型</label><select id="cpType">' + sel(['言情', '悬疑', '玄幻', '科幻', '现实主义', '其它'], N.type) + '</select></div>'
+      + '<div class="form-row"><label>视角</label><select id="cpPov">' + sel(['第一人称', '第三人称限知', '第三人称全知', '多视角'], N.pov) + '</select></div>'
+      + '<div class="form-row"><label>结构</label><select id="cpStruct">' + sel(['三幕', '四幕', '起承转合', '自由'], N.structure) + '</select></div>'
+      + '<div class="form-row"><label>结局</label><select id="cpEnd">' + sel(['圆满', '悲剧', '开放', '反转'], N.ending) + '</select></div>'
+      + '</div>'
+      + '<div>'
+      + '<div class="form-row"><label>篇幅设定</label><select id="cpLenMode">' + sel(['words', 'chapters'], N.lenMode).replace('>words<', '>按字数<').replace('>chapters<', '>按章数×每章字数<') + '</select></div>'
+      + goalRows
+      + '<div class="form-row"><label>日均目标</label><input type="number" id="cpDailyGoal" value="' + (N.dailyGoal || '') + '" placeholder="如：1000"></div>'
+      + '<button class="btn sm" id="cpSave" style="margin-top:4px">保存设定</button>'
+      + '</div>'
+      + '</div>'
+      + '<div class="banner" style="margin:10px 0 4px">' + etaTxt + '</div>'
+      + '<div class="cp-actbar" style="position:relative;height:12px;border-radius:6px;background:linear-gradient(90deg,#cfe8d4 0 25%,#f3e2c0 25% 75%,#d8cfe8 75% 100%);border:1px solid var(--line)"><div style="position:absolute;left:' + pct + '%;top:-3px;bottom:-3px;width:2px;background:#333"></div></div>'
+      + '<div class="muted" style="font-size:12px;margin-top:4px">第一幕 25% · 第二幕 50% · 第三幕 25%　|　当前：第' + act.act + '幕·' + act.beat + '（约 ' + pct + '%）</div>'
+      + '<div style="margin-top:10px"><div class="muted" style="font-size:12px;margin-bottom:4px">写作阶段（点任一步可跳转）</div><div class="cp-phase">' + steps + '</div></div>'
+      + phaseNote
+      + '</div>';
+  },
+  bindCockpit(root) {
+    const box = root;
+    const persist = () => {
+      const N = this.novel();
+      N.bookName = (box.querySelector('#cpName') || {}).value ? box.querySelector('#cpName').value.trim() : N.bookName;
+      if (box.querySelector('#cpType')) N.type = box.querySelector('#cpType').value;
+      if (box.querySelector('#cpPov')) N.pov = box.querySelector('#cpPov').value;
+      if (box.querySelector('#cpStruct')) N.structure = box.querySelector('#cpStruct').value;
+      if (box.querySelector('#cpEnd')) N.ending = box.querySelector('#cpEnd').value;
+      if (box.querySelector('#cpLenMode')) N.lenMode = box.querySelector('#cpLenMode').value;
+      if (box.querySelector('#cpGoal')) N.goalWords = Number(box.querySelector('#cpGoal').value) || 0;
+      if (box.querySelector('#cpChapters')) N.chapters = Number(box.querySelector('#cpChapters').value) || 0;
+      if (box.querySelector('#cpWpc')) N.wordsPerChapter = Number(box.querySelector('#cpWpc').value) || 0;
+      if (box.querySelector('#cpDailyGoal')) N.dailyGoal = Number(box.querySelector('#cpDailyGoal').value) || 0;
+      S.set('novel', N); return N;
+    };
+    const sv = box.querySelector('#cpSave'); if (sv) sv.onclick = () => { persist(); this.render(root); toast('设定已保存'); };
+    const lm = box.querySelector('#cpLenMode'); if (lm) lm.onchange = () => { const N = persist(); N.lenMode = lm.value; S.set('novel', N); this.render(root); };
+    box.querySelectorAll('.cp-step').forEach(b => b.onclick = () => { const N = this.novel(); N.phase = b.dataset.phase; S.set('novel', N); this.render(root); });
+    const done = box.querySelector('#cpDone'); if (done) done.onclick = () => { const N = this.novel(); N.phase = '已完结'; S.set('novel', N); this.render(root); toast('恭喜完结！'); };
+    const rest = box.querySelector('#cpRest'); if (rest) rest.onclick = () => { const N = this.novel(); N.phase = '休息周'; N.restStart = todayStr(); S.set('novel', N); this.render(root); };
+    const rev = box.querySelector('#cpRev'); if (rev) rev.onclick = () => { const N = this.novel(); N.phase = '修改中'; S.set('novel', N); this.render(root); };
+    const revd = box.querySelector('#cpRevDone'); if (revd) revd.onclick = () => { const N = this.novel(); N.phase = '已修改'; S.set('novel', N); this.render(root); };
+    const pub = box.querySelector('#cpPub'); if (pub) pub.onclick = () => { const N = this.novel(); N.phase = '上传'; S.set('novel', N); this.render(root); toast('发布顾问下阶段接入'); };
+  },
+
   writeDialog(root) {
     const N = this.novel();
     openModal(`<button class="close-x" onclick="closeModal()">×</button><h3>${icon('edit',18)} 记录今日码字</h3>
@@ -1774,7 +1869,7 @@ const Work = {
       S.set('writeLogs', logs);
       const novel = this.novel();
       novel.bookName = document.getElementById('wrBook').value.trim() || novel.bookName;
-      novel.totalWords = (novel.totalWords || 0) + words;
+      novel.totalWords = this.sumWords();
       const sites = document.getElementById('wrSite').value.split(/[,，、\s]+/).filter(Boolean);
       if (sites.length) novel.sites = sites;
       S.set('novel', novel); closeModal(); this.render(root); toast('码字记录已保存');
