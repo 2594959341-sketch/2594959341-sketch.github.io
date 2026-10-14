@@ -1,5 +1,5 @@
 /* ============ 首页 + 导航 ============ */
-window.APP_VER = 'mumu-v365'; // 当前前端版本（设置页可见，用于确认是否加载到最新代码）
+window.APP_VER = 'mumu-v366'; // 当前前端版本（设置页可见，用于确认是否加载到最新代码）
 const SR_LINKS = [
   { v: 'sport', n: '运动（任意跟练）' },
   { v: 'sport:', n: '运动（具体项目，选后填名）' },
@@ -55,7 +55,7 @@ const Home = {
   render(root) {
     const d = todayStr();
     const plan = Daily.statsOf(d);
-    const work = (S.get('workLogs', {})[d] || []).length;
+    const work = (S.get('workLogs', {})[d] || []).length + (S.get('writeLogs', {})[d] || []).length;
     const study = (S.get('kgLogs', {})[d] || []).reduce((s, l) => s + l.minutes, 0);
     const growth = (S.get('growthLogs', {})[d] || []).length;
     const sport = (S.get('sportLogs', {})[d] || []).reduce((s, l) => s + l.minutes, 0);
