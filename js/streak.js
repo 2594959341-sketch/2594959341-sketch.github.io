@@ -51,9 +51,6 @@ const Streak = {
     if (isSickLeave(date)) return true; // 病假：保护所有板块续火花，等同月经假/年度假期
     if (isAnnualHoliday(date)) return true; // 年度固定假期（生日/纪念日）：全局保护所有板块续火花，等同月经假
     if ((S.get('menstrualRest', []) || []).indexOf(date) >= 0) return true; // 月经假：保护所有板块续火花
-    if (item.type === 'sport' && (S.get('sportRest', []) || []).indexOf(date) >= 0) return true;
-    if (item.type === 'kg' && (S.get('kgRest', []) || []).indexOf(date) >= 0) return true;
-    if (item.type === 'work' && (S.get('workRest', []) || []).indexOf(date) >= 0) return true;
     return this.isDone(item, date) || !!(item.rest && item.rest[date]) || !!(item.madeup && item.madeup[date]);
   },
 
@@ -95,6 +92,15 @@ const Streak = {
     d.items.forEach(it => {
       if (it.type === 'kg') { it.ref = kgNorm(it.ref); it.name = '学习·' + it.ref; }
       else if (it.type === 'sport') { it.ref = sportNorm(it.ref); it.name = it.ref; }
+    });
+    // v363 迁移：旧 section 级休息数组(sportRest/kgRest/workRest) → 各 streak item 的 per-item rest；迁移后清空旧数组
+    ['sportRest', 'kgRest', 'workRest'].forEach(function (secKey) {
+      var mtype = secKey === 'sportRest' ? 'sport' : secKey === 'kgRest' ? 'kg' : 'work';
+      var arr = S.get(secKey, []) || [];
+      if (arr.length) {
+        arr.forEach(function (ds) { d.items.forEach(function (it) { if (it.type === mtype) { it.rest = it.rest || {}; if (!it.rest[ds]) it.rest[ds] = 1; } }); });
+        S.set(secKey, []);
+      }
     });
     this.save(d);
     return d.items;
@@ -213,7 +219,7 @@ const Streak = {
     stat.innerHTML = `连续 <b>${this.curStreak(item)}</b> 天 · 补签卡 ×<b>${this.makeupAvail(item)}</b> · 打卡满 30 天得 1 张`;
     box.appendChild(stat);
     const grid = document.createElement('div'); grid.className = 'stk-days'; box.appendChild(grid);
-    const catRest = ds => { const mr = (S.get('menstrualRest', []) || []).indexOf(ds) >= 0; return mr || isAnnualHoliday(ds) || isSickLeave(ds) || (item.type === 'sport' ? (S.get('sportRest', []) || []).indexOf(ds) >= 0 : item.type === 'kg' ? (S.get('kgRest', []) || []).indexOf(ds) >= 0 : item.type === 'work' ? (S.get('workRest', []) || []).indexOf(ds) >= 0 : false); };
+    const catRest = ds => isAnnualHoliday(ds) || isSickLeave(ds);
     for (let dd = 1; dd <= dim; dd++) {
       const ds = ym + '-' + String(dd).padStart(2, '0');
       const done = this.isDone(item, ds);
@@ -286,7 +292,7 @@ const Streak = {
       if (cls === 'mu') { toast('补签日不可改'); return; }
       const mensSet = new Set(S.get('menstrualRest', []) || []);
       if (mensSet.has(ds)) { toast('当日为月经假，已是休息，无需补签'); return; }
-      const covCat = item.type === 'sport' ? (S.get('sportRest', []) || []).indexOf(ds) >= 0 : item.type === 'kg' ? (S.get('kgRest', []) || []).indexOf(ds) >= 0 : item.type === 'work' ? (S.get('workRest', []) || []).indexOf(ds) >= 0 : false;
+      const covCat = !!(item.rest && item.rest[ds]);
       if (covCat && !(it.rest && it.rest[ds])) { toast('当日为每日计划休息日，可在每日计划调整'); return; }
       // 火花页：空格=补签（休息只能在板块设置，不在火花页设置）
       if (cls === 'rest') { toast('休息日请在板块设置'); return; }
