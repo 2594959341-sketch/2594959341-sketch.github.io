@@ -130,6 +130,18 @@ function restRemove(key, date) {
   if (i >= 0) { arr.splice(i, 1); _restWrite(key, arr); }
 }
 
+// 收集某板块所有 streak 条目的休息日期（per-item，v363 取代 section 级 sportRest/kgRest/workRest）
+function restDatesOfType(type) {
+  var St = window.Streak; if (!St || !St.data) return [];
+  var d = St.data(); if (!d || !d.items) return [];
+  var s = {};
+  d.items.forEach(function (it) {
+    if (it.type !== type || !it.rest) return;
+    Object.keys(it.rest).forEach(function (k) { if (it.rest[k]) s[k] = 1; });
+  });
+  return Object.keys(s);
+}
+
 /* ---- 月经假（独立健康假，不占用运动/备考/创作的「每月4天」额度）----
    规则：每月最多 2 天，必须连续休两天（点一次占今天+明天）；
    不与任何其它假期/补签日重叠；月经假日对所有板块续火花都算「休息」 */
@@ -140,14 +152,16 @@ function menstrualCountMonth(date) {
   var ms = date.slice(0, 7);
   return menstrualArr().filter(function (d) { return d.slice(0, 7) === ms; }).length;
 }
-// 收集所有其它「休息 / 补签」日期（用于重叠互斥判定）
+// 收集所有其它「休息 / 补签」日期（用于重叠互斥判定，v363：休息改为 per-item，从各 streak item.rest 聚合）
 function allOtherRestDates() {
   var s = {};
-  ['sportRest', 'kgRest', 'workRest'].forEach(function (k) { (S.get(k, []) || []).forEach(function (d) { s[d] = 1; }); });
   var St = window.Streak;
   if (St && St.data) {
     var d = St.data();
-    if (d && d.items) d.items.forEach(function (it) { if (it.madeup) Object.keys(it.madeup).forEach(function (k) { if (it.madeup[k]) s[k] = 1; }); });
+    if (d && d.items) d.items.forEach(function (it) {
+      if (it.rest) Object.keys(it.rest).forEach(function (k) { if (it.rest[k]) s[k] = 1; });
+      if (it.madeup) Object.keys(it.madeup).forEach(function (k) { if (it.madeup[k]) s[k] = 1; });
+    });
   }
   return s;
 }
@@ -350,7 +364,7 @@ function openRestMenu(ds, boardKey, render, restToggleFn) {
     return;
   }
   if (ds > todayStr()) { toast('不能给未来的日期设休息 / 月经假'); return; }
-  var restSet = _restSet(boardKey);
+  var restSet = new Set(restDatesOfType(boardKey));
   var mset = menstrualSet();
   var isRest = restSet.has(ds), isMens = mset.has(ds);
   if (isRest && isMens) {
