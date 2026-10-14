@@ -484,6 +484,16 @@ const Daily = {
         logs[date].push({ id: uid(), subject: km, content: title, mode: kmode, progress: (extra && (extra.where != null ? extra.where : extra.progress)) || '', minutes: (extra && extra.minutes != null) ? extra.minutes : 25, qTotal: kqt, qCorrect: kqc, qWrongTypes: (extra && extra.qWrongTypes) || undefined, time: this._nowHM(), autoGen: true, srcId: srcId || undefined });
         S.set('kgLogs', logs);
       } else if (mod === 'work') {
+        if (sub === 'write') {
+          // 写作打卡落 writeLogs（码字，与写作页/写作续火花同源，双向联动）；按 srcId 去重
+          const wLogs = S.get('writeLogs', {}); wLogs[date] = wLogs[date] || [];
+          if (srcId && wLogs[date].some(l => l.srcId === srcId)) return;
+          const words = (extra && extra.words != null) ? (Number(extra.words) || 0) : 0;
+          wLogs[date].push({ id: uid(), title: (extra && extra.content) || title || '写作打卡', words, kind: (extra && extra.kind) || 'text', time: this._nowHM(), autoGen: true, srcId: srcId || undefined, date: date });
+          S.set('writeLogs', wLogs);
+          try { if (window.Work && window.Work.novel && window.Work.sumWords) { const N = window.Work.novel(); if (extra && extra.book) N.bookName = extra.book; N.totalWords = window.Work.sumWords(); S.set('novel', N); } } catch (e) {}
+          return;
+        }
         const logs = S.get('workLogs', {}); logs[date] = logs[date] || [];
         // 按 srcId 去重：同一每日计划任务只记一次；不同任务各自记录（修复「一天完成多个创作任务却只记一条」的 bug）
         if (srcId && logs[date].some(l => l.autoGen && l.srcId === srcId)) return;
@@ -1352,7 +1362,30 @@ const Daily = {
     if (t.cat === 'sport') return this.requireSportInfo(t, date, onConfirm);
     if (t.cat === 'growth' && this.growthArea(t.link) === '英语') return this.requireEngInfo(t, date, onConfirm);
     if (t.cat === 'growth' && this.growthArea(t.link) === '阅读') return this.requireReadInfo(t, date, onConfirm);
+    if (t.link === 'work:write') return this.requireWriteInfo(t, date, onConfirm);
     onConfirm();
+  },
+  // 每日计划「写作打卡(work:write)」完成时：采集 哪本作品/写了什么/类型(构思·正文)/字数，落 writeLogs（与写作页同源，双向联动）
+  requireWriteInfo(t, date, onConfirm) {
+    const W = window.Work;
+    const N = (W && W.novel) ? W.novel() : { bookName: '' };
+    const preWords = (t.extra && t.extra.words != null) ? t.extra.words : '';
+    openModal(`<button class="close-x" onclick="closeModal()">×</button><h3>${icon('edit',18)} 写作打卡</h3>
+      <div class="muted" style="font-size:12px;margin-bottom:10px">${esc(t.title || '写作')}</div>
+      <div class="form-row"><label>哪本作品</label><input id="wdBook" placeholder="在写哪本书？" value="${esc(N.bookName || '')}"></div>
+      <div class="form-row"><label>写了什么</label><input id="wdContent" placeholder="例如：第三章 / 作品大纲 / 场景设定"></div>
+      <div class="form-row"><label>类型</label><select id="wdKind"><option value="text">正文（计入总字数）</option><option value="plan">构思 · 设定/大纲（不计入总字数）</option></select></div>
+      <div class="form-row"><label>码了多少字</label><input id="wdWords" type="number" min="0" inputmode="numeric" placeholder="如：1200" value="${esc(preWords)}"></div>
+      <button class="btn" id="wdOk" style="width:100%;margin-top:12px">完成打卡</button>`);
+    document.getElementById('wdOk').onclick = () => {
+      const content = document.getElementById('wdContent').value.trim();
+      const words = Math.max(0, Number(document.getElementById('wdWords').value) || 0);
+      t.writeBook = document.getElementById('wdBook').value.trim();
+      t.writeContent = content || (t.title || '写作打卡');
+      t.writeWords = words;
+      t.writeKind = document.getElementById('wdKind').value;
+      closeModal(); onConfirm();
+    };
   },
   // 今日待办里的「阅读」任务完成时：采集书名/进度/时长（复用阅读录入字段，但降低摩擦：不强制封面/标签/评分）
   requireReadInfo(t, date, onConfirm) {
@@ -1404,6 +1437,7 @@ const Daily = {
         else if (t.cat === 'sport') extra = { minutes: t.sportMin || 10, feel: t.sportFeel || '适中' };
         else if (this.growthArea(t.link) === '英语') extra = { minutes: (t.engMin != null ? t.engMin : (extra && extra.minutes) || 20), delta: (t.engDelta != null ? t.engDelta : 0) };
         else if (this.growthArea(t.link) === '阅读') extra = { book: t.readBook, pages: t.readPages || '', minutes: t.readMin != null ? t.readMin : 20, cat: t.readCat || '', finished: t.readFinished };
+        else if (t.link === 'work:write') extra = { book: t.writeBook, content: t.writeContent, words: t.writeWords, kind: t.writeKind };
         this.pushToColumn(date, t.link, t.title, t.linkApp, extra, t.srcId || t.id);
       }
       this.syncGoalsFromPlan(date);
@@ -1417,6 +1451,7 @@ const Daily = {
     // 移动不记录学习/涨分，英语/阅读任务跳过填写弹窗（移动不等于打卡）
     if (t.cat === 'growth' && this.growthArea(t.link) === '英语') { this.promptMoveLoad(t, date); return; }
     if (t.cat === 'growth' && this.growthArea(t.link) === '阅读') { this.promptMoveLoad(t, date); return; }
+    if (t.link === 'work:write') { this.promptMoveLoad(t, date); return; }
     this.requireTaskInfo(t, date, () => this.promptMoveLoad(t, date));
   },
 
