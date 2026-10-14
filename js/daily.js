@@ -2335,6 +2335,12 @@ const Daily = {
   },
 
   // ===== 月日历页面（独立页面，非弹窗）=====
+  // v368：全日休=当天有任务且全部处于休息/放弃/移走（月历假期染色用；动态判断，翻月无需预计算）
+  _isFullRest(ds) {
+    const arr = this.list(ds) || [];
+    return arr.length > 0 && arr.every(t => t.abandoned || t.moved || t.restDay);
+  },
+
   renderMonthCalPage(box) {
     if (!this._monthYm) this._monthYm = todayStr().slice(0, 7);
     const ym = this._monthYm;
@@ -2351,6 +2357,7 @@ const Daily = {
     renderMonthCal(calEl, {
       ym,
       legendEl: '#mcHl', legendHTML: v => holidayLegendHTML(v), madeupSet: new Set(madeupSetInRange('2020-01-01', '2050-12-31')),
+      menstrualSet: menstrualSet(), restSet: { has: ds => this._isFullRest(ds) },
       cellHTML: ds => {
         const list = this.list(ds);
         const n = list.length;
@@ -2730,6 +2737,7 @@ const Daily = {
     renderMonthCal(calEl, {
       ym,
       legendEl: '#gmHl', legendHTML: v => holidayLegendHTML(v), madeupSet: new Set(madeupSetInRange('2020-01-01', '2050-12-31')),
+      menstrualSet: menstrualSet(), restSet: { has: ds => this._isFullRest(ds) },
       cellHTML: ds => {
         const dgs = goals.filter(g => g.scope === 'day' && g.period === ds);
         if (!dgs.length) return '';
@@ -2777,6 +2785,7 @@ const Daily = {
     const body = dlg.querySelector('#mcBody');
     const draw = () => renderMonthCal(body, {
       ym: viewYm,
+      menstrualSet: menstrualSet(), restSet: { has: ds => this._isFullRest(ds) },
       cellHTML: ds => {
         const list = this.list(ds);
         const n = list.length;
