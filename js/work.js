@@ -1022,7 +1022,8 @@ const Work = {
   render_cal(box, root) {
     const logs = this.logs();
     const marks = {}; Object.keys(logs).forEach(d => { marks[d] = logs[d].map(l => l.type === 'video' ? '#7CB390' : '#F6C56E'); });
-    const restSet = new Set([].concat(restDatesOfType('work'), annualHolidaySet('2020-01-01', '2050-12-31'), sickSetInRange('2020-01-01', '2050-12-31'))); // 排除月经假：月经假走粉色 menstrualSet；病假走专属蓝色；创作连续天数由 Streak.covered 统一处理（已含月经假+年度假期+病假）
+    // v368：Array.from 展开 Set；旧 workRest 并上兼容。月经假走粉色 menstrualSet；病假/年度假期走 hcls；创作连续天数由 Streak.covered 统一处理
+    const restSet = new Set([].concat(restDatesOfType('work'), S.get('workRest', []) || [], Array.from(annualHolidaySet('2020-01-01', '2050-12-31')), Array.from(sickSetInRange('2020-01-01', '2050-12-31')))); // 排除月经假：月经假走粉色 menstrualSet；病假走专属蓝色；创作连续天数由 Streak.covered 统一处理（已含月经假+年度假期+病假）
     const mensSet = menstrualSet();
     const todayIsRest = restDatesOfType('work').indexOf(todayStr()) >= 0;
     box.innerHTML = `<div class="card"><h3 style="font-size:14px;color:var(--sub);font-weight:600">创作日历 <span style="margin-left:auto"><button class="icon-btn" id="workCalRest" title="${todayIsRest ? '取消今日休息' : '今日休息'}（长按日历里那一天可补记 / 设月经假）" style="${todayIsRest ? 'color:#e74c3c' : ''}">${icon(todayIsRest ? 'sun' : 'moon',16)}</button></span></h3><div id="workCal"></div>
