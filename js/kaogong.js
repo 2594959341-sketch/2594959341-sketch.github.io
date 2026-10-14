@@ -209,9 +209,11 @@ const KG = {
     const _kgStData = S.get('mumu_streak', { items: [] });
     const _kgMadeup = [];
     (_kgStData.items || []).forEach(function(it){ if (it && it.type === 'kg' && it.madeup) Object.keys(it.madeup).forEach(function(d){ _kgMadeup.push(d); }); });
-    const restSet = new Set([].concat(restDatesOfType('kg'), S.get('menstrualRest', []) || [], _kgMadeup, annualHolidaySet('2020-01-01', '2050-12-31'), sickSetInRange('2020-01-01', '2050-12-31')));
+    // v368：Array.from 展开 Set（concat 不展开 Set，曾致生日/纪念日/病假日「不中断连续天数」逻辑失效）；旧 kgRest 并上兼容
+    const restSet = new Set([].concat(restDatesOfType('kg'), S.get('menstrualRest', []) || [], S.get('kgRest', []) || [], _kgMadeup, Array.from(annualHolidaySet('2020-01-01', '2050-12-31')), Array.from(sickSetInRange('2020-01-01', '2050-12-31'))));
     // 日历用"不含月经假"的休息集：月经假单独走 menstrualSet 上粉色，病假走专属蓝色；均不中断连续天数（火花/连续天数仍用上面的 restSet）
-    const calRestSet = new Set([].concat(S.get('kgRest', []) || [], _kgMadeup, annualHolidaySet('2020-01-01', '2050-12-31'), sickSetInRange('2020-01-01', '2050-12-31')));
+    // v368：改读 per-item restDatesOfType（v363 起休息日写在 streak 条目里，此前只读旧 kgRest 致新休息日不上色）；月经假走粉色、病假/年度假期走 hcls
+    const calRestSet = new Set([].concat(restDatesOfType('kg'), S.get('kgRest', []) || []));
     const todayIsRest = restDatesOfType('kg').indexOf(todayStr()) >= 0;
     let streak = 0; let d = todayStr();
     if (!((logs[d] && logs[d].length) || restSet.has(d))) d = addDays(d, -1);
