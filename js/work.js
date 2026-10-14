@@ -1469,9 +1469,13 @@ const Work = {
   },
 
   /* ---------- 写小说 ---------- */
-  novel() { return S.get('novel', { bookName: '', goalWords: 0, totalWords: 0, daily: {}, clips: [], materials: [], sites: [], chaptersData: [],
-    type: '', lenMode: 'words', chapters: 0, wordsPerChapter: 0, pov: '', structure: '三幕', ending: '', dailyGoal: 0, phase: '构思', restStart: '',
-    chars: [], outline: { acts: [], chapters: [], scenes: [] }, world: {} }); },
+  novel() {
+    const N = S.get('novel', { bookName: '', goalWords: 0, totalWords: 0, daily: {}, clips: [], materials: [], sites: [], chaptersData: [],
+      type: '', lenMode: 'words', chapters: 0, wordsPerChapter: 0, pov: '', structure: '三幕', ending: '', dailyGoal: 0, phase: '构思', restStart: '',
+      chars: [], outline: { acts: [], chapters: [], scenes: [] }, world: {} });
+    if (N.phase === '准备') { N.phase = '构思'; S.set('novel', N); } // v367：构思/准备合并（设定/大纲/场景都算构思，做完即写正文）
+    return N;
+  },
   render_novel(box, root) {
     const N = this.novel();
     const today = todayStr();
@@ -1564,15 +1568,17 @@ const Work = {
     const first = new Date(y, m - 1, 1); const startW = first.getDay();
     const daysIn = new Date(y, m, 0).getDate();
     const today = todayStr();
+    const dg = Number(this.novel().dailyGoal) || 0; // 日均目标：达标浅绿、未达标红
     let html = '<div class="cal-head"><button class="btn ghost sm" id="wrPrev">‹</button><b>' + y + '年' + m + '月</b><button class="btn ghost sm" id="wrNext">›</button></div>';
     html += '<div class="cal-grid">' + ['日', '一', '二', '三', '四', '五', '六'].map(w => '<div class="wd">' + w + '</div>').join('');
     for (let i = 0; i < startW; i++) html += '<div></div>';
     for (let d = 1; d <= daysIn; d++) {
       const ds = y + '-' + String(m).padStart(2, '0') + '-' + String(d).padStart(2, '0');
       const arr = wLogs[ds] || [];
-      const textSum = arr.reduce((s, l) => s + (this.isPlanEntry(l) ? 0 : (l.words || 0)), 0); // 只算正文码字
-      if (textSum > 0) {
-        html += '<div class="cal-cell wr-fill' + (ds === today ? ' today' : '') + '" data-date="' + ds + '" title="' + ds + ' · 码字 ' + textSum + '"><span class="wr-words">' + textSum + '</span></div>';
+      const total = arr.reduce((s, l) => s + (l.words || 0), 0); // 当日码字总数（构思+正文，各阶段都呈现）
+      if (total > 0) {
+        const met = dg <= 0 || total >= dg;                 // 达标浅绿、未达标红
+        html += '<div class="cal-cell wr-fill' + (ds === today ? ' today' : '') + '" data-date="' + ds + '" title="' + ds + ' · 码字 ' + total + (dg ? '（目标 ' + dg + '）' : '') + '"><span class="wr-words" style="color:' + (met ? '#3FA96A' : '#E0564E') + '">' + total + '</span></div>';
       } else {
         html += '<div class="cal-cell' + (ds === today ? ' today' : '') + '" data-date="' + ds + '"><div class="d">' + d + '</div></div>';
       }
@@ -1798,7 +1804,7 @@ const Work = {
     const N = this.novel();
     const goal = this.novelGoal(); const total = this.sumWords(); const pct = this.novelPct();
     const act = this.novelAct(pct); const eta = this.novelEta();
-    const PH = ['构思', '准备', '写作中', '已完结', '休息周', '修改中', '已修改', '上传'];
+    const PH = ['构思', '写作中', '已完结', '休息周', '修改中', '已修改', '上传'];
     const cur = N.phase || '构思';
     const steps = PH.map(p => '<button class="cp-step' + (p === cur ? ' on' : '') + '" data-phase="' + p + '">' + p + '</button>').join('');
     const goalRows = N.lenMode === 'chapters'
@@ -1812,7 +1818,7 @@ const Work = {
       + '<div><span class="muted">日均</span><b>' + (N.dailyGoal || '—') + '</b></div>'
       + '<div><span class="muted">预计还需</span><b>' + (eta ? (eta.days + ' 天 · ' + eta.ds) : '设日均后测') + '</b></div>';
     let phaseNote = '';
-    if (['构思', '准备', '写作中'].includes(cur) && goal && total >= goal) phaseNote = '<div class="banner info" style="margin:8px 0">已达目标字数！<button class="btn sm" id="cpDone">标记完结</button></div>';
+    if (['构思', '写作中'].includes(cur) && goal && total >= goal) phaseNote = '<div class="banner info" style="margin:8px 0">已达目标字数！<button class="btn sm" id="cpDone">标记完结</button></div>';
     else if (cur === '已完结') phaseNote = '<div class="banner info" style="margin:8px 0">写完啦，休息一下～<button class="btn sm" id="cpRest">开始休息周</button></div>';
     else if (cur === '休息周') { const left = Math.max(0, 7 - this.daysBetween(N.restStart, todayStr())); phaseNote = left > 0 ? '<div class="banner info" style="margin:8px 0">休息周：还剩 <b>' + left + '</b> 天（别写，充电）</div>' : '<div class="banner info" style="margin:8px 0">休息够了，可以改稿了<button class="btn sm" id="cpRev">开始修改</button></div>'; }
     else if (cur === '修改中') phaseNote = '<div class="banner info" style="margin:8px 0">改稿中<button class="btn sm" id="cpRevDone">完成修改</button></div>';
