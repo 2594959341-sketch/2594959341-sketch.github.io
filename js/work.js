@@ -1974,15 +1974,26 @@ const Work = {
     document.getElementById('wrOk').onclick = () => {
       const t = document.getElementById('wrTitle').value.trim(); if (!t) return toast('记一下写了什么');
       const words = Number(document.getElementById('wrWords').value) || 0;
+      const kind = document.getElementById('wrKind').value;
       const logs = S.get('writeLogs', {}); logs[todayStr()] = logs[todayStr()] || [];
-      logs[todayStr()].push({ id: uid(), title: t, words, kind: document.getElementById('wrKind').value });
+      const entry = { id: uid(), title: t, words, kind };
+      logs[todayStr()].push(entry);
       S.set('writeLogs', logs);
       const novel = this.novel();
       novel.bookName = document.getElementById('wrBook').value.trim() || novel.bookName;
       novel.totalWords = this.sumWords();
       const sites = document.getElementById('wrSite').value.split(/[,，、\s]+/).filter(Boolean);
       if (sites.length) novel.sites = sites;
-      S.set('novel', novel); closeModal(); this.render(root); toast('码字记录已保存');
+      S.set('novel', novel);
+      // 写作打卡 ↔ 每日计划联动：标记今日「写作打卡(work:write)」任务完成（当天没有创作任务时按需自动建一条）
+      try {
+        if (window.Daily) window.Daily.autoFromColumn('work:write', todayStr(), t || '写作打卡', null, {
+          '字数': (words || 0) + ' 字',
+          '类型': kind === 'plan' ? '构思' : '正文',
+          '书名': novel.bookName || ''
+        }, entry.id);
+      } catch (e) { console.warn('write→daily sync failed', e); }
+      closeModal(); this.render(root); toast('码字记录已保存');
     };
   },
 };
