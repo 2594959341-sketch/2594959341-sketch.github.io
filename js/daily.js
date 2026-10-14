@@ -1356,7 +1356,7 @@ const Daily = {
       if (t.steps.length) t.steps.forEach(s => { s.done = true; s.doneAt = Date.now(); });
       else t.manualDone = true;
       if (!t.doneAt) t.doneAt = Date.now();
-      if (t.restDay) { t.restDay = false; this._clearRest(date); }
+      if (t.restDay) { t.restDay = false; this._clearRest(date, t); }
       this.setList(date, arr);
       if (t.link) {
         let extra = t.extra || null;
@@ -1405,7 +1405,7 @@ const Daily = {
       const arr = this.list(date); const tt = arr.find(x => x.id === t.id); if (!tt) return;
       tt.moved = true;
       tt.taskLoadConsumed = consumed;          // 今日已消耗，计入今天精力
-      if (tt.restDay) { tt.restDay = false; this._clearRest(date); }
+      if (tt.restDay) { tt.restDay = false; this._clearRest(date, tt); }
       // 今天实际学了 → 记到备考打卡（考公专栏）；明天那份清空，完成时再问
       if (tt.cat === 'kaogong' && tt.actMin != null && tt.actMin > 0) {
         const sid = tt.srcId || tt.id;
@@ -1422,7 +1422,7 @@ const Daily = {
   abandonTask(date, id, reason) {
     const arr = this.list(date); const t = arr.find(x => x.id === id); if (!t) return;
     t.abandoned = true; t.abandonReason = reason != null ? reason : (t.abandonReason || '');
-    if (t.restDay) { t.restDay = false; this._clearRest(date); }
+    if (t.restDay) { t.restDay = false; this._clearRest(date, t); }
     this.setList(date, arr); this.render(this._root); toast('已标记无法完成，轻装上阵');
   },
   promptAbandon(date, id) {
@@ -1439,35 +1439,77 @@ const Daily = {
     };
   },
 
-  // 今日休息：对所有任务可用。运动/备考任务会同步写入对应休息数组，不计入连续打卡中断
-  // （一周最多 1 天，一月最多 4 天）。cancel=true 取消休息。
+  // 今日休息：把每日任务映射到对应续火花条目（per-item），返回 streak item 数组
+  _restTargetItems(t) {
+    const St = window.Streak; if (!St || !St.data) return [];
+    const items = St.data().items || [];
+    if (t.cat === 'sport') {
+      const ref = (t.link && t.link.split(':')[1]) || (t.extra && t.extra.project) || (t.title || '');
+      const it = items.find(x => x.type === 'sport' && sportNorm(x.ref) === sportNorm(ref));
+      return it ? [it] : [];
+    }
+    if (t.cat === 'kaogong') {
+      // 备考每日计划只有通用「学习打卡」，休息=所有学习科目都休（每个科目独立额度）
+      return items.filter(x => x.type === 'kg');
+    }
+    if (t.cat === 'work') {
+      const link = t.link || '';
+      if (link === 'work:video') { const it = items.find(x => x.id === 'work:game'); return it ? [it] : []; }
+      if (link === 'work:write') { const it = items.find(x => x.id === 'work:write'); return it ? [it] : []; }
+      return items.filter(x => x.type === 'work'); // 通用创作（今日产出/活动）→ 所有创作项
+    }
+    return [];
+  },
+  // 今日休息：按「条目」记录（v363 改 per-item）。运动/备考/创作任务映射到对应续火花条目，
+  // 各自独立额度（一周最多 1 天、一月最多 4 天），互不干扰；通用备考/创作任务休息=该板块所有条目都休。
   restDay(date, id, cancel) {
     const arr = this.list(date); const t = arr.find(x => x.id === id); if (!t) return;
-    const key = t.cat === 'sport' ? 'sport' : (t.cat === 'kaogong' ? 'kaogong' : (t.cat === 'work' ? 'work' : null));
+    const items = this._restTargetItems(t);
     if (cancel) {
       t.restDay = false;
-      if (key) restRemove(key, date);
+      if (items.length) {
+        const St = window.Streak; const d = St.data();
+        items.forEach(it => { if (it.rest) delete it.rest[date]; });
+        St.save(d);
+      }
       this.setList(date, arr); this.render(this._root);
-      toast(key ? '已取消休息' : '已取消今日休息');
+      toast('已取消休息');
       return;
     }
-    if (key) {
-      const chk = restCanAdd(key, date);
-      if (!chk.ok) { toast(chk.msg); return; }
+    if (!items.length) {
+      // 无关联续火花条目（如纯自定义任务）：仅本地标记
+      t.restDay = true;
+      this.setList(date, arr); this.render(this._root);
+      toast('已设为今日休息');
+      return;
     }
+    // 额度检查：特定条目(单条)超额直接拦截；通用条目(多条)只休允许的部分（Streak.restCanAdd 返回布尔）
+    const blocked = items.map(it => ({ it, ok: window.Streak.restCanAdd(it, date) })).filter(x => !x.ok);
+    if (items.length === 1 && blocked.length) { toast('该条目本周/本月休息已用完（一周最多 1 天、一月最多 4 天）'); return; }
+    const St = window.Streak; const d = St.data();
+    let rested = 0;
+    items.forEach(it => {
+      if (blocked.find(b => b.it === it)) return;
+      it.rest = it.rest || {}; it.rest[date] = 1; rested++;
+    });
+    St.save(d);
     t.restDay = true;
-    if (key) restAdd(key, date);
     this.setList(date, arr); this.render(this._root);
-    toast(key === 'kaogong' ? '已设为休息日 · 连续学习不受影响'
-      : (key === 'sport' ? '已设为休息日 · 连续运动不受影响' : '已设为今日休息'));
+    if (rested === 0) toast('该条目本周/本月休息已用完（一周最多 1 天、一月最多 4 天）');
+    else toast('已设为休息日 · 连续打卡不受影响');
   },
 
-  // 任务改为完成 / 无法完成 / 挪到明天 时，若当天曾被标记休息则清除（这些都不是“休息”）
-  _clearRest(date) {
-    ['sportRest', 'kgRest', 'workRest'].forEach(k => {
-      const rest = S.get(k, []) || [];
-      if (rest.includes(date)) S.set(k, rest.filter(d => d !== date));
-    });
+  // 任务改为完成 / 无法完成 / 挪到明天 时，清除该任务对应续火花条目的休息标记（per-item，v363）
+  _clearRest(date, t) {
+    const St = window.Streak;
+    if (!St || !St.data) return;
+    let items = [];
+    if (t) items = this._restTargetItems(t);
+    else { const d = St.data(); items = d.items || []; } // 旧调用无 t 时清全部
+    if (!items.length) return;
+    const d = St.data(); let changed = false;
+    items.forEach(it => { if (it.rest && it.rest[date]) { delete it.rest[date]; changed = true; } });
+    if (changed) St.save(d);
   },
 
   // 长按进入排序模式后，按住右侧横线上下拖动重排任务
