@@ -497,9 +497,13 @@ const Daily = {
         if (sub === '阅读') {
           // 阅读记录落 readLogs（与阅读页/阅读续火花同源），保证每日计划完成也能续火花
           const rLogs = S.get('readLogs', {}); rLogs[date] = rLogs[date] || [];
-          if (srcId && rLogs[date].some(l => l.autoGen && l.srcId === srcId)) return;
+          if (srcId && rLogs[date].some(l => l.srcId === srcId)) return; // 同一来源（每日计划任务 / 阅读页打卡）只记一次
+          const book = (extra && extra.book) ? extra.book : (title || '阅读打卡');
           const mins = (extra && extra.minutes != null) ? extra.minutes : 20;
-          rLogs[date].push({ id: uid(), book: title || '阅读打卡', cat: '', minutes: mins, finished: false, time: this._nowHM(), autoGen: true, srcId: srcId || undefined, date: date });
+          const pages = (extra && extra.pages != null) ? extra.pages : '';
+          const cat = (extra && extra.cat) ? extra.cat : '';
+          const finished = !!(extra && extra.finished);
+          rLogs[date].push({ id: uid(), book, cat, pages, minutes: mins, finished, time: this._nowHM(), autoGen: true, srcId: srcId || undefined, date: date });
           S.set('readLogs', rLogs);
           return;
         }
@@ -1347,7 +1351,43 @@ const Daily = {
     if (t.cat === 'kaogong') return this.requireActMin(t, date, onConfirm);
     if (t.cat === 'sport') return this.requireSportInfo(t, date, onConfirm);
     if (t.cat === 'growth' && this.growthArea(t.link) === '英语') return this.requireEngInfo(t, date, onConfirm);
+    if (t.cat === 'growth' && this.growthArea(t.link) === '阅读') return this.requireReadInfo(t, date, onConfirm);
     onConfirm();
+  },
+  // 今日待办里的「阅读」任务完成时：采集书名/进度/时长（复用阅读录入字段，但降低摩擦：不强制封面/标签/评分）
+  requireReadInfo(t, date, onConfirm) {
+    const g = window.Growth;
+    const cats = (g && g.READ_CATS) ? g.READ_CATS : [{ key: 'other', name: '其他', color: '#bbb' }];
+    const defBook = (t.readBook) || (t.title && t.title !== '阅读' ? t.title : '');
+    openModal(`<button class="close-x" onclick="closeModal()">×</button><h3>阅读打卡</h3>
+      <div class="muted" style="font-size:12px;margin-bottom:10px">${esc(t.title || '阅读任务')} · ${esc(date)}</div>
+      <div class="form-row"><label>书名</label><input id="rdBook2" placeholder="在读哪本书？" value="${esc(defBook)}"></div>
+      <div class="form-row"><label>阅读状态</label>
+        <select id="rdStatus2"><option value="reading">未读完</option><option value="done">已读完</option></select></div>
+      <div class="form-row"><label>阅读时长（分钟）</label><input id="rdMin2" type="number" min="0" inputmode="numeric" placeholder="例如：45" value="${esc(t.readMin != null ? t.readMin : '')}"></div>
+      <div id="rdProg2"><div class="form-row"><label>读到第几页 / 第几章</label><input id="rdPages2" placeholder="例如：P120 / 第5章" value="${esc(t.readPages || '')}"></div></div>
+      <div class="form-row"><label>书籍分类</label>
+        <div class="rd-cat-pick" style="display:flex;gap:6px;margin-top:4px;flex-wrap:wrap">${cats.map(c => `<button class="btn sm ghost rd-cat-btn2${c.key === 'other' ? ' active' : ''}" data-cat="${c.key}" data-color="${c.color}" style="border:2px solid ${c.color};${c.key === 'other' ? `background:${c.color};color:#fff` : `background:#fff;color:${c.color}`}">${c.name}</button>`).join('')}</div></div>
+      <button class="btn" id="rdOk2" style="width:100%;margin-top:12px">完成打卡</button>`);
+    let cat = 'other';
+    document.querySelectorAll('.rd-cat-btn2').forEach(b => b.onclick = () => {
+      document.querySelectorAll('.rd-cat-btn2').forEach(x => { x.classList.remove('active'); x.style.background = '#fff'; x.style.color = x.dataset.color; });
+      b.classList.add('active'); b.style.background = b.dataset.color; b.style.color = '#fff'; cat = b.dataset.cat;
+    });
+    const stSel = document.getElementById('rdStatus2');
+    const progBox = document.getElementById('rdProg2');
+    stSel.onchange = e => { progBox.style.display = e.target.value === 'done' ? 'none' : ''; };
+    document.getElementById('rdOk2').onclick = () => {
+      const book = document.getElementById('rdBook2').value.trim();
+      if (!book) return toast('填一下书名');
+      t.readBook = book;
+      t.readFinished = stSel.value === 'done';
+      t.readPages = t.readFinished ? '' : (document.getElementById('rdPages2').value.trim() || '');
+      t.readMin = Math.max(0, Number(document.getElementById('rdMin2').value) || 20);
+      t.readCat = cat;
+      closeModal();
+      onConfirm();
+    };
   },
 
   completeTask(date, id) {
@@ -1363,6 +1403,7 @@ const Daily = {
         if (t.cat === 'kaogong') extra = this._kgExtra(t);
         else if (t.cat === 'sport') extra = { minutes: t.sportMin || 10, feel: t.sportFeel || '适中' };
         else if (this.growthArea(t.link) === '英语') extra = { minutes: (t.engMin != null ? t.engMin : (extra && extra.minutes) || 20), delta: (t.engDelta != null ? t.engDelta : 0) };
+        else if (this.growthArea(t.link) === '阅读') extra = { book: t.readBook, pages: t.readPages || '', minutes: t.readMin != null ? t.readMin : 20, cat: t.readCat || '', finished: t.readFinished };
         this.pushToColumn(date, t.link, t.title, t.linkApp, extra, t.srcId || t.id);
       }
       this.syncGoalsFromPlan(date);
@@ -1373,8 +1414,9 @@ const Daily = {
 
   moveTmr(date, id) {
     const arr = this.list(date); const t = arr.find(x => x.id === id); if (!t) return;
-    // 移动不记录学习/涨分，英语任务跳过填写弹窗
+    // 移动不记录学习/涨分，英语/阅读任务跳过填写弹窗（移动不等于打卡）
     if (t.cat === 'growth' && this.growthArea(t.link) === '英语') { this.promptMoveLoad(t, date); return; }
+    if (t.cat === 'growth' && this.growthArea(t.link) === '阅读') { this.promptMoveLoad(t, date); return; }
     this.requireTaskInfo(t, date, () => this.promptMoveLoad(t, date));
   },
 
