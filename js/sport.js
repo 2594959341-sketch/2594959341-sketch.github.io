@@ -44,9 +44,9 @@ const Sport = {
 
   render_main_checkin(box, root) {
     const logs = this.logs();
-    const restSet = new Set([].concat(S.get('sportRest', []) || [], S.get('menstrualRest', []) || [], annualHolidaySet('2020-01-01', '2050-12-31'), sickSetInRange('2020-01-01', '2050-12-31'))); // 连续天数循环用：含月经假+年度假期+病假（均不中断）
+    const restSet = new Set([].concat(restDatesOfType('sport'), S.get('menstrualRest', []) || [], annualHolidaySet('2020-01-01', '2050-12-31'), sickSetInRange('2020-01-01', '2050-12-31'))); // 连续天数循环用：含月经假+年度假期+病假（均不中断）
     const calRestSet = new Set([].concat(S.get('sportRest', []) || [], annualHolidaySet('2020-01-01', '2050-12-31'), sickSetInRange('2020-01-01', '2050-12-31'))); // 日历休息集：排除月经假（粉色 menstrualSet）；病假走专属蓝色
-    const todayIsRest = (S.get('sportRest', []) || []).indexOf(todayStr()) >= 0;
+    const todayIsRest = restDatesOfType('sport').indexOf(todayStr()) >= 0;
     let streak = 0; let d = todayStr();
     if (!((logs[d] && logs[d].length) || restSet.has(d))) d = addDays(d, -1);
     while ((logs[d] && logs[d].length) || restSet.has(d)) { streak++; d = addDays(d, -1); }
@@ -147,25 +147,29 @@ const Sport = {
     };
   },
 
-  // 运动打卡页「今日休息」：直接写 sportRest 数组，不计入连续运动中断（一周最多 1 天，一月最多 4 天）
-  // ds 缺省为今天；传入过去日期即可「补记」休息（连续运动天数自动续上）
+  // 运动打卡页「今日休息」：按条目记录（v363）。休息=所有运动条目的这一天都休（各自独立额度）；
+  // 不计入连续运动中断（一周最多 1 天、一月最多 4 天，按条目计）
   toggleRest(root, ds) {
     ds = ds || todayStr();
     if (ds > todayStr()) { toast('不能给未来的日期设休息'); return; }
-    const set = _restSet('sport');
-    const D = window.Daily;
-    if (set.has(ds)) {
-      restRemove('sport', ds);
+    const St = window.Streak; const D = window.Daily;
+    const items = (St && St.data) ? St.data().items.filter(x => x.type === 'sport') : [];
+    const isRest = items.some(it => it.rest && it.rest[ds]);
+    if (isRest) {
+      const d = St.data();
+      items.forEach(it => { if (it.rest) delete it.rest[ds]; });
+      St.save(d);
       if (D) { const arr = D.list(ds); arr.forEach(t => { if (t.cat === 'sport') t.restDay = false; }); D.setList(ds, arr); }
       toast('已取消 ' + fmtCN(ds) + ' 的休息 · 连续运动重新计算');
     } else {
       if (menstrualSet().has(ds)) { toast(fmtCN(ds) + ' 已是月经假，不再叠加其他休息'); return; }
       const lg = this.logs();
       if (lg[ds] && lg[ds].length) { toast(fmtCN(ds) + ' 已经有运动打卡，不能设为休息'); return; }
-      const chk = restCanAdd('sport', ds);
-      if (!chk.ok) { toast(chk.msg); return; }
-      restAdd('sport', ds);
+      const d = St.data(); let rested = 0;
+      items.forEach(it => { if (St.restCanAdd(it, ds)) { it.rest = it.rest || {}; it.rest[ds] = 1; rested++; } });
+      St.save(d);
       if (D) { const arr = D.list(ds); arr.forEach(t => { if (t.cat === 'sport') t.restDay = true; }); D.setList(ds, arr); }
+      if (rested === 0) { toast('本周/本月运动休息已用完'); return; }
       toast('已将 ' + fmtCN(ds) + ' 设为休息日 · 连续运动不受影响');
     }
     this.render(root);
