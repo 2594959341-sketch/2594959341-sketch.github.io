@@ -718,7 +718,7 @@ const Work = {
   /* ---------- 今日打卡 ---------- */
   render_chk(box, root) {
     const logs = this.logs(); const today = todayStr();
-    const todayIsRest = (S.get('workRest', []) || []).indexOf(today) >= 0;
+    const todayIsRest = restDatesOfType('work').indexOf(todayStr()) >= 0;
     box.innerHTML = `
       <div class="card">
         <h3>今日打卡 <span style="margin-left:auto;display:flex;align-items:center;gap:6px"><button class="icon-btn" id="workRestBtn" title="${todayIsRest ? '取消今日休息' : '今日休息'}（长按创作日历里那一天可补记 / 设月经假）" style="${todayIsRest ? 'color:#e74c3c' : ''}">${icon(todayIsRest ? 'sun' : 'moon',16)}</button><button class="btn sm" id="logAdd">＋ 记录一条产出</button></span></h3>
@@ -730,25 +730,28 @@ const Work = {
     this.bindLogRows(box, root);
   },
 
-  // 创作打卡页「今日休息」：直接写 workRest 数组，不计入连续创作中断（一周最多 1 天，一月最多 4 天）
-  // ds 缺省为今天；传入过去日期即可「补记」休息（连续创作天数自动续上）
+  // 创作打卡页「今日休息」：按条目记录（v363）。休息=所有创作条目(游戏/写作)的这一天都休（各自独立额度）
   toggleRest(root, ds) {
     ds = ds || todayStr();
     if (ds > todayStr()) { toast('不能给未来的日期设休息'); return; }
-    const set = _restSet('work');
-    const D = window.Daily;
-    if (set.has(ds)) {
-      restRemove('work', ds);
+    const St = window.Streak; const D = window.Daily;
+    const items = (St && St.data) ? St.data().items.filter(x => x.type === 'work') : [];
+    const isRest = items.some(it => it.rest && it.rest[ds]);
+    if (isRest) {
+      const d = St.data();
+      items.forEach(it => { if (it.rest) delete it.rest[ds]; });
+      St.save(d);
       if (D) { const arr = D.list(ds); arr.forEach(t => { if (t.cat === 'work') t.restDay = false; }); D.setList(ds, arr); }
       toast('已取消 ' + fmtCN(ds) + ' 的休息 · 连续创作重新计算');
     } else {
       if (menstrualSet().has(ds)) { toast(fmtCN(ds) + ' 已是月经假，不再叠加其他休息'); return; }
       const lg = S.get('workLogs', {});
       if (lg[ds] && lg[ds].length) { toast(fmtCN(ds) + ' 已经有创作打卡，不能设为休息'); return; }
-      const chk = restCanAdd('work', ds);
-      if (!chk.ok) { toast(chk.msg); return; }
-      restAdd('work', ds);
+      const d = St.data(); let rested = 0;
+      items.forEach(it => { if (St.restCanAdd(it, ds)) { it.rest = it.rest || {}; it.rest[ds] = 1; rested++; } });
+      St.save(d);
       if (D) { const arr = D.list(ds); arr.forEach(t => { if (t.cat === 'work') t.restDay = true; }); D.setList(ds, arr); }
+      if (rested === 0) { toast('本周/本月创作休息已用完'); return; }
       toast('已将 ' + fmtCN(ds) + ' 设为休息日 · 连续创作不受影响');
     }
     this.render(root);
@@ -1019,9 +1022,9 @@ const Work = {
   render_cal(box, root) {
     const logs = this.logs();
     const marks = {}; Object.keys(logs).forEach(d => { marks[d] = logs[d].map(l => l.type === 'video' ? '#7CB390' : '#F6C56E'); });
-    const restSet = new Set([].concat(S.get('workRest', []) || [], annualHolidaySet('2020-01-01', '2050-12-31'), sickSetInRange('2020-01-01', '2050-12-31'))); // 排除月经假：月经假走粉色 menstrualSet；病假走专属蓝色；创作连续天数由 Streak.covered 统一处理（已含月经假+年度假期+病假）
+    const restSet = new Set([].concat(restDatesOfType('work'), annualHolidaySet('2020-01-01', '2050-12-31'), sickSetInRange('2020-01-01', '2050-12-31'))); // 排除月经假：月经假走粉色 menstrualSet；病假走专属蓝色；创作连续天数由 Streak.covered 统一处理（已含月经假+年度假期+病假）
     const mensSet = menstrualSet();
-    const todayIsRest = (S.get('workRest', []) || []).indexOf(todayStr()) >= 0;
+    const todayIsRest = restDatesOfType('work').indexOf(todayStr()) >= 0;
     box.innerHTML = `<div class="card"><h3 style="font-size:14px;color:var(--sub);font-weight:600">创作日历 <span style="margin-left:auto"><button class="icon-btn" id="workCalRest" title="${todayIsRest ? '取消今日休息' : '今日休息'}（长按日历里那一天可补记 / 设月经假）" style="${todayIsRest ? 'color:#e74c3c' : ''}">${icon(todayIsRest ? 'sun' : 'moon',16)}</button></span></h3><div id="workCal"></div>
       <div class="muted" style="margin-top:8px;display:flex;gap:14px">
         <span><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#7CB390;margin-right:4px"></span>视频</span>
