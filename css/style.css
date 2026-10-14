@@ -1340,6 +1340,14 @@ details[open] > summary .car{transform:rotate(180deg)}
 .stk-day.rest .mk{color:#3a6fd0}
 .stk-day.mu{background:#f3e9fb;border-color:#dcc3f0}
 .stk-day.mu .mk{color:#9b51d0}
+.stk-day.mens{background:#FFB7C5;border-color:#ff9bb0}
+.stk-day.mens .mk{color:#7a2e44}
+.stk-day.sick{background:#A8CFE6;border-color:#93c3e0}
+.stk-day.sick .mk{color:#2c5670}
+.stk-day.birth{background:#F6D98A;border-color:#eec96f}
+.stk-day.birth .mk{color:#7a5c14}
+.stk-day.anni{background:#D3C2EA;border-color:#c2b0dd}
+.stk-day.anni .mk{color:#4d3a6b}
 /* 频率页：一个事件一个独立方块，方块内是当月按日期排序的小方格 */
 .freq-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;margin-top:6px}
 .freq-card{background:var(--card,#fff);border:1px solid var(--line,#eee);border-left:3px solid var(--mac,#eee);border-radius:16px;padding:12px 12px 14px;box-shadow:0 2px 8px rgba(0,0,0,.04)}
