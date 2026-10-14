@@ -1570,9 +1570,9 @@ const Work = {
     for (let d = 1; d <= daysIn; d++) {
       const ds = y + '-' + String(m).padStart(2, '0') + '-' + String(d).padStart(2, '0');
       const arr = wLogs[ds] || [];
-      const wsum = arr.reduce((s, l) => s + (l.words || 0), 0);
-      if (wsum > 0) {
-        html += '<div class="cal-cell wr-fill' + (ds === today ? ' today' : '') + '" data-date="' + ds + '"><span class="d">' + d + '</span><span class="wr-words">' + wsum + '</span></div>';
+      const textSum = arr.reduce((s, l) => s + (this.isPlanEntry(l) ? 0 : (l.words || 0)), 0); // 只算正文码字
+      if (textSum > 0) {
+        html += '<div class="cal-cell wr-fill' + (ds === today ? ' today' : '') + '" data-date="' + ds + '" title="' + ds + ' · 码字 ' + textSum + '"><span class="wr-words">' + textSum + '</span></div>';
       } else {
         html += '<div class="cal-cell' + (ds === today ? ' today' : '') + '" data-date="' + ds + '"><div class="d">' + d + '</div></div>';
       }
@@ -1589,11 +1589,13 @@ const Work = {
     N.materials = N.materials || []; N.sites = N.sites || []; N.clips = N.clips || [];
     const todayMats = (N.materials || []).map((m, i) => ({ m, i })).filter(x => x.m.date === todayStr());
     const todayLogs = wLogs[todayStr()] || [];
-    const todayWords = todayLogs.reduce((s, l) => s + (l.words || 0), 0);
-    const totalWords = this.sumWords();
+    const todayWords = todayLogs.reduce((s, l) => s + (this.isPlanEntry(l) ? 0 : (l.words || 0)), 0); // 今日正文码字
+    const totalWords = this.sumWords();            // 累计正文字数（小说正式总字数）
+    const planTotal = this.sumPlanWords();         // 构思另计，不计入总字数
     // 今日码字记录（可单独删除）——需求14：试验时填的数字要能删
     const todayListHTML = todayLogs.length
       ? todayLogs.map(l => `<div class="list-row" style="align-items:flex-start">
+          ${this.isPlanEntry(l) ? '<span class="tag" style="background:#E7DFF5;color:#5b4a86;border:none;font-size:11px;padding:1px 7px">构思</span>' : ''}
           <div style="flex:1"><b>${esc(l.title)}</b> <span class="muted">${(l.words || 0)} 字</span></div>
           <button class="del" data-delwrlog="${l.id}">✕</button></div>`).join('')
       : '<div class="empty">今天还没记录码字</div>';
@@ -1605,6 +1607,7 @@ const Work = {
           <div class="sc-half"><b>${todayWords}</b><span class="muted">今日字数</span></div>
           <div class="sc-half"><b>${totalWords}</b><span class="muted">累计字数</span></div>
         </div>
+        ${planTotal ? `<div class="muted" style="margin-top:8px;font-size:12px">构思另计：<b style="color:#5b4a86">${planTotal}</b> 字（设定 / 大纲等，不计入总字数）</div>` : ''}
         <div id="wrTodayList" style="margin-top:10px;display:flex;flex-direction:column;gap:8px">${todayListHTML}</div>
       </div>
       <div class="grid2">
@@ -1637,7 +1640,7 @@ const Work = {
       logs[td] = (logs[td] || []).filter(l => l.id !== b.dataset.delwrlog);
       if (!logs[td].length) delete logs[td];
       S.set('writeLogs', logs);
-      const N = this.novel(); N.totalWords = Math.max(0, (N.totalWords || 0) - (rec ? (rec.words || 0) : 0)); S.set('novel', N);
+      const N = this.novel(); N.totalWords = this.sumWords(); S.set('novel', N);
       this.render(root); toast('已删除该记录');
     });
     const transBtn = root.querySelector('#wvTrans');
@@ -1751,7 +1754,11 @@ const Work = {
 
 
   /* ============ 小说驾驶舱（构思/目标/ETA/三幕进度/状态机） ============ */
-  sumWords() { const logs = S.get('writeLogs', {}); let t = 0; for (const d in logs) for (const l of logs[d]) t += (l.words || 0); return t; },
+  /* 构思（作品设定/作品大纲等）与正文码字分开：构思可统计，但不计入小说正式总字数 */
+  PLAN_RE: /设定|大纲|构思|人设|世界观|细纲|梗概|框架/,
+  isPlanEntry(l) { return !l ? false : (l.kind === 'plan' || (l.kind == null && this.PLAN_RE.test(l.title || ''))); },
+  sumWords() { const logs = S.get('writeLogs', {}); let t = 0; for (const d in logs) for (const l of logs[d]) if (!this.isPlanEntry(l)) t += (l.words || 0); return t; },
+  sumPlanWords() { const logs = S.get('writeLogs', {}); let t = 0; for (const d in logs) for (const l of logs[d]) if (this.isPlanEntry(l)) t += (l.words || 0); return t; },
   novelGoal() { const N = this.novel(); return N.lenMode === 'chapters' ? (Number(N.chapters) || 0) * (Number(N.wordsPerChapter) || 0) : (Number(N.goalWords) || 0); },
   novelPct() { const g = this.novelGoal(); return g ? Math.min(100, Math.round(this.sumWords() / g * 100)) : 0; },
   novelAct(pct) {
@@ -1959,6 +1966,7 @@ const Work = {
     const N = this.novel();
     openModal(`<button class="close-x" onclick="closeModal()">×</button><h3>${icon('edit',18)} 记录今日码字</h3>
       <div class="form-row"><label>写了什么</label><input id="wrTitle" placeholder="例如：小说章节 / 小红书文案"></div>
+      <div class="form-row"><label>类型</label><select id="wrKind"><option value="text">正文码字（计入总字数）</option><option value="plan">构思 · 设定/大纲（不计入总字数）</option></select></div>
       <div class="form-row"><label>字数</label><input type="number" id="wrWords" value="500" placeholder="今天写了多少字"></div>
       <div class="form-row"><label>小说名字</label><input id="wrBook" value="${esc(N.bookName)}" placeholder="在写哪本书？"></div>
       <div class="form-row"><label>发布网站</label><input id="wrSite" value="${(N.sites || []).join('、')}" placeholder="番茄、起点…"></div>
@@ -1967,7 +1975,7 @@ const Work = {
       const t = document.getElementById('wrTitle').value.trim(); if (!t) return toast('记一下写了什么');
       const words = Number(document.getElementById('wrWords').value) || 0;
       const logs = S.get('writeLogs', {}); logs[todayStr()] = logs[todayStr()] || [];
-      logs[todayStr()].push({ id: uid(), title: t, words });
+      logs[todayStr()].push({ id: uid(), title: t, words, kind: document.getElementById('wrKind').value });
       S.set('writeLogs', logs);
       const novel = this.novel();
       novel.bookName = document.getElementById('wrBook').value.trim() || novel.bookName;
