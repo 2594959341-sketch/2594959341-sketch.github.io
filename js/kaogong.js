@@ -209,10 +209,10 @@ const KG = {
     const _kgStData = S.get('mumu_streak', { items: [] });
     const _kgMadeup = [];
     (_kgStData.items || []).forEach(function(it){ if (it && it.type === 'kg' && it.madeup) Object.keys(it.madeup).forEach(function(d){ _kgMadeup.push(d); }); });
-    const restSet = new Set([].concat(S.get('kgRest', []) || [], S.get('menstrualRest', []) || [], _kgMadeup, annualHolidaySet('2020-01-01', '2050-12-31'), sickSetInRange('2020-01-01', '2050-12-31')));
+    const restSet = new Set([].concat(restDatesOfType('kg'), S.get('menstrualRest', []) || [], _kgMadeup, annualHolidaySet('2020-01-01', '2050-12-31'), sickSetInRange('2020-01-01', '2050-12-31')));
     // 日历用"不含月经假"的休息集：月经假单独走 menstrualSet 上粉色，病假走专属蓝色；均不中断连续天数（火花/连续天数仍用上面的 restSet）
     const calRestSet = new Set([].concat(S.get('kgRest', []) || [], _kgMadeup, annualHolidaySet('2020-01-01', '2050-12-31'), sickSetInRange('2020-01-01', '2050-12-31')));
-    const todayIsRest = (S.get('kgRest', []) || []).indexOf(todayStr()) >= 0;
+    const todayIsRest = restDatesOfType('kg').indexOf(todayStr()) >= 0;
     let streak = 0; let d = todayStr();
     if (!((logs[d] && logs[d].length) || restSet.has(d))) d = addDays(d, -1);
     // 休息/月经假/补签日不中断连续，但「不计入」天数；只有真正有学习记录(kgLogs)的日子才算 1 天
@@ -350,25 +350,28 @@ const KG = {
 
   /* ---- 备考搭子（已移除：用户认为用处不大） ---- */
 
-  // 备考打卡页「今日休息」：直接写 kgRest 数组，不计入连续学习中断（一周最多 1 天，一月最多 4 天）
-  // ds 缺省为今天；传入过去日期即可「补记」休息（连续学习天数自动续上）
+  // 备考打卡页「今日休息」：按条目记录（v363）。休息=所有学习科目的这一天都休（各自独立额度）
   toggleRest(root, ds) {
     ds = ds || todayStr();
     if (ds > todayStr()) { toast('不能给未来的日期设休息'); return; }
-    const set = _restSet('kaogong');
-    const D = window.Daily;
-    if (set.has(ds)) {
-      restRemove('kaogong', ds);
+    const St = window.Streak; const D = window.Daily;
+    const items = (St && St.data) ? St.data().items.filter(x => x.type === 'kg') : [];
+    const isRest = items.some(it => it.rest && it.rest[ds]);
+    if (isRest) {
+      const d = St.data();
+      items.forEach(it => { if (it.rest) delete it.rest[ds]; });
+      St.save(d);
       if (D) { const arr = D.list(ds); arr.forEach(t => { if (t.cat === 'kaogong') t.restDay = false; }); D.setList(ds, arr); }
       toast('已取消 ' + fmtCN(ds) + ' 的休息 · 连续学习重新计算');
     } else {
       if (menstrualSet().has(ds)) { toast(fmtCN(ds) + ' 已是月经假，不再叠加其他休息'); return; }
       const lg = S.get('kgLogs', {});
       if (lg[ds] && lg[ds].length) { toast(fmtCN(ds) + ' 已经有学习打卡，不能设为休息'); return; }
-      const chk = restCanAdd('kaogong', ds);
-      if (!chk.ok) { toast(chk.msg); return; }
-      restAdd('kaogong', ds);
+      const d = St.data(); let rested = 0;
+      items.forEach(it => { if (St.restCanAdd(it, ds)) { it.rest = it.rest || {}; it.rest[ds] = 1; rested++; } });
+      St.save(d);
       if (D) { const arr = D.list(ds); arr.forEach(t => { if (t.cat === 'kaogong') t.restDay = true; }); D.setList(ds, arr); }
+      if (rested === 0) { toast('本周/本月学习休息已用完'); return; }
       toast('已将 ' + fmtCN(ds) + ' 设为休息日 · 连续学习不受影响');
     }
     this.render(root);
