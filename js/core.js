@@ -1191,9 +1191,10 @@ function renderMonthCal(el, opts) {
     const hcls = dayHolidayClass(ds);
     const isMadeup = opts.madeupSet && typeof opts.madeupSet.has === 'function' && opts.madeupSet.has(ds);
     const madeCls = (!hcls && isMadeup && !marks.length) ? ' cal-madeup' : '';
-    const restCls = (!hcls && !madeCls && isRest && !marks.length) ? ' rest' : '';
     const isMens = opts.menstrualSet && (typeof opts.menstrualSet.has === 'function' ? opts.menstrualSet.has(ds) : opts.menstrualSet[ds]);
-    const mensCls = (!hcls && !madeCls && isMens && !marks.length && !isRest) ? ' mens' : '';
+    // v368：月经假优先级高于普通休息（与「月经假优先」原则一致）；病假/生日/纪念日(hcls)与补签仍最高
+    const mensCls = (!hcls && !madeCls && isMens && !marks.length) ? ' mens' : '';
+    const restCls = (!hcls && !madeCls && !mensCls && isRest && !marks.length) ? ' rest' : '';
     html += '<div class="cal-cell' + (ds === today ? ' today' : '') + hcls + madeCls + restCls + mensCls + '" data-date="' + ds + '"><div class="d">' + d + '</div>'
       + (opts.cellHTML ? (() => { try { return opts.cellHTML(ds); } catch (e) { return ''; } })() : '')
       + (marks.length ? '<div class="dots">' + marks.slice(0, 6).map(c => '<span class="dot" style="background:' + c + '"></span>').join('') + '</div>' : '')
