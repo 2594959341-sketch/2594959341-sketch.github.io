@@ -1799,7 +1799,7 @@ const Review = {
     const badDays = [3, 4].reduce((s, m) => s + (moodCount[m] || 0), 0);
     // 写作量
     const writeLogs = S.get('writeLogs', {});
-    const totalWords = Object.values(writeLogs).flat().reduce((s, l) => s + (l.words || 0), 0);
+    const totalWords = Object.values(writeLogs).flat().reduce((s, l) => s + ((window.Work && window.Work.isPlanEntry && window.Work.isPlanEntry(l)) ? 0 : (l.words || 0)), 0);
     // 本月维度分
     const dims = this._monthStats(this._monthDaysAt(0)).dim;
     // 自救365
