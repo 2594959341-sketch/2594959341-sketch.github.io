@@ -224,12 +224,16 @@ const Streak = {
       const ds = ym + '-' + String(dd).padStart(2, '0');
       const done = this.isDone(item, ds);
       const mens = (S.get('menstrualRest', []) || []).indexOf(ds) >= 0;
+      const sick = isSickLeave(ds);
+      const ahRaw = annualHolidayType(ds);
+      const ah = (!sick && (ahRaw === 'birth' || ahRaw === 'anni')) ? ahRaw : null;
       const rest = !!(item.rest && item.rest[ds]) || catRest(ds);
       const mu = !!(item.madeup && item.madeup[ds]);
-      const cls = mu ? 'mu' : rest ? 'rest' : done ? 'done' : 'gap';
+      // v368：假期全员上色——月经假粉、病假蓝、生日黄、纪念日紫（原先只出文字标签不上色）
+      const cls = mu ? 'mu' : sick ? 'sick' : ah ? ah : mens ? 'mens' : rest ? 'rest' : done ? 'done' : 'gap';
       const cell = document.createElement('div');
       cell.className = 'stk-day ' + cls;
-      const lab = done ? '✓' : mu ? '补' : rest ? (mens ? '经' : '休') : '';
+      const lab = done ? '✓' : mu ? '补' : sick ? '病' : ah === 'birth' ? '诞' : ah === 'anni' ? '念' : mens ? '经' : rest ? '休' : '';
       cell.innerHTML = `<span class="d">${dd}</span>${lab ? '<span class="mk">' + lab + '</span>' : ''}`;
       cell.onclick = () => this.toggleDay(item, ds, cls, box);
       grid.appendChild(cell);
@@ -292,6 +296,9 @@ const Streak = {
       if (cls === 'mu') { toast('补签日不可改'); return; }
       const mensSet = new Set(S.get('menstrualRest', []) || []);
       if (mensSet.has(ds)) { toast('当日为月经假，已是休息，无需补签'); return; }
+      // v368：病假/年度假期格子同样禁止补签（此前会掉进补签分支误发卡）
+      if (isSickLeave(ds)) { toast('当日为病假，已是休息，无需补签'); return; }
+      if (isAnnualHoliday(ds)) { toast('当日为' + annualHolidayLabel(ds) + '，自动休息，无需补签'); return; }
       const covCat = !!(item.rest && item.rest[ds]);
       if (covCat && !(it.rest && it.rest[ds])) { toast('当日为每日计划休息日，可在每日计划调整'); return; }
       // 火花页：空格=补签（休息只能在板块设置，不在火花页设置）
