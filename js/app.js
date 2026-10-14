@@ -1,5 +1,5 @@
 /* ============ 首页 + 导航 ============ */
-window.APP_VER = 'mumu-v362'; // 当前前端版本（设置页可见，用于确认是否加载到最新代码）
+window.APP_VER = 'mumu-v363'; // 当前前端版本（设置页可见，用于确认是否加载到最新代码）
 const SR_LINKS = [
   { v: 'sport', n: '运动（任意跟练）' },
   { v: 'sport:', n: '运动（具体项目，选后填名）' },
@@ -194,7 +194,7 @@ const Home = {
   srCountLink(sr, link, since) {
     const start = since || sr.start || todayStr();
     const isSport = link === 'sport' || (link || '').startsWith('sport:');
-    const rest = isSport ? (S.get('sportRest', []) || []) : [];
+    const rest = isSport ? restDatesOfType('sport') : [];
     let n = 0;
     for (let i = 0; i <= daysBetween(start, todayStr()); i++) {
       const d = addDays(start, i);
