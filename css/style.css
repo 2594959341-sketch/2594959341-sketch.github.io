@@ -1814,8 +1814,9 @@ body.modal-open .pv-dl{display:none!important}
 .cp-enter:active{box-shadow:0 0 0 2px var(--accent)}
 
 /* v357 码字日历：填充格显示日期+字数，字数用主题色，一眼看出哪天码字 */
-.cal-cell.wr-fill{border-color:var(--accent)}
-.wr-fill .wr-words{color:var(--accent);font-weight:700;font-size:13px;line-height:1.1;margin-top:1px}
+.cal-cell.wr-fill{background:#BFE6CC;border-color:#93D3A8}
+.wr-fill .wr-words{color:#2e6b47;font-weight:700;font-size:15px;line-height:1}
+.cal-cell.wr-fill.today{box-shadow:0 0 0 2px #111 inset}
 /* v357 驾驶舱统计：标签+数值横排网格，一目了然（无竖排） */
 .cp-stats{display:flex;flex-wrap:wrap;gap:8px 18px;word-break:break-word}
 .cp-stats>div{display:flex;flex-direction:column;min-width:46px}
