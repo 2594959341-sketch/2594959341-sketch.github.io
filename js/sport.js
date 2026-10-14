@@ -44,8 +44,10 @@ const Sport = {
 
   render_main_checkin(box, root) {
     const logs = this.logs();
-    const restSet = new Set([].concat(restDatesOfType('sport'), S.get('menstrualRest', []) || [], annualHolidaySet('2020-01-01', '2050-12-31'), sickSetInRange('2020-01-01', '2050-12-31'))); // 连续天数循环用：含月经假+年度假期+病假（均不中断）
-    const calRestSet = new Set([].concat(S.get('sportRest', []) || [], annualHolidaySet('2020-01-01', '2050-12-31'), sickSetInRange('2020-01-01', '2050-12-31'))); // 日历休息集：排除月经假（粉色 menstrualSet）；病假走专属蓝色
+    // v368：Array.from 展开 Set（concat 不展开 Set，曾致生日/病假日中断连续天数逻辑失效）；旧 sportRest 并上兼容
+    const restSet = new Set([].concat(restDatesOfType('sport'), S.get('menstrualRest', []) || [], S.get('sportRest', []) || [], Array.from(annualHolidaySet('2020-01-01', '2050-12-31')), Array.from(sickSetInRange('2020-01-01', '2050-12-31')))); // 连续天数循环用：含月经假+年度假期+病假（均不中断）
+    // v368：改读 per-item restDatesOfType（v363 起休息日写在 streak 条目里，此前只读旧 sportRest 致新休息日不上色）；月经假走粉色、病假/年度假期走 hcls
+    const calRestSet = new Set([].concat(restDatesOfType('sport'), S.get('sportRest', []) || [])); // 日历休息集：排除月经假（粉色 menstrualSet）；病假走专属蓝色
     const todayIsRest = restDatesOfType('sport').indexOf(todayStr()) >= 0;
     let streak = 0; let d = todayStr();
     if (!((logs[d] && logs[d].length) || restSet.has(d))) d = addDays(d, -1);
@@ -322,7 +324,7 @@ const Sport = {
       let totMin = 0, daysN = 0; const marks = {};
       for (let dd = 1; dd <= dim; dd++) { const ds = ym + '-' + String(dd).padStart(2, '0'); const arr = logs[ds] || []; if (arr.length) { totMin += arr.reduce((s, l) => s + l.minutes, 0); daysN++; marks[ds] = [...new Set(arr.map(l => Sport.sportColor(l.project)))]; } }
       el.innerHTML = `<div class="muted" style="margin-bottom:6px">本月已运动 <b>${daysN}</b> 天 · 共 <b>${totMin}</b> 分钟</div><div id="spMonthViewCal"></div>`;
-      renderMonthCal(el.querySelector('#spMonthViewCal'), { ym, marks, restSet });
+      renderMonthCal(el.querySelector('#spMonthViewCal'), { ym, marks, restSet, menstrualSet: menstrualSet(), madeupSet: new Set(madeupSetInRange('2020-01-01', '2050-12-31')) });
     } else {
       const y = todayStr().slice(0, 4); const yy = Number(y);
       const countMap = {};
