@@ -641,6 +641,26 @@ const Growth = {
     const recs = allRecs.map((r, i) => ({ r, i })).filter(x => x.r.area === '阅读');
     const allRead = Object.entries(rLogs).flatMap(([d, arr]) => arr.map(l => ({ ...l, date: d }))).sort((a, b) => b.date.localeCompare(a.date));
     const todayRead = rLogs[todayStr()] || [];
+    // 书架：从全部阅读记录聚合去重书名（取最近一次），点书即记今日阅读，免去重复填书名
+    const shelfBooks = []; const shelfSeen = new Set();
+    allRead.forEach(l => {
+      if (!l.book || shelfSeen.has(l.book)) return;
+      shelfSeen.add(l.book);
+      const cover = allRead.find(x => x.book === l.book && x.cover)?.cover || null;
+      shelfBooks.push({ book: l.book, date: l.date, pages: l.pages, catKey: this.readCat(l).key, cover });
+    });
+    const shelfHTML = shelfBooks.length
+      ? `<div style="display:flex;gap:10px;overflow-x:auto;padding:4px 2px 8px;-webkit-overflow-scrolling:touch">${shelfBooks.slice(0, 16).map(b => {
+          const coverStyle = b.cover
+            ? `background-image:url('${b.cover}');background-size:cover;background-position:center`
+            : `display:flex;align-items:center;justify-content:center;font-size:40px;color:#bbb`;
+          return `<div data-shelfbook="${esc(b.book)}" data-catkey="${esc(b.catKey)}" title="点这本书记录今日阅读" style="flex:0 0 auto;width:84px;cursor:pointer;text-align:center">
+            <div style="width:84px;height:112px;border-radius:8px;background:#f0f0f0;${coverStyle};box-shadow:0 1px 3px rgba(0,0,0,.12)">${b.cover ? '' : esc(b.book.slice(0, 1))}</div>
+            <div style="font-size:12px;margin-top:4px;line-height:1.2;max-height:2.4em;overflow:hidden;text-overflow:ellipsis;white-space:normal">${esc(b.book)}</div>
+            <div class="muted" style="font-size:10px">${esc((b.date || '').slice(5))}${b.pages ? ' · ' + esc(b.pages) : ''}</div>
+          </div>`;
+        }).join('')}</div>`
+      : '<div class="empty" style="font-size:12px">书架还是空的，点「＋ 新书」记下第一本</div>';
     const ym = this._rdCalYm;
     const [yy, mm] = ym.split('-').map(Number);
     const dim = new Date(yy, mm, 0).getDate();
@@ -684,7 +704,9 @@ const Growth = {
     return `<div style="display:flex;flex-direction:column;gap:12px">
       ${reportHTML}
       <div class="card">
-        <h3>阅读打卡 <button class="btn sm" id="readCheckIn" style="margin-left:auto">＋ 打卡</button></h3>
+        <h3>书架 <button class="btn sm" id="readCheckIn" style="margin-left:auto">＋ 新书</button></h3>
+        ${shelfHTML}
+        <div class="muted" style="font-size:12px;margin:10px 0 2px">今日打卡</div>
         ${todayRead.length ? todayRead.map(l => `<div class="list-row" data-editread="${l.id}" style="cursor:pointer">
           ${this.readCatTag(l, 11)}
           ${l.rating ? `<span style="letter-spacing:1px">${this.rdStarHTML(l.rating)}</span>` : ''}
@@ -781,6 +803,10 @@ const Growth = {
   },
   bindReadingEvents(root, recs) {
     root.querySelector('#readCheckIn').onclick = () => this.readDialog(root);
+    // 书架：点书即记（预填书名+分类），免去重复填书名
+    root.querySelectorAll('[data-shelfbook]').forEach(el => el.onclick = () => {
+      this.readDialog(root, { date: todayStr(), prefill: { book: el.dataset.shelfbook, cat: el.dataset.catkey } });
+    });
     root.querySelectorAll('[data-dtcover]').forEach(el => el.onclick = () => { const entry = this._findRead(el.dataset.dtcover); if (entry) this.readView(root, entry); });
     const rdAll = root.querySelector('[data-rdall]');
     if (rdAll) rdAll.onclick = () => { this._rdAxisOpen = true; this.render(root); };
@@ -1011,13 +1037,14 @@ const Growth = {
   readDialog(root, opts = {}) {
     const edate = opts.date || todayStr();
     const edit = opts.edit || null;
+    const prefill = opts.prefill || null;
     const isEdit = !!edit;
-    const curCat = isEdit ? this.readCat(edit).key : 'other';
+    const curCat = isEdit ? this.readCat(edit).key : (prefill ? (prefill.cat || 'other') : 'other');
     const isBackdate = !isEdit && edate !== todayStr();
     openModal(`<button class="close-x" onclick="closeModal()">×</button><h3>阅读打卡${isEdit ? ' · 编辑' : (isBackdate ? ' · 补打卡' : '')}</h3>
       <div class="form-row"><label>打卡日期${isBackdate ? '（补打卡）' : ''}</label>
         <input type="date" id="rdDate" value="${esc(edate)}" max="${esc(todayStr())}" style="max-width:200px"></div>
-      <div class="form-row"><label>书名</label><input id="rdBook" placeholder="在读哪本书？" value="${esc(edit ? (edit.book || '') : '')}"></div>
+      <div class="form-row"><label>书名</label><input id="rdBook" placeholder="在读哪本书？" value="${esc(edit ? (edit.book || '') : (prefill ? prefill.book : ''))}"></div>
       <div class="form-row"><label>阅读状态</label>
         <select id="rdStatus"><option value="reading">未读完</option><option value="done">已读完</option></select></div>
       <div class="form-row"><label>阅读时长（分钟）</label><input id="rdMinutes" type="number" min="0" inputmode="numeric" placeholder="例如：45" value="${esc(edit ? (edit.minutes || '') : '')}"></div>
@@ -1105,7 +1132,7 @@ const Growth = {
             else notes.push({ id: uid(), book, content: '[读后感] ' + review, thought: '', image: null, date: targetDate, type: 'review', rating, eid: edit.id });
           } else if (idx >= 0) notes.splice(idx, 1);
         } else {
-          entry.id = uid(); entry.date = useDate;
+          entry.id = uid(); entry.date = useDate; entry.srcId = entry.id;
           rLogs[useDate] = rLogs[useDate] || [];
           rLogs[useDate].push(entry);
           if (review) {
