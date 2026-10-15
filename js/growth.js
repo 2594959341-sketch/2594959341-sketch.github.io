@@ -147,7 +147,7 @@ const Growth = {
   },
 
   growthNavHTML() {
-    const items = [['skill', '技能'], ['english', '英语'], ['reading', '阅读']];
+    const items = [['skill', '技能'], ['reading', '阅读']];
     return `<div class="subnav">${items.map(([k, l]) => `<button class="${this.sub === k ? 'on' : ''}" data-gsub="${k}">${l}</button>`).join('')}</div>`;
   },
   bindGrowthNav(root) {
@@ -332,6 +332,7 @@ const Growth = {
       const park = this.ideaPark(); park.push({ id: 'id_' + Date.now(), text: text, created: todayStr() });
       this.saveIdeaPark(park); this.render(root);
     };
+    this.bindBadgeWallEvents(root);
   },
   skillCheckIn(root, name) {
     openModal('<button class="close-x" onclick="closeModal()">×</button><h3>' + esc(name) + ' · 打卡</h3>'
@@ -1856,7 +1857,7 @@ const Growth = {
       const lv = this.skillLevelOf(cm);
       const locked = cm <= 0;
       const cls = locked ? 'badge-locked' : 'badge-lv' + lv.lv;
-      return '<div class="badge-item">'
+      return '<div class="badge-item" data-skid="' + esc(sk.id) + '">'
         + '<div class="sk-badge ' + cls + '">' + (locked ? '🔒' : '★') + '</div>'
         + '<div class="badge-name">' + esc(sk.name) + '</div>'
         + '<div class="badge-lv">' + (locked ? '未点亮' : ('Lv' + lv.lv + ' · ' + lv.name)) + '</div>'
@@ -1878,8 +1879,19 @@ const Growth = {
       <div class="badge-wall" style="background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px">${this.badgeItemsHTML()}</div>
     </div>`;
   },
+  bindBadgeWallEvents(root) {
+    root.querySelectorAll('[data-skid]').forEach(b => b.onclick = () => {
+      const lib = this.skillLib(); const sk = lib.find(x => x.id === b.dataset.skid);
+      if (sk) this.openSkillFromBadge(sk, root);
+    });
+  },
+  openSkillFromBadge(sk, root) {
+    if (sk.id === 'sk_english' || sk.name === '英语') { this.sub = 'english'; this.render(root); }
+    else { this.skillCheckIn(root, sk.name); }
+  },
   bindBadgeEvents(root) {
     const back = root.querySelector('#badgeBack'); if (back) back.onclick = () => { this._skBadge = false; this.render(root); };
+    this.bindBadgeWallEvents(root);
   },
 };
 window.Modules.growth = { render: r => Growth.render(r) };
