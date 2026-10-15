@@ -7,8 +7,8 @@
  */
 (function () {
   var THEMES = {
-    cat:   { dir: 'png',   ver: 'mumu-v368' },
-    zhiya: { dir: 'zhiya', ver: 'mumu-v368' }
+    cat:   { dir: 'png',   ver: 'mumu-v369' },
+    zhiya: { dir: 'zhiya', ver: 'mumu-v369' }
   };
   var KEY = 'mumu_theme';
   var raw = localStorage.getItem(KEY);
