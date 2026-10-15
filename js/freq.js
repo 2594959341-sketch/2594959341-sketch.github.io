@@ -228,7 +228,10 @@ const Freq = {
       for (let i = 0; i < firstDow; i++) sq += '<div class="freq-sq empty-cell"></div>';
       for (let dd = 1; dd <= dim; dd++) {
         const ds = ym + '-' + String(dd).padStart(2, '0');
-        const cnt = lk ? this.countOf(lk, ds) : ((d.dates[ds] && d.dates[ds][ev]) ? (Number(d.dates[ds][ev]) || 1) : 0);
+        const auto = lk ? this.countOf(lk, ds) : 0;
+        const raw = d.dates[ds] ? d.dates[ds][ev] : undefined;
+        const man = (raw != null && Number(raw) > 0) ? Number(raw) : 0;
+        const cnt = auto + man;
         const on = cnt > 0;
         if (on) onN++;
         sq += `<div class="freq-sq ${on ? 'on' : ''}${lk ? ' linked' : ''}" data-ev="${esc(ev)}" data-ds="${ds}" title="${ds}${cnt > 1 ? ' · ' + cnt + ' 次' : ''}">${cnt > 1 ? cnt : (on ? '✓' : dd)}</div>`;
@@ -244,29 +247,25 @@ const Freq = {
         <div class="freq-sq-grid">${sq}</div>`;
       cards.appendChild(card);
     });
-    // 日期格：短按 +1（易加），长按清除当天该事件（易删，不会误删整条事件）
+    // 日期格：短按 +1（易加），长按清除当天手动记录（易删，不会误删整条事件）
+    // 关联板块的事件：次数 = 自动统计 + 手动记录，两路都可加；手动只影响手填部分，不覆盖自动打卡
     cards.querySelectorAll('.freq-sq[data-ev]').forEach(c => {
-      // 关联板块的事件由专栏/每日计划打卡自动统计，格子只读，避免手动数与实际打卡打架
-      if (this.linkOf(c.dataset.ev)) {
-        c.addEventListener('click', () => toast('「' + c.dataset.ev + '」已关联板块，次数由打卡自动同步'));
-        return;
-      }
+      const ev = c.dataset.ev, ds = c.dataset.ds;
+      const isLinked = !!this.linkOf(ev);
       let longFired = false;
       bindLongPress(c, () => {
         longFired = true;
-        const ev = c.dataset.ev, ds = c.dataset.ds;
         const dd = this.data();
         dd.dates[ds] = dd.dates[ds] || {};
-        dd.dates[ds][ev] = 0;   // 长按 = 清除当天该事件记录
+        dd.dates[ds][ev] = 0;   // 长按 = 清除当天手动记录（关联事件的自动次数不受影响）
         this.save(dd); this.render(box);
-        toast('已清除 ' + ev + ' · ' + ds.slice(5));
+        toast(isLinked ? '已清除「' + ev + '」手动记录 · ' + ds.slice(5) : '已清除 ' + ev + ' · ' + ds.slice(5));
       });
       c.addEventListener('click', () => {
         if (longFired) { longFired = false; return; }  // 忽略长按后的误触发 click
-        const ev = c.dataset.ev, ds = c.dataset.ds;
         const dd = this.data();
         dd.dates[ds] = dd.dates[ds] || {};
-        const cnt = (dd.dates[ds][ev] ? (Number(dd.dates[ds][ev]) || 0) : 0) + 1;
+        const cnt = (dd.dates[ds][ev] != null ? (Number(dd.dates[ds][ev]) || 0) : 0) + 1;
         dd.dates[ds][ev] = cnt;
         this.save(dd); this.render(box);
         toast((cnt === 1 ? '已记录 ' : '已追加 ') + ev + ' · ' + ds.slice(5) + (cnt > 1 ? ' ×' + cnt : ''));
