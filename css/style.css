@@ -1361,7 +1361,7 @@ details[open] > summary .car{transform:rotate(180deg)}
 .freq-sq.held{transform:scale(1.06)}
 .freq-sq.empty-cell{background:transparent;cursor:default}
 /* v253：关联板块的事件——次数由打卡自动同步，格子只读（视觉上稍作区分） */
-.freq-sq.linked{cursor:default}
+.freq-sq.linked{cursor:pointer}
 .freq-auto{display:inline-block;margin-left:5px;padding:1px 5px;border-radius:999px;background:var(--light,#f2f2f2);color:var(--muted,#999);font-size:9px;font-weight:600;vertical-align:1px;letter-spacing:.2px}
 /* v230：频率卡片编辑态（长按标题进入）— 右上角 × 删除 + 拖拽排序 */
 .freq-card{position:relative}
