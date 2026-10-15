@@ -24,10 +24,12 @@ const AI = {
         <textarea id="aiText" rows="1" placeholder="问点什么？比如：我最近坚持得最好的是哪项？"></textarea>
         <button class="btn" id="aiSend">发送</button>
       </div>
-      <div class="muted ai-note">数据来自你本机工作台；仅在你提问时随问题发给 DeepSeek。没配 Key？去「设置」填 DeepSeek Key。</div>`;
+      <div class="ai-proxy"><input id="aiProxy" placeholder="可选：Cloudflare Worker 代理地址（解决浏览器直连 CORS）" value="${esc(S.get('mumu_ai_proxy', ''))}"></div>
+      <div class="muted ai-note">数据来自你本机工作台；仅在你提问时随问题发给 DeepSeek。没配 Key？去「设置」填 DeepSeek Key。若提示跨域/CORS，在上方填一个代理地址即可（步骤问枝枝）。</div>`;
     this.renderMessages();
     root.querySelector('#aiBack').onclick = () => { if (window.App) App.go('home'); };
     const clear = root.querySelector('#aiClear'); if (clear) clear.onclick = () => { if (confirm('清空对话记录？')) this.clearChat(); };
+    const px = root.querySelector('#aiProxy'); if (px) px.oninput = () => { S.set('mumu_ai_proxy', px.value.trim()); };
     root.querySelector('#aiSend').onclick = () => this.submit();
     const ta = root.querySelector('#aiText');
     ta.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); this.submit(); } });
@@ -83,8 +85,9 @@ const AI = {
       { role: 'user', content: q }
     ];
     try {
-      const base = (cfg.base || 'https://api.deepseek.com/v1').replace(/\/+$/, '');
-      const res = await fetch(base + '/chat/completions', {
+      const proxy = S.get('mumu_ai_proxy', '');
+      const url = proxy ? (proxy.replace(/\/+$/, '') + '/chat/completions') : ((cfg.base || 'https://api.deepseek.com/v1').replace(/\/+$/, '') + '/chat/completions');
+      const res = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + cfg.key },
         body: JSON.stringify({ model: cfg.model || 'deepseek-chat', messages: messages, temperature: 0.7, max_tokens: 1200 })
@@ -97,7 +100,7 @@ const AI = {
       const b2 = this._root.querySelector('#aiBox'); if (b2) b2.scrollTop = b2.scrollHeight;
     } catch (e) {
       const c2 = this.chat();
-      c2[c2.length - 1] = { role: 'assistant', content: '请求失败了：' + (e && e.message ? e.message : e) + '\n检查一下网络或 Key 是否正确～' };
+      c2[c2.length - 1] = { role: 'assistant', content: '请求失败了：' + (e && e.message ? e.message : e) + '\n若是跨域/CORS 报错，说明 DeepSeek 不允许浏览器直连（它不发预检头）。请在上方「代理地址」填一个 Cloudflare Worker 代理即可解决——具体步骤问枝枝要。' };
       this.saveChat(c2); this.renderMessages();
     }
   },
