@@ -389,7 +389,7 @@ const Review = {
     this._root = root;
     root.innerHTML = `<div class="fun-archive" id="rvBody"></div>${this.rvNavHTML()}`;
     const box = root.querySelector('#rvBody');
-    if (this._rtab === 'daily') this.render_daily_page(box, root);
+    if (this._rtab === 'daily') { if (window.H3) return H3.renderDaily(this, box, root); this.render_daily_page(box, root); }
     else this.render_stat_page(box, root);   // 统计：周/月/年/全部
     this.bindRvNav(root);
   },
@@ -1018,6 +1018,7 @@ const Review = {
     else this.render_all_visual(body, root);
     body.insertAdjacentHTML('beforeend', this.vizBlocksHTML(scope, { skipDimMood: scope === 'week' }));
     body.insertAdjacentHTML('beforeend', this.summaryCardHTML(scope));
+    if (window.H3) H3.appendCharts(this, body, root, scope);
     this.bindStatBlocks(body, root);
   },
   // 全部：跨年累计复盘
