@@ -3,10 +3,10 @@
    铁律：无徽章/无安慰文案/无补签联动/逃避必填置灰/UI 极简 */
 window.H3 = (function () {
   const DIMS = [
-    { key: 'mind',     label: '心智 Mind',     anchor: '写下今天我在逃避什么' },
+    { key: 'mind',     label: '心智 Mind',     anchor: '面对它做了最低动作' },
     { key: 'body',     label: '身体 Body',     anchor: '手机离床·两顿饭·出门' },
-    { key: 'spirit',   label: '精神 Spirit',   anchor: '一次真实连接' },
-    { key: 'vocation', label: '事业 Vocation', anchor: '发了1条视频' }
+    { key: 'spirit',   label: '精神 Spirit',   anchor: '主动连接·回消息算1' },
+    { key: 'vocation', label: '事业 Vocation', anchor: '发了内容·播放0也算' }
   ];
   const WEEK_CN = ['一', '二', '三', '四', '五', '六', '日'];
 
@@ -153,7 +153,8 @@ window.H3 = (function () {
         <div class="muted" style="font-size:12px;margin-bottom:8px">当前等级：${esc(lvLine)}</div>
         <div class="h3-quad">${quadRows}</div>
         <div class="h3-field" style="margin-top:12px"><label>小说时长</label>
-          <div class="muted">自动读取娱乐模块记录：${novelAuto} 分钟</div></div>
+          <div class="muted">自动读取娱乐模块记录：${novelAuto} 分钟</div>
+          ${novelAuto === 0 ? `<div class="muted" style="margin-top:4px"><a href="javascript:void(0)" id="h3FunJump" style="color:#3a7d5d">今日娱乐无记录，去补记 ›</a></div>` : ''}
         ${cravingRow}
         <div class="h3-field"><label>逃避对象（今天在躲什么，必填）</label>
           <input type="text" id="h3Avoid" value="${esc(avoidVal)}" ${isToday ? '' : 'disabled'} placeholder="例如：发视频"></div>
@@ -167,6 +168,8 @@ window.H3 = (function () {
     const di = box.querySelector('#rDate');
     if (dc) dc.onclick = () => di.showPicker ? di.showPicker() : di.click();
     if (di) di.onchange = e => { Review.cur = e.target.value; Review.render(root); };
+    const fj = box.querySelector('#h3FunJump');
+    if (fj) fj.onclick = () => { if (window.App) App.go('fun'); };
 
     if (isToday) {
       box.querySelectorAll('[data-h3dim]').forEach(b => b.onclick = () => {
