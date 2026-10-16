@@ -85,15 +85,25 @@ const KG = {
     return plans.length === 1 ? plans[0].id : null;
   },
   // 科目配色：固定调色板按科目名取色（与运动 sportColor 同理）
+  /* 科目配色：标准科目固定色；别名先归一再取色（否则「综应」会落到哈希兜底、和「数量」撞同一个色）；
+     自定义科目按哈希从色池里找第一个还没被占用的颜色，保证同时出现的科目两两不同。 */
   subjectColor(name) {
-    if (!this._sc) this._sc = {};
-    if (this._sc[name]) return this._sc[name];
     const subs = ['言语', '判断', '数量', '常识', '申论', '综合应用能力', '时政', '面试', '策略'];
     const palette = ['#E8746B', '#4A90D9', '#F0A45B', '#9B7FD4', '#5FB58E', '#D98CC4', '#E0C44B', '#7FB069', '#5BC0BE'];
-    let idx = subs.indexOf(name), c;
-    if (idx >= 0) c = palette[idx % palette.length];
-    else { let h = 0; for (const ch of name) h = (h * 31 + ch.charCodeAt(0)) >>> 0; c = palette[h % palette.length]; }
-    this._sc[name] = c; return c;
+    const extra = ['#E89B72', '#C4D17A', '#7ED0A8', '#6FC3D6', '#8FA6E0', '#B48BE0', '#E08BB8', '#D98C8C', '#A8C46A', '#9AA0E8', '#D1A0C4', '#8ED1B8'];
+    if (!this._sc) {
+      this._sc = {}; this._scUsed = {};
+      subs.forEach((x, i) => { this._sc[x] = palette[i]; this._scUsed[palette[i]] = 1; }); // 预热缓存 + 占位：标准色永不被自定义科目占用
+    }
+    const key = this.normSubject(name);
+    if (this._sc[key]) return this._sc[key];
+    const pool = palette.concat(extra);
+    let h = 0; for (const ch of key) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+    let c = null;
+    for (let i = 0; i < pool.length; i++) { const cand = pool[(h + i) % pool.length]; if (!this._scUsed[cand]) { c = cand; break; } }
+    if (!c) c = 'hsl(' + Math.round((h * 137.508) % 360) + ',55%,60%)'; // 池子耗尽兜底
+    this._sc[key] = c; this._scUsed[c] = 1;
+    return c;
   },
   render_plan(box, root) {
     let plans = this.plans(); const D = window.MUMU_KAOGONG;
