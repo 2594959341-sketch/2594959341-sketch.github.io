@@ -288,9 +288,9 @@ const KG = {
     box.querySelector('#kgLogAdd').onclick = () => {
       openModal(`<button class="close-x" onclick="closeModal()">×</button><h3>${icon('check',18)} 学习打卡</h3>
         <div class="form-row"><label>科目</label><select id="klSub"><option>言语</option><option>判断</option><option>数量</option><option>常识</option><option>申论</option><option>综合应用能力</option><option>时政</option><option>面试</option><option>策略</option></select></div>
-        <div class="form-row"><label>学习方式</label><select id="klMode"><option value="网课">网课</option><option value="刷题">刷题</option></select></div>
+        <div class="form-row"><label>学习方式</label><select id="klMode"><option value="网课">网课</option><option value="刷题">刷题</option><option value="背知识点">背知识点</option></select></div>
         <div class="form-row" id="klConWrap"><label>学了什么</label><input id="klCon" placeholder="例如：欣说言语 第3课 中心理解题"></div>
-        <div class="form-row" id="klProgWrap"><label>学到哪儿了（进度标记·网课用）</label><input id="klProg" placeholder="例如：看完P3，做题30道，正确率70%"></div>
+        <div class="form-row" id="klProgWrap"><label>学到哪儿了（进度标记）</label><input id="klProg" placeholder="例如：看完P3，做题30道，正确率70%"></div>
         <div class="form-row"><label>时长（分钟）</label><input type="number" id="klMin" value="60"></div>
         <div id="klQuizWrap" style="display:none">
           <div class="form-row"><label>刷了几道题</label><input type="number" id="klQ" placeholder="例如：50"></div>
@@ -328,7 +328,7 @@ const KG = {
         lg[todayStr()].push({ id: cid, srcId: cid, subject: kgSub, mode: kgMode, content: con, progress: kgProg, minutes: kgMin, qTotal: kgQ, qCorrect: kgC, qWrongTypes: kgWrong.length ? kgWrong : undefined, planId: document.getElementById('klPlan').value, time: new Date().toTimeString().slice(0, 5) });
         S.set('kgLogs', lg); closeModal();
         const extra = { '科目': kgSub, '方式': kgMode, '内容': con, '时长': kgMin + '分钟' };
-        if (kgMode === '网课' && kgProg) extra['学到哪里'] = kgProg;
+        if ((kgMode === '网课' || kgMode === '背知识点') && kgProg) extra['学到哪里'] = kgProg;
         if (kgMode === '刷题') { const acc = kgQ > 0 ? Math.round(kgC / kgQ * 100) : 0; extra['做题'] = kgQ + ' 题'; extra['对题'] = kgC + ' 道'; extra['正确率'] = acc + '%'; extra['错题题型'] = kgWrong.map(x => x.type).join('、') || '-'; }
         if (window.Daily) window.Daily.autoFromColumn('kaogong:study', todayStr(), con, null, extra, cid);
         this.render(root); toast('已打卡，积少成多');
