@@ -113,7 +113,7 @@ const Daily = {
       if (have.has(t.id)) return;
       list.push({ id: uid(), title: t.title, steps: (t.steps || []).map(s => ({ id: uid(), text: s.text, done: false })),
         manualDone: false, abandoned: false, moved: false, createdAt: Date.now(), link: t.link || '', linkApp: t.linkApp || '', cat: t.cat || this.catFromLink(t.link || ''), extra: (function(){ var e = t.extra ? Object.assign({}, t.extra) : {}; if (t.cat === 'kaogong' && !e.subject) { var s = (typeof kgSubjectFromTitle === 'function') ? kgSubjectFromTitle(t.title) : ''; if (s) e.subject = s; } return e; })(), estMin: t.estMin || 0, _tmpl: t.id,
-        taskLoad: (t.taskLoad && t.taskLoad >= 1 && t.taskLoad <= 5) ? t.taskLoad : 1, taskType: t.taskType === 'invest' ? 'invest' : 'consume', studyType: (t.studyType === '刷题' || t.studyType === '网课') ? t.studyType : undefined });
+        taskLoad: (t.taskLoad && t.taskLoad >= 1 && t.taskLoad <= 5) ? t.taskLoad : 1, taskType: t.taskType === 'invest' ? 'invest' : 'consume', studyType: (t.studyType === '刷题' || t.studyType === '网课' || t.studyType === '背知识点') ? t.studyType : undefined });
       changed = true;
     });
     if (isNew) { this.applyInheritedOrder(date, list); changed = true; } // 全新一天：按昨天顺序排，免去每天重排
@@ -564,7 +564,7 @@ const Daily = {
     const e = Object.assign({}, t.extra);
     if (t.actMin != null) e.minutes = t.actMin;
     if (t.actWhere != null) e.where = t.actWhere;
-    if (t.studyType) e.mode = t.studyType;            // 网课 / 刷题
+    if (t.studyType) e.mode = t.studyType;            // 网课 / 刷题 / 背知识点
     if (t.qTotal != null) e.qTotal = t.qTotal;
     if (t.qCorrect != null) e.qCorrect = t.qCorrect;
     if (t.qWrongTypes != null) e.qWrongTypes = t.qWrongTypes;
@@ -1828,6 +1828,7 @@ const Daily = {
         <div class="seg" id="npStudySeg">
           <button type="button" data-st="网课" class="on">网课</button>
           <button type="button" data-st="刷题">刷题</button>
+          <button type="button" data-st="背知识点">背知识点</button>
         </div>
       </div>
       <label style="display:flex;gap:8px;align-items:center;margin:4px 0 12px;cursor:pointer"><input type="checkbox" id="npDaily" style="width:18px;height:18px;accent-color:#111"> ${icon('refresh',14)} 固定为每日任务（每天自动出现）</label>
@@ -2142,7 +2143,7 @@ const Daily = {
           <button type="button" data-type="invest" class="${this.taskType(t) === 'invest' ? 'on' : ''}">主动投资</button>
         </div>
       </div>
-      ${!isMeal && t.cat === 'kaogong' ? `<div class="form-row" style="margin-bottom:10px"><label>学习类型</label><div class="seg" id="edStudySeg"><button type="button" data-st="网课" class="${t.studyType === '网课' ? 'on' : ''}">网课</button><button type="button" data-st="刷题" class="${t.studyType === '刷题' ? 'on' : ''}">刷题</button></div></div>` : ''}` : `<div class="banner info" style="margin-bottom:10px">${icon('meal',14)} 三餐任务不计入精力系统，也无需选消耗值</div>`}
+      ${!isMeal && t.cat === 'kaogong' ? `<div class="form-row" style="margin-bottom:10px"><label>学习类型</label><div class="seg" id="edStudySeg"><button type="button" data-st="网课" class="${t.studyType === '网课' ? 'on' : ''}">网课</button><button type="button" data-st="刷题" class="${t.studyType === '刷题' ? 'on' : ''}">刷题</button><button type="button" data-st="背知识点" class="${t.studyType === '背知识点' ? 'on' : ''}">背知识点</button></div></div>` : ''}` : `<div class="banner info" style="margin-bottom:10px">${icon('meal',14)} 三餐任务不计入精力系统，也无需选消耗值</div>`}
       <div id="stepList">${t.steps.map(s => `
         <div class="step-row ${s.done ? 'done' : ''}" data-lp>
           <input type="checkbox" ${s.done ? 'checked' : ''} data-step="${s.id}">
