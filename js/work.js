@@ -1766,6 +1766,41 @@ const Work = {
   isPlanEntry(l) { return !l ? false : (l.kind === 'plan' || (l.kind == null && this.PLAN_RE.test(l.title || ''))); },
   sumWords() { const logs = S.get('writeLogs', {}); let t = 0; for (const d in logs) for (const l of logs[d]) if (!this.isPlanEntry(l)) t += (l.words || 0); return t; },
   sumPlanWords() { const logs = S.get('writeLogs', {}); let t = 0; for (const d in logs) for (const l of logs[d]) if (this.isPlanEntry(l)) t += (l.words || 0); return t; },
+  /* 一次性数据修正：把误记为「正文」的大纲字数改回「构思」（不计入小说总字数）
+     规则：当前被计为正文字数、且 words===601 的记录 -> kind 改为 'plan'。
+     只有唯一命中才自动改（避免改错）；命中多条则只提示、不动数据；幂等，跑过一次即置标志位。 */
+  fixMislabeledPlanWords() {
+    try {
+      if (S.get('fixPlanWords601', false)) return;
+      const logs = S.get('writeLogs', {}) || {};
+      const hits = [];
+      Object.keys(logs).forEach(d => {
+        (logs[d] || []).forEach(l => {
+          if (Number(l && l.words) === 601 && !this.isPlanEntry(l)) hits.push({ d: d, l: l });
+        });
+      });
+      if (hits.length === 1) {
+        const d = hits[0].d, l = hits[0].l;
+        l.kind = 'plan';
+        // 同步每日计划里对应的写作任务类型，避免计划页仍显示「正文 601 字」
+        try {
+          if (l.srcId) {
+            const plans = S.get('plans', {}) || {};
+            const task = (plans[d] || []).find(x => x.id === l.srcId);
+            if (task && task.writeKind !== 'plan') { task.writeKind = 'plan'; S.set('plans', plans); }
+          }
+        } catch (e2) {}
+        S.set('writeLogs', logs);
+        S.set('fixPlanWords601Audit', { at: Date.now(), date: d, id: l.id, title: l.title || '', words: l.words, from: 'text', to: 'plan' });
+        toast('已修正：' + d + '「' + (l.title || '写作') + '」601 字由正文改为构思，不计入总字数');
+      } else if (hits.length > 1) {
+        S.set('fixPlanWords601Audit', { at: Date.now(), note: 'multi', list: hits.map(h => ({ date: h.d, title: h.l.title || '', id: h.l.id })) });
+        toast('找到 ' + hits.length + ' 条 601 字记录，为避免改错没有自动修改，请告诉枝枝具体是哪一天');
+      }
+      S.set('fixPlanWords601', true);
+      console.log('[fixPlanWords601] candidates=' + hits.length);
+    } catch (e) { console.warn('fixMislabeledPlanWords failed', e); }
+  },
   novelGoal() { const N = this.novel(); return N.lenMode === 'chapters' ? (Number(N.chapters) || 0) * (Number(N.wordsPerChapter) || 0) : (Number(N.goalWords) || 0); },
   novelPct() { const g = this.novelGoal(); return g ? Math.min(100, Math.round(this.sumWords() / g * 100)) : 0; },
   novelAct(pct) {
