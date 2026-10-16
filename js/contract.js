@@ -30,8 +30,14 @@ window.Contract = (function () {
 
   // 让已签的旧契约（v376 把 phone/meal 存成 manual）自动升级到新口径（按 key 同步 sourceType/link）
   function normalizeItems(c) {
-    (c.items || []).forEach(it => { const def = ITEM_DEFS[it.key]; if (def) { it.sourceType = def.sourceType; it.link = def.link || ''; } });
-    return c;
+    let changed = false;
+    (c.items || []).forEach(it => {
+      const def = ITEM_DEFS[it.key];
+      if (def && (it.sourceType !== def.sourceType || (it.link || '') !== (def.link || ''))) {
+        it.sourceType = def.sourceType; it.link = def.link || ''; changed = true;
+      }
+    });
+    return changed;
   }
 
   // —— 豁免判定（修正4）：休息日 / 经期假 / 年度假期 不计入分母；病假计入（用户承认存在没病也请的情况）——
@@ -109,9 +115,9 @@ window.Contract = (function () {
     ensurePhoneTask();
     const c = get();
     if (!c) return signForm(Review, box, root);
-    normalizeItems(c);
+    if (normalizeItems(c)) set(c);   // 迁移只落盘一次，之后读取即为新口径
     ensureSettled(c);
-    activeView(Review, box, root, get());
+    activeView(Review, box, root, c);
   }
 
   function typeBadge(t) {
