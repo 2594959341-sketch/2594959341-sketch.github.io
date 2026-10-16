@@ -1,5 +1,5 @@
 /* ============ Human 3.0 复盘模型（融入工作台·复盘模块） ============ */
-/* 自包含自评：四象限打分(0/1/2) + 小说时长 + 渴求次数 + 逃避对象(必填)
+/* 自包含自评：四象限打分(0/1/2) + 小说时长(自动读娱乐) + 渴求次数 + 逃避对象(必填)
    铁律：无徽章/无安慰文案/无补签联动/逃避必填置灰/UI 极简 */
 window.H3 = (function () {
   const DIMS = [
@@ -16,6 +16,12 @@ window.H3 = (function () {
   function cravings() { return S.get('h3_craving', {}); }
   function levels() { return S.get('h3_levels', { mind: 'L1', body: 'L1', spirit: 'L1', vocation: 'L1' }); }
   function setLevels(o) { S.set('h3_levels', o); }
+
+  // 小说时长：自动读取娱乐模块（funLogs）里「小说」类型记录的总分钟
+  function novelMinutesOf(d) {
+    const logs = (S.get('funLogs', {}) || {})[d] || [];
+    return logs.reduce((s, r) => s + (String(r.type || '').indexOf('小说') >= 0 ? (Number(r.minutes) || 0) : 0), 0);
+  }
 
   // ---------- helpers ----------
   function dimScore(d, key) { const r = reviews()[d]; return r ? (Number(r[key]) || 0) : null; }
@@ -102,7 +108,7 @@ window.H3 = (function () {
     const saved = rev[cur] || null;
     if (!H3._draft) H3._draft = {};
     if (!H3._draft[cur]) {
-      const base = { mind: null, body: null, spirit: null, vocation: null, novelMinutes: '', avoidTarget: '', cravingCount: 0 };
+      const base = { mind: null, body: null, spirit: null, vocation: null, avoidTarget: '', cravingCount: 0 };
       H3._draft[cur] = saved ? Object.assign(base, saved) : base;
     }
     const dft = H3._draft[cur];
@@ -110,6 +116,7 @@ window.H3 = (function () {
 
     const lv = updateLevels();
     const lvLine = DIMS.map(d => d.label.split(' ')[0] + ' ' + lv[d.key]).join(' · ');
+    const novelAuto = novelMinutesOf(cur);
 
     const quadRows = DIMS.map(dim => {
       const val = dft[dim.key];
@@ -131,7 +138,6 @@ window.H3 = (function () {
           <span class="muted" style="font-size:11px">点一下记一次，全天可加</span></div></div>`
       : `<div class="h3-field"><label>渴求次数</label><div class="h3-crav"><span class="cnt">${saved ? (saved.cravingCount || 0) : 0}</span></div></div>`;
 
-    const novelVal = isToday ? dft.novelMinutes : (saved ? (saved.novelMinutes || 0) : 0);
     const avoidVal = isToday ? dft.avoidTarget : (saved ? (saved.avoidTarget || '') : '');
     const fourDone = [dft.mind, dft.body, dft.spirit, dft.vocation].every(v => v !== null);
     const avoidOk = String(avoidVal || '').trim() !== '';
@@ -146,15 +152,14 @@ window.H3 = (function () {
       <div class="card">
         <div class="muted" style="font-size:12px;margin-bottom:8px">当前等级：${esc(lvLine)}</div>
         <div class="h3-quad">${quadRows}</div>
-        <div class="h3-field" style="margin-top:12px"><label>小说时长（分钟，可空）</label>
-          <input type="number" min="0" id="h3Novel" value="${novelVal}" ${isToday ? '' : 'disabled'} placeholder="看了多久小说"></div>
+        <div class="h3-field" style="margin-top:12px"><label>小说时长</label>
+          <div class="muted">自动读取娱乐模块记录：${novelAuto} 分钟</div></div>
         ${cravingRow}
         <div class="h3-field"><label>逃避对象（今天在躲什么，必填）</label>
           <input type="text" id="h3Avoid" value="${esc(avoidVal)}" ${isToday ? '' : 'disabled'} placeholder="例如：发视频"></div>
         ${isToday ? `<button class="btn h3-submit" id="h3Save"${canSubmit ? '' : ' disabled'}>保存复盘</button>` : `<div class="muted" style="margin-top:12px">这是过去的记录，已锁定不可改。</div>`}
         ${!isToday && saved ? `<div class="muted" style="margin-top:8px">保存于 ${new Date(saved.ts || 0).toLocaleString('zh-CN')}</div>` : ''}
       </div>
-      ${weekGridHTML(cur, today)}
       ${oldDiaryHTML()}`;
 
     // 日期切换
@@ -168,8 +173,6 @@ window.H3 = (function () {
         H3._draft[cur][b.dataset.h3dim] = Number(b.dataset.h3val);
         renderDaily(Review, box, root);
       });
-      const novel = box.querySelector('#h3Novel');
-      if (novel) novel.oninput = () => { H3._draft[cur].novelMinutes = novel.value; };
       const avoid = box.querySelector('#h3Avoid');
       if (avoid) avoid.oninput = () => {
         H3._draft[cur].avoidTarget = avoid.value;
@@ -193,7 +196,7 @@ window.H3 = (function () {
     if (!String(dft.avoidTarget || '').trim()) return;
     const rec = {
       mind: +dft.mind, body: +dft.body, spirit: +dft.spirit, vocation: +dft.vocation,
-      novelMinutes: dft.novelMinutes === '' ? 0 : (+dft.novelMinutes || 0),
+      novelMinutes: novelMinutesOf(cur),
       cravingCount: Number((cravings()[cur]) || 0),
       avoidTarget: String(dft.avoidTarget).trim(),
       ts: Date.now()
@@ -204,9 +207,10 @@ window.H3 = (function () {
     Review.render(root);
   }
 
-  // 本周 7×4 网格（周一为首）
-  function weekGridHTML(cur, today) {
+  // 本周 7×4 网格（周一为首），cur 所在周
+  function weekGridHTML(cur) {
     const days = weekDates(cur);
+    const today = todayStr();
     const head = days.map(d => {
       const dt = new Date(d + 'T12:00:00');
       const wd = WEEK_CN[(dt.getDay() + 6) % 7];
@@ -242,10 +246,12 @@ window.H3 = (function () {
     return `<details class="h3-old"><summary>往期日记（只读）</summary><div class="od-list">${items}</div></details>`;
   }
 
-  // ---------- 统计页三图（延迟加载） ----------
+  // ---------- 统计页（延迟加载） ----------
   function appendCharts(Review, body, root, scope) {
     H3._root = root; H3._Review = Review;
-    const html = `<div class="card h3-card"><h3>Human 3.0 复盘</h3>
+    let html = '';
+    if (scope === 'week') html += weekGridHTML(todayStr()) + '\n';
+    html += `<div class="card h3-card"><h3>Human 3.0 复盘</h3>
       <div class="muted" style="font-size:12px">四象限达标率（28天）与等级</div>
       <div class="h3-chart" data-h3="radar" style="min-height:240px"></div>
       <div class="muted" style="font-size:12px;margin-top:8px">90天趋势（按周·周一始·四色=四维度）</div>
