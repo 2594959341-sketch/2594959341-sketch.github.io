@@ -389,8 +389,13 @@ const Review = {
     this._root = root;
     root.innerHTML = `<div class="fun-archive" id="rvBody"></div>${this.rvNavHTML()}`;
     const box = root.querySelector('#rvBody');
-    if (this._rtab === 'daily') { if (window.H3) return H3.renderDaily(this, box, root); this.render_daily_page(box, root); }
-    else this.render_stat_page(box, root);   // 统计：周/月/年/全部
+    try {
+      if (this._rtab === 'daily') { if (window.H3) { H3.renderDaily(this, box, root); } else this.render_daily_page(box, root); }
+      else this.render_stat_page(box, root);
+    } catch (e) {
+      console.error('[review render]', e);
+      try { if (this._rtab === 'daily') this.render_daily_page(box, root); } catch (e2) { console.error(e2); }
+    }
     this.bindRvNav(root);
   },
   rvNavHTML() {
@@ -1018,7 +1023,7 @@ const Review = {
     else this.render_all_visual(body, root);
     body.insertAdjacentHTML('beforeend', this.vizBlocksHTML(scope, { skipDimMood: scope === 'week' }));
     body.insertAdjacentHTML('beforeend', this.summaryCardHTML(scope));
-    if (window.H3) H3.appendCharts(this, body, root, scope);
+    try { if (window.H3) H3.appendCharts(this, body, root, scope); } catch (e) { console.error('[h3 charts]', e); }
     this.bindStatBlocks(body, root);
   },
   // 全部：跨年累计复盘
