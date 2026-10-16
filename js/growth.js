@@ -506,7 +506,7 @@ const Growth = {
     Object.entries(rLogs).forEach(([d, arr]) => (arr || []).forEach(l => {
       out.push({
         id: l.id, title: l.book || '未命名', book: l.book, cover: l.cover || null,
-        minutes: Number(l.minutes) || 0, finished: !!l.finished, status: l.finished ? '已读完' : '',
+        minutes: Number(l.minutes) || 0, finished: !!l.finished, status: l.finished ? '已读完' : (l.status === 'abandoned' ? '弃' : ''),
         review: l.review || '', tags: l.tags || [], cat: l.cat, rating: l.rating || 0,
         pages: l.pages || '', date: d
       });
@@ -773,7 +773,7 @@ const Growth = {
             <div style="display:flex;gap:6px;align-items:center;margin-top:2px;flex-wrap:wrap">
               ${this.readCatTag(l)}
               ${l.rating ? `<span style="letter-spacing:1px;font-size:12px">${this.rdStarHTML(l.rating)}</span>` : ''}
-              <span class="muted" style="font-size:11px">${l.finished ? '已读完' : (l.pages ? esc(l.pages) : '在读')}${l.minutes ? ' · ' + l.minutes + ' 分钟' : ''}</span>
+              <span class="muted" style="font-size:11px">${l.finished ? '已读完' : (l.status === 'abandoned' ? '弃' + (l.percent ? ' · ' + l.percent + '%' : '') : (l.pages ? esc(l.pages) : '在读'))}${l.minutes ? ' · ' + l.minutes + ' 分钟' : ''}</span>
             </div>
             ${tagHTML}
           </div>
@@ -964,7 +964,7 @@ const Growth = {
                   <div style="display:flex;gap:6px;align-items:center;margin-top:2px;flex-wrap:wrap">
                     ${this.readCatTag(l)}
                     ${l.rating ? `<span style="letter-spacing:1px">${this.rdStarHTML(l.rating)}</span>` : ''}
-                    <span class="muted" style="font-size:11px">${l.date.slice(5)}${l.finished ? ' · 已读完' : (l.pages ? ' · ' + esc(l.pages) : '')}</span>
+                    <span class="muted" style="font-size:11px">${l.date.slice(5)}${l.finished ? ' · 已读完' : (l.status === 'abandoned' ? ' · 弃' + (l.percent ? ' ' + l.percent + '%' : '') : (l.pages ? ' · ' + esc(l.pages) : ''))}</span>
                   </div>
                   ${tagHTML}
                 </div></div>`;
@@ -1047,9 +1047,10 @@ const Growth = {
         <input type="date" id="rdDate" value="${esc(edate)}" max="${esc(todayStr())}" style="max-width:200px"></div>
       <div class="form-row"><label>书名</label><input id="rdBook" placeholder="在读哪本书？" value="${esc(edit ? (edit.book || '') : (prefill ? prefill.book : ''))}"></div>
       <div class="form-row"><label>阅读状态</label>
-        <select id="rdStatus"><option value="reading">未读完</option><option value="done">已读完</option></select></div>
+        <select id="rdStatus"><option value="reading">未读完</option><option value="abandoned">弃（弃书）</option><option value="done">已读完</option></select></div>
       <div class="form-row"><label>阅读时长（分钟）</label><input id="rdMinutes" type="number" min="0" inputmode="numeric" placeholder="例如：45" value="${esc(edit ? (edit.minutes || '') : '')}"></div>
-      <div id="rdProgress"><div class="form-row"><label>读到第几页/第几章</label><input id="rdPages" placeholder="例如：P120 / 第5章" value="${esc(edit && !edit.finished ? (edit.pages || '') : '')}"></div></div>
+      <div id="rdProgress"><div class="form-row"><label>读到第几页/第几章</label><input id="rdPages" placeholder="例如：P120 / 第5章" value="${esc(edit && !edit.finished ? (edit.pages || '') : '')}"></div>
+        <div class="form-row"><label>读到百分之几（可选）</label><input id="rdPercent" type="number" min="0" max="100" inputmode="numeric" placeholder="例如：60" value="${esc(edit && edit.percent ? edit.percent : '')}"></div></div>
       <div id="rdDoneExtra" style="display:none">
         <div class="form-row"><label>评分</label><div id="rdRateBox" style="font-size:24px;cursor:pointer;letter-spacing:4px"></div></div>
         <div class="form-row"><label>读后感</label><textarea id="rdReview" rows="3" placeholder="读完这本书，你的感受、收获、想记住的话…">${esc(edit && edit.review ? edit.review : '')}</textarea></div>
@@ -1088,7 +1089,7 @@ const Growth = {
     };
     // 编辑模式：按已有数据初始化状态展示
     if (edit) {
-      document.getElementById('rdStatus').value = edit.finished ? 'done' : 'reading';
+      document.getElementById('rdStatus').value = edit.finished ? 'done' : (edit.status === 'abandoned' ? 'abandoned' : 'reading');
       document.getElementById('rdStatus').dispatchEvent(new Event('change'));
     }
     document.getElementById('rdOk').onclick = () => {
@@ -1110,7 +1111,9 @@ const Growth = {
            · 编辑：edit 可能跨日期移动（用 useDate 代替原 edit.date），同步读后感 date 跟着改 */
         const targetDate = isEdit ? useDate : useDate;
         const entry = {
-          book, pages: status === 'reading' ? (document.getElementById('rdPages').value.trim() || '') : '',
+          book, pages: status !== 'done' ? (document.getElementById('rdPages').value.trim() || '') : '',
+          status: status,
+          percent: status !== 'done' ? (Number(document.getElementById('rdPercent').value) || 0) : 0,
           finished: status === 'done', cat, minutes: Math.max(0, Number(document.getElementById('rdMinutes').value) || 0),
           cover: cover || (isEdit ? (edit.cover || null) : null),
           rating: status === 'done' ? rating : 0, review,
@@ -1167,7 +1170,7 @@ const Growth = {
             const extra = {
               '书名': book,
               '分类': catName,
-              '进度': entry.finished ? '已读完' : (entry.pages || '在读'),
+              '进度': entry.finished ? '已读完' : (entry.status === 'abandoned' ? '弃' + (entry.percent ? ' ' + entry.percent + '%' : '') : (entry.pages || '在读')),
               '评分': entry.rating ? entry.rating + ' 星' : '',
               '标签': (tags || []).join('、')
             };
