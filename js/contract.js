@@ -7,13 +7,32 @@
 window.Contract = (function () {
   const DEFAULT_ITEMS = [
     { key: 'video',  label: '发内容',   sourceType: 'task' },
-    { key: 'phone',  label: '手机离床', sourceType: 'manual' },
-    { key: 'meal',   label: '两顿饭',   sourceType: 'manual' },
+    { key: 'phone',  label: '手机离床', sourceType: 'task', link: 'contract:phoneOffBed' },
+    { key: 'meal',   label: '两顿饭',   sourceType: 'meals' },
     { key: 'review', label: '复盘四项', sourceType: 'review' }
   ];
+  const ITEM_DEFS = {};
+  DEFAULT_ITEMS.forEach(x => { ITEM_DEFS[x.key] = x; });
 
   function get() { return S.get('contract', null); }
   function set(c) { S.set('contract', c); }
+
+  // 在每日计划「固定每日任务」模板里确保存在「手机离床」任务（幂等：仅首次创建一次）
+  // 用户每日在每日计划里勾选/取消，契约只读其完成态，不在契约内反向写入
+  function ensurePhoneTask() {
+    if (!(window.Daily && window.Daily.dailyTmpl && window.Daily.saveDaily)) return;
+    const LINK = 'contract:phoneOffBed';
+    const tmpl = window.Daily.dailyTmpl();
+    if (tmpl.some(t => (t.link || '') === LINK)) return;
+    tmpl.push({ id: 'ct_phone_' + Date.now(), title: '手机离床', link: LINK, cat: 'growth', steps: [], taskLoad: 0, taskType: '', studyType: '' });
+    window.Daily.saveDaily(tmpl);
+  }
+
+  // 让已签的旧契约（v376 把 phone/meal 存成 manual）自动升级到新口径（按 key 同步 sourceType/link）
+  function normalizeItems(c) {
+    (c.items || []).forEach(it => { const def = ITEM_DEFS[it.key]; if (def) { it.sourceType = def.sourceType; it.link = def.link || ''; } });
+    return c;
+  }
 
   // —— 豁免判定（修正4）：休息日 / 经期假 / 年度假期 不计入分母；病假计入（用户承认存在没病也请的情况）——
   function isExempt(d) {
@@ -34,11 +53,21 @@ window.Contract = (function () {
       return !!(r && r.avoidTarget && String(r.avoidTarget).trim() !== '');
     }
     if (item.sourceType === 'task') {
-      // 两者任一满足：创作发布记录 或 每日计划发内容任务 done
+      const plans = S.get('plans', {})[d] || [];
+      if (item.link) {
+        // 绑定特定每日计划任务（如「手机离床」），读其完成态——用户在每日计划里勾选
+        return plans.some(t => !t.abandoned && (t.link || '') === item.link && (window.Daily ? Daily.effDone(t, d) : !!t.done));
+      }
+      // 发内容：创作发布记录 或 每日计划发内容任务 done，任一即可
       const wl = S.get('workLogs', {})[d] || [];
       if (wl.length) return true;
-      const plans = S.get('plans', {})[d] || [];
       return plans.some(t => !t.abandoned && (t.link || '').indexOf('work:') === 0 && (window.Daily ? Daily.effDone(t, d) : !!t.done));
+    }
+    if (item.sourceType === 'meals') {
+      // 两顿饭：读三餐数据，当天非跳过且已记录 ≥2 餐即视为完成
+      const mv = S.get('meals', {})[d];
+      const mealN = mv ? ['breakfast', 'lunch', 'dinner'].filter(k => mv[k] && !mv[k].skipped).length : 0;
+      return mealN >= 2;
     }
     return false;
   }
@@ -77,14 +106,16 @@ window.Contract = (function () {
 
   // ================= 渲染 =================
   function render(Review, box, root) {
+    ensurePhoneTask();
     const c = get();
     if (!c) return signForm(Review, box, root);
+    normalizeItems(c);
     ensureSettled(c);
     activeView(Review, box, root, get());
   }
 
   function typeBadge(t) {
-    const map = { task: '绑现有任务', review: '读复盘', metric: '读数值', manual: '手动勾选' };
+    const map = { task: '绑现有任务', review: '读复盘', metric: '读数值', manual: '手动勾选', meals: '读三餐' };
     return `<span class="ct-badge ct-${t}">${map[t] || t}</span>`;
   }
 
@@ -105,7 +136,7 @@ window.Contract = (function () {
           <div class="ct-items">${DEFAULT_ITEMS.map(it => `<div class="ct-item"><b>${esc(it.label)}</b>${typeBadge(it.sourceType)}</div>`).join('')}</div>
         </div>
         <button class="btn ct-sign" id="ctSign" disabled style="width:100%;margin-top:6px">签署契约</button>
-        <div class="muted" style="font-size:11px;margin-top:6px">发内容 = 创作发布记录 或 每日计划发内容任务完成，任一即可。</div>
+        <div class="muted" style="font-size:11px;margin-top:6px">发内容 = 创作发布记录 或 每日计划发内容任务完成，任一即可。手机离床 = 每日计划里勾选。两顿饭 = 自动读三餐记录（≥2 餐）。</div>
       </div>`;
     let dur = 14;
     box.querySelectorAll('.ct-dur').forEach(b => b.onclick = () => {
