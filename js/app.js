@@ -1,5 +1,5 @@
 /* ============ 首页 + 导航 ============ */
-window.APP_VER = 'mumu-v379'; // 当前前端版本（设置页可见，用于确认是否加载到最新代码）
+window.APP_VER = 'mumu-v380'; // 当前前端版本（设置页可见，用于确认是否加载到最新代码）
 const SR_LINKS = [
   { v: 'sport', n: '运动（任意跟练）' },
   { v: 'sport:', n: '运动（具体项目，选后填名）' },
@@ -602,6 +602,7 @@ const App = {
     if (typeof migrateKgSubjects === 'function') { try { migrateKgSubjects(); } catch (e) {} } // 备考科目归一：行测言语→言语（一次性，幂等）
     if (typeof migrateKgMerge === 'function') { try { migrateKgMerge(); } catch (e) {} } // 备考科目合并：数量关系+资料分析→数量（一次性，幂等）
     if (window.Meals && Meals.backfillJunkTags) Meals.backfillJunkTags();
+    if (window.Work && Work.fixMislabeledPlanWords) Work.fixMislabeledPlanWords(); // 一次性：把误记为正文的 601 字大纲记录改回构思
     const sb = document.getElementById('nav');
     sb.innerHTML = this.navs.map(n => {
       const hasBranches = n.branches && n.branches.length > 0;
