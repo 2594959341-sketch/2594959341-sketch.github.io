@@ -391,6 +391,7 @@ const Review = {
     const box = root.querySelector('#rvBody');
     try {
       if (this._rtab === 'daily') { if (window.H3) { H3.renderDaily(this, box, root); } else this.render_daily_page(box, root); }
+      else if (this._rtab === 'contract') { if (window.Contract) Contract.render(this, box, root); }
       else this.render_stat_page(box, root);
     } catch (e) {
       console.error('[review render]', e);
@@ -399,7 +400,7 @@ const Review = {
     this.bindRvNav(root);
   },
   rvNavHTML() {
-    const items = [['daily', '日记'], ['stat', '统计']];
+    const items = [['daily', '日记'], ['stat', '统计'], ['contract', '契约']];
     return `<div class="fun-nav rv-nav">${items.map(([k, l]) => `<button class="fun-nav-item ${this._rtab === k ? 'on' : ''}" data-rtab="${k}">${l}</button>`).join('')}</div>`;
   },
   bindRvNav(root) {
@@ -1639,6 +1640,7 @@ const Review = {
     const wkTop = wkTopArr[0];
 
     const wdNames = ['一', '二', '三', '四', '五', '六', '日'];
+    const flowVal = (S.get('flowWeek', {})[start] || '');
     // 有打卡=彩色方块(cat-X 背景)；单次日打卡只显方块无数字；一天多次打卡显数字；未打卡留透明占位(不显黑框)保持7列对齐
     const rowsHTML = ordered.map(key => {
       const r = rows[key];
@@ -1677,6 +1679,11 @@ const Review = {
           <div style="text-align:center"><div class="stat-num" style="font-size:15px">${wkTop ? esc(wkTop.label) : '—'}</div><div class="stat-lab">最专注</div></div>
         </div>
         ${wkTop ? `<div class="muted" style="margin-top:6px">本周你在「${esc(wkTop.label)}」上打卡最多（${wkTop.n} ${wkTop.unit}），这份坚持正在长成你的底色。</div>` : '<div class="muted" style="margin-top:6px">这周记录还不多，从今天一个小小的打卡开始就好。</div>'}
+      </div>
+      <div class="card" style="margin-top:12px"><h3>这周哪一刻忘了时间？没有就写“没有”</h3>
+        <div class="muted" style="font-size:12px;margin-bottom:8px">做完还想继续 / 中途没看手机 / 中途没想起小说，任意一条都算。</div>
+        <textarea id="flowMoment" rows="2" placeholder="没有就写“没有”" style="width:100%;resize:vertical">${esc(flowVal)}</textarea>
+        <div class="muted" id="flowSaved" style="font-size:11px;margin-top:4px"></div>
       </div>`;
 
     const pBtn = box.querySelector('#wkPrev');
@@ -1689,6 +1696,16 @@ const Review = {
     if (et) et.onclick = () => { this._energyView = this._energyView === 'rech' ? 'load' : 'rech'; this.render(root); };
     const ro = box.querySelectorAll('[data-rechcat]');
     if (ro) ro.forEach(el => el.onclick = () => this.rechCatModal(el.dataset.rechcat, JSON.parse(el.dataset.days)));
+    const fm = box.querySelector('#flowMoment');
+    if (fm) {
+      fm.oninput = () => {
+        const obj = S.get('flowWeek', {});
+        obj[start] = fm.value;
+        S.set('flowWeek', obj);
+        const snd = box.querySelector('#flowSaved');
+        if (snd) snd.textContent = fm.value.trim() ? '已存' : '已清空';
+      };
+    }
   },
 
   // ===== 月总结可视化（当月数据 + 月份切换）=====
@@ -1704,6 +1721,14 @@ const Review = {
     const wkStudy = st.wkStudy, wkWork = st.wkWork, wkSport = st.wkSport;
     const diaryN = st.diaryN;
     const weakest = st.weakest, strongest = st.strongest;
+    const fw = S.get('flowWeek', {});
+    let fwHTML = '';
+    for (let i = 0; i < 4; i++) {
+      const ws = addDays(weekStart(todayStr()), -i * 7);
+      const v = fw[ws];
+      const has = Object.prototype.hasOwnProperty.call(fw, ws) && String(v).trim() !== '';
+      fwHTML += `<div style="display:flex;gap:8px;padding:6px 0;border-top:1px dashed var(--line);font-size:13px"><span class="muted" style="min-width:64px;flex-shrink:0">${ws.slice(5)} 周</span><span style="flex:1">${has ? esc(v) : '<span class="muted">—</span>'}</span></div>`;
+    }
     box.innerHTML = `
       <div class="wk-nav">
         <button class="btn ghost sm" id="moPrev" ${this._monthOff >= 11 ? 'disabled style="opacity:.2"' : ''} title="上一月">‹</button>
@@ -1725,6 +1750,9 @@ const Review = {
           <div style="text-align:center"><div class="stat-num">${wkSport.reduce((a, b) => a + b, 0)}</div><div class="stat-lab">运动(天)</div></div>
         </div>
         <div class="muted" style="margin-top:6px">本月最强项「${strongest}」、待补强「${weakest}」——把精力往弱的那一项挪一点点，就有大变化。</div>
+      </div>
+      <div class="card" style="margin-top:12px"><h3>${icon('sparkles',16)} 最近 4 周 · 心流一刻</h3>
+        ${fwHTML}
       </div>`;
     const pBtn = box.querySelector('#moPrev');
     const nBtn = box.querySelector('#moNext');
