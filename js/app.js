@@ -1,5 +1,5 @@
 /* ============ 首页 + 导航 ============ */
-window.APP_VER = 'mumu-v381'; // 当前前端版本（设置页可见，用于确认是否加载到最新代码）
+window.APP_VER = 'mumu-v382'; // 当前前端版本（设置页可见，用于确认是否加载到最新代码）
 const SR_LINKS = [
   { v: 'sport', n: '运动（任意跟练）' },
   { v: 'sport:', n: '运动（具体项目，选后填名）' },
@@ -502,6 +502,10 @@ const App = {
           <div><div class="setting-label">${icon('sun',16)} 请病假</div><div class="setting-desc" style="font-size:11px">每月 3 天病假，所有板块连续天数与续火花不受影响</div></div>
           <div class="setting-actions"><button class="btn sm" id="btnSickLeave">请假</button></div>
         </div>
+        <div class="setting-row">
+          <div><div class="setting-label">${icon('target',16)} 考试日</div><div class="setting-desc" style="font-size:11px">登记考试日：当天不安排备考任务，学习连续天数与续火花不受影响</div></div>
+          <div class="setting-actions"><button class="btn sm" id="btnExamDay">登记</button></div>
+        </div>
       </div>`;
     const btnExport = root.querySelector('#btnExport');
     if (btnExport) btnExport.onclick = async () => {
@@ -590,6 +594,8 @@ const App = {
     });
     const btnSickLeave = root.querySelector('#btnSickLeave');
     if (btnSickLeave) btnSickLeave.onclick = () => { if (window.openSickLeaveDialog) openSickLeaveDialog(root); };
+    const btnExamDay = root.querySelector('#btnExamDay');
+    if (btnExamDay) btnExamDay.onclick = () => { if (window.openExamDayDialog) openExamDayDialog(root); };
   },
   async init() {
     try {
