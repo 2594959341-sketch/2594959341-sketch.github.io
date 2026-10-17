@@ -1492,6 +1492,8 @@ details[open] > summary .car{transform:rotate(180deg)}
 .cal-sick{background:#A8CFE6}
 .cal-birth{background:#F6D98A}
 .cal-anni{background:#D3C2EA}
+/* v382：考试日专属色（珊瑚红；区别于病假蓝/生日黄/纪念日紫/休息绿/月经粉/补签杏） */
+.cal-exam{background:#F1948A}
 /* 假期说明（可折叠，仅当月有对应假期才出现） */
 .holiday-legend{margin-top:10px;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:#fff}
 .hl-head{display:flex;justify-content:space-between;align-items:center;cursor:pointer;padding:8px 10px;font-size:12px;color:var(--ink);background:var(--light)}
@@ -1510,6 +1512,7 @@ details[open] > summary .car{transform:rotate(180deg)}
 .cal-cell.today.cal-sick{background:#A8CFE6;box-shadow:0 0 0 2px #111 inset}
 .cal-cell.today.cal-birth{background:#F6D98A;box-shadow:0 0 0 2px #111 inset}
 .cal-cell.today.cal-anni{background:#D3C2EA;box-shadow:0 0 0 2px #111 inset}
+.cal-cell.today.cal-exam{background:#F1948A;box-shadow:0 0 0 2px #111 inset}
 
 /* ===== 目标系统日历（v264）：年→月→周 钻取 ===== */
 .goal-year-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:4px 0 16px}
