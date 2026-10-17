@@ -104,6 +104,7 @@ const Daily = {
     const tmpl = this.dailyTmpl();
     if (date < todayStr()) return; // 固定任务只部署到今天与未来，绝不往过去补（避免「穿越处理」）
     if (typeof isSickLeave === 'function' && isSickLeave(date)) return; // 病假日：不部署固定任务（当天未打卡任务已被清空）
+    const examDay = typeof isExamDay === 'function' && isExamDay(date); // 考试日：只跳过备考固定任务，运动/创作等照常
     const all = this.all();
     const isNew = !all[date]; // 这一天才刚出现、尚无任何计划 -> 全新一天
     const list = this.list(date);
@@ -111,6 +112,7 @@ const Daily = {
     let changed = false;
     tmpl.forEach(t => {
       if (have.has(t.id)) return;
+      if (examDay && (t.cat === 'kaogong' || (t.link || '').indexOf('kaogong:') === 0)) return; // 考试日：不部署备考任务
       list.push({ id: uid(), title: t.title, steps: (t.steps || []).map(s => ({ id: uid(), text: s.text, done: false })),
         manualDone: false, abandoned: false, moved: false, createdAt: Date.now(), link: t.link || '', linkApp: t.linkApp || '', cat: t.cat || this.catFromLink(t.link || ''), extra: (function(){ var e = t.extra ? Object.assign({}, t.extra) : {}; if (t.cat === 'kaogong' && !e.subject) { var s = (typeof kgSubjectFromTitle === 'function') ? kgSubjectFromTitle(t.title) : ''; if (s) e.subject = s; } return e; })(), estMin: t.estMin || 0, _tmpl: t.id,
         taskLoad: (t.taskLoad && t.taskLoad >= 1 && t.taskLoad <= 5) ? t.taskLoad : 1, taskType: t.taskType === 'invest' ? 'invest' : 'consume', studyType: (t.studyType === '刷题' || t.studyType === '网课' || t.studyType === '背知识点') ? t.studyType : undefined });
@@ -929,6 +931,7 @@ const Daily = {
     const d = this.cur;
     const isToday = d === todayStr();
     const isHol = isAnnualHoliday(d) || isSickLeave(d);
+    const isExam = typeof isExamDay === 'function' && isExamDay(d); // 考试日：只影响备考，不作整日休息
     this.ensureDaily(d);
     let tasks = this.list(d);
     // 三餐类显示去重：当天有手工三餐任务（meals:任意/具体餐）时，隐藏自动生成的重复三餐任务，避免「固定早餐 + 打卡早餐」显示两条
@@ -946,7 +949,7 @@ const Daily = {
     if (todayDone) streak = 1;
     for (let i = 0; i < 365; i++) {
       const dd = addDays(d, -(i + 1));
-      if (isAnnualHoliday(dd) || isSickLeave(dd)) continue; // 年度假期/病假：不中断、不计入连续天数
+      if (isAnnualHoliday(dd) || isSickLeave(dd) || (typeof isExamDay === 'function' && isExamDay(dd))) continue; // 年度假期/病假/考试日：不中断、不计入连续天数
       if (!this._dayChecked(dd)) break;
       streak++;
     }
@@ -1002,6 +1005,7 @@ const Daily = {
     root.innerHTML = `
       <div class="branch-title" style="display:flex;align-items:center;gap:8px">每日计划<button class="btn sm ghost" id="dCal" style="padding:5px 9px;font-size:12.5px;font-weight:500">${icon('calendar',16)}</button></div>
       ${isHol ? '<div class="banner info" style="margin-bottom:10px">' + icon('sun', 14) + (isSickLeave(d) ? ' 今天是病假，已自动设为休息日，所有板块连续天数与续火花不受影响，好好休息 🌿' : ' 今天是' + annualHolidayLabel(d) + '，已自动设为休息日，所有板块续火花不受影响，不用完成任何任务 🎂') + '</div>' : ''}
+      ${isExam ? '<div class="banner info" style="margin-bottom:10px">' + icon('target', 14) + ' 今天是考试日，已自动跳过备考任务，学习连续天数与续火花不受影响，加油 🍀</div>' : ''}
       <!-- 合并统计卡片 -->
       <div class="stat-combined">
         <div class="sc-half">
