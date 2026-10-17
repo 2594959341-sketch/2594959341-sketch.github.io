@@ -283,6 +283,41 @@ function sickToggle(dateStr) {
   return { added: true, count: sickMonthCount(ym), msg: '' };
 }
 
+/* ---- 考试日（用户在设置登记；不占休息额度、允许未来日期；仅跳过备考任务，保护备考续火花）---- */
+var EXAM_KEY = 'examDays';
+function examArr() { return S.get(EXAM_KEY, []) || []; }
+function isExamDay(dateStr) { return examArr().indexOf(dateStr) >= 0; }
+function examSetInRange(fromStr, toStr) {
+  var arr = examArr(), s = new Set();
+  for (var i = 0; i < arr.length; i++) { var d = arr[i]; if (d >= fromStr && d <= toStr) s.add(d); }
+  return Array.from(s);
+}
+function examToggle(dateStr) {
+  var arr = examArr(), i = arr.indexOf(dateStr);
+  if (i >= 0) { arr.splice(i, 1); S.set(EXAM_KEY, arr); return { added: false, msg: '' }; }
+  if (arr.indexOf(dateStr) < 0) { arr.push(dateStr); arr.sort(); S.set(EXAM_KEY, arr); }
+  clearKaogongForExam(dateStr); // 考试日：移除当天未打卡的备考任务（已打卡/专栏联动完成保留）
+  return { added: true, msg: '' };
+}
+// 考试日清理备考任务：只动 kaogong 类（cat==='kaogong' 或 link 以 kaogong: 开头），未打卡移除、已打卡保留；运动/创作等其它任务原样不动
+function clearKaogongForExam(dateStr) {
+  var all = S.get('plans', {}); var arr = all[dateStr];
+  if (!arr || !arr.length) return;
+  var D = (typeof window !== 'undefined' && window.Daily) ? window.Daily : null;
+  var isKg = function (t) { return !!t && (t.cat === 'kaogong' || (t.link || '').indexOf('kaogong:') === 0); };
+  var kept = arr.filter(function (t) {
+    if (!t) return false;
+    if (!isKg(t)) return true;
+    if (t.abandoned || t.moved || t.restDay) return false;
+    var done = (Array.isArray(t.steps) && t.steps.length) ? t.steps.every(function (s) { return s && s.done; }) : !!t.manualDone;
+    if (done) return true;
+    if (D && typeof D.effDone === 'function') { try { if (D.effDone(t, dateStr)) return true; } catch (e) {} }
+    return false;
+  });
+  all[dateStr] = kept;
+  S.set('plans', all);
+}
+
 /* ---- 补签卡日子：streak items 的 madeup 键（全局并集），日历上给专属颜色 ---- */
 function madeupSetInRange(fromStr, toStr) {
   var st = S.get('mumu_streak', { items: [] }); var s = new Set();
@@ -314,6 +349,7 @@ function dayHolidayClass(ds) {
   var t = annualHolidayType(ds);
   if (t === 'birth') return ' cal-birth';
   if (t === 'anni') return ' cal-anni';
+  if (isExamDay(ds)) return ' cal-exam';
   return '';
 }
 // 日历颜色图例（可折叠、默认收起；休息/月经假/补签/病假/生日/纪念日合并在一起，只标颜色对应关系）
@@ -323,6 +359,7 @@ function holidayLegendHTML(ym) {
   var items = [{ c: 'cal-rest', t: '休息' }, { c: 'cal-mens', t: '月经假' }];
   if (madeupSetInRange(ym + '-01', ym + '-31').length) items.push({ c: 'cal-madeup', t: '补签' });
   if (sickMonthCount(ym) > 0) items.push({ c: 'cal-sick', t: '病假' });
+  if (examSetInRange(ym + '-01', ym + '-31').length) items.push({ c: 'cal-exam', t: '考试日' });
   if (mm === '09') { items.push({ c: 'cal-birth', t: '生日' }); items.push({ c: 'cal-anni', t: '纪念日' }); }
   var inner = items.map(function (it) { return '<div class="hl-item"><span class="hl-sw ' + it.c + '"></span><span>' + it.t + '</span></div>'; }).join('');
   inner += '<div class="muted" style="font-size:11px">长按日历某天可补记休息 / 月经假</div>';
@@ -346,6 +383,34 @@ function openSickLeaveDialog(root) {
     if (window.App && window.App.renderSettings) window.App.renderSettings(root);
   };
 }
+// 设置页「考试日」弹窗：登记 / 取消（仅跳过备考任务，保护备考续火花）
+function openExamDayDialog(root) {
+  var list = examArr();
+  var rows = list.length ? list.map(function (d) {
+    return '<div class="setting-row" style="margin:0"><div><div class="setting-label">' + fmtCN(d) + '</div><div class="setting-desc" style="font-size:11px">不做备考任务 · 学习火花不断</div></div><div class="setting-actions"><button class="btn sm ghost" data-exam-del="' + d + '">取消</button></div></div>';
+  }).join('') : '<div class="muted" style="font-size:12px;margin:4px 0 12px">还没有登记考试日。登记后：当天不部署备考任务、已安排的备考任务自动移除，学习连续天数与续火花不受影响。</div>';
+  openModal('<button class="close-x" onclick="closeModal()">×</button><h3>考试日</h3>'
+    + '<div class="form-row"><label>考试日期</label><input type="date" id="exDate" value="' + todayStr() + '"></div>'
+    + '<button class="btn" id="exOk" style="width:100%">登记考试日</button>'
+    + '<div style="margin-top:14px"><h3>已登记</h3></div>' + rows);
+  var ok = document.getElementById('exOk');
+  if (ok) ok.onclick = function () {
+    var d = document.getElementById('exDate').value;
+    if (!d) return toast('先选个日期');
+    if (isSickLeave(d)) { toast('这天已经是病假了，病假已保护所有板块，不用再登记'); return; }
+    var r = examToggle(d);
+    closeModal();
+    toast(r.added ? '已登记考试日：当天不安排备考任务，学习火花不断，加油 🍀' : '已取消该考试日');
+    if (window.App && window.App.renderSettings) window.App.renderSettings(root);
+  };
+  document.querySelectorAll('[data-exam-del]').forEach(function (b) {
+    b.onclick = function () {
+      examToggle(b.dataset.examDel); closeModal();
+      toast('已取消 ' + fmtCN(b.dataset.examDel) + ' 的考试日');
+      if (window.App && window.App.renderSettings) window.App.renderSettings(root);
+    };
+  });
+}
 // 假期说明折叠（全局委托，一次绑定）
 (function () {
   function hlToggle(e) { var h = e.target.closest ? e.target.closest('.hl-head') : null; if (!h) return; var b = h.parentElement.querySelector('.hl-body'); if (!b) return; var open = b.style.display !== 'none'; b.style.display = open ? 'none' : ''; var c = h.querySelector('.hl-caret'); if (c) c.textContent = open ? '▾' : '▸'; }
@@ -361,6 +426,10 @@ function openRestMenu(ds, boardKey, render, restToggleFn) {
   }
   if (isAnnualHoliday(ds)) {
     openModal('<button class="close-x" onclick="closeModal()">×</button><h3>' + fmtCN(ds) + ' · ' + annualHolidayLabel(ds) + '</h3><div style="margin-top:8px;color:#777;font-size:13px;line-height:1.6">每年这一天自动设为休息日，所有板块续火花不受影响，不用完成任何任务 🎂</div><div style="display:flex;flex-direction:column;gap:10px;margin-top:12px"><button class="btn ghost" onclick="closeModal()">知道了</button></div>');
+    return;
+  }
+  if (isExamDay(ds)) {
+    openModal('<button class="close-x" onclick="closeModal()">×</button><h3>' + fmtCN(ds) + ' · 考试日</h3><div style="margin-top:8px;color:#777;font-size:13px;line-height:1.6">当天为考试日，已自动跳过备考任务，学习连续天数与续火花不受影响，安心考试 🍀</div><div style="display:flex;flex-direction:column;gap:10px;margin-top:12px"><button class="btn ghost" onclick="closeModal()">知道了</button></div>');
     return;
   }
   if (ds > todayStr()) { toast('不能给未来的日期设休息 / 月经假'); return; }
