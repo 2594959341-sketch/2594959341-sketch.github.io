@@ -349,6 +349,7 @@ const Daily = {
         return logs.some(l => (l.subject || '').trim().replace(/^(行测|申论|面试)-/, '') === ts);
       }
       if (mod === 'work') {
+        if (sub === 'write') return ((S.get('writeLogs', {})[date]) || []).length > 0; // 写作打卡落 writeLogs，按写作记录判定（与写作页/写作续火花同源）；避免被游戏/视频创作记录误判完成
         if (sub === 'act') {
           const actId = t.link.split(':')[2];
           const all = (S.get('workLogs', {})[date]) || [];
