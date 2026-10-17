@@ -51,6 +51,7 @@ const Streak = {
     if (isSickLeave(date)) return true; // 病假：保护所有板块续火花，等同月经假/年度假期
     if (isAnnualHoliday(date)) return true; // 年度固定假期（生日/纪念日）：全局保护所有板块续火花，等同月经假
     if ((S.get('menstrualRest', []) || []).indexOf(date) >= 0) return true; // 月经假：保护所有板块续火花
+    if (item.type === 'kg' && typeof isExamDay === 'function' && isExamDay(date)) return true; // 考试日：保护备考板块续火花（不要求打卡也不中断）
     return this.isDone(item, date) || !!(item.rest && item.rest[date]) || !!(item.madeup && item.madeup[date]);
   },
 
@@ -299,6 +300,7 @@ const Streak = {
       // v368：病假/年度假期格子同样禁止补签（此前会掉进补签分支误发卡）
       if (isSickLeave(ds)) { toast('当日为病假，已是休息，无需补签'); return; }
       if (isAnnualHoliday(ds)) { toast('当日为' + annualHolidayLabel(ds) + '，自动休息，无需补签'); return; }
+      if (it.type === 'kg' && typeof isExamDay === 'function' && isExamDay(ds)) { toast('当日为考试日，已自动跳过，无需补签'); return; }
       const covCat = !!(item.rest && item.rest[ds]);
       if (covCat && !(it.rest && it.rest[ds])) { toast('当日为每日计划休息日，可在每日计划调整'); return; }
       // 火花页：空格=补签（休息只能在板块设置，不在火花页设置）
