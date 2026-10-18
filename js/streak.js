@@ -241,7 +241,8 @@ const Streak = {
       + '<button class="icon-btn" id="lvAdd" title="新增项目">' + icon('plus', 18) + '</button>';
     top.appendChild(bar);
     const grid = document.createElement('div'); grid.className = 'stk-children'; grid.style.marginTop = '12px'; box.appendChild(grid);
-    list.forEach(it => grid.appendChild(this.listCard(it, box)));
+    const _sorted = list.slice().sort((a, b) => this.curStreak(b) - this.curStreak(a));
+    _sorted.forEach(it => grid.appendChild(this.listCard(it, box)));
     box.querySelector('#lvBack').onclick = () => {
       if (isTop) { Daily._sub = null; Daily.render(Daily._root); }
       else { const prev = this._navStack.pop(); this.renderLevel(prev.list, box, prev.title, prev.parentId); }
