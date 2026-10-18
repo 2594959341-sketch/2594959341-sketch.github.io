@@ -1315,7 +1315,7 @@ details[open] > summary .car{transform:rotate(180deg)}
 .stk-flame{color:var(--mac,#ff7a3c);line-height:0}
 .stk-num{font-size:32px;font-weight:800;line-height:1;color:var(--mac,#ff7a3c)}
 .stk-name{font-size:13px;color:var(--sub,#666)}
-.stk-card-grp .stk-go{position:absolute;top:11px;right:13px;font-size:22px;font-weight:800;color:var(--mac,#999);line-height:1}
+
 .stk-mk-corner{position:absolute;right:8px;bottom:7px;font-size:10px;color:var(--muted,#aaa);opacity:.85}
 .stk-stat{font-size:13px;color:var(--sub,#666);margin:10px 0 4px}
 .stk-stat b{color:var(--ink,#111)}
@@ -1888,3 +1888,5 @@ body.modal-open .pv-dl{display:none!important}
 .bs-tile{min-width:30px;height:30px;border-radius:9px;border:1px solid var(--line);display:inline-flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;color:var(--sub)}
 .bs-tile.bs-empty{background:#f4f4f4;color:#bbb}
 .bs-tile.bs-solid{color:#fff}
+.bs-count{margin-left:auto;font-size:13px;color:var(--ink);font-weight:600}
+.bs-count.bs-empty{color:var(--sub)}
