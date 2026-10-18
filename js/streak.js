@@ -210,44 +210,65 @@ const Streak = {
   // ================= 渲染 =================
   render(box) {
     const items = this.ensureItems();
+    const ORDER = ['group:kg', 'group:sport', 'group:work', 'group:growth'];
+    const roots = [];
+    ORDER.forEach(id => { const g = items.find(i => i.id === id); if (g) roots.push(g); });
+    items.filter(i => i.type !== 'group' && !i.parent).forEach(i => roots.push(i));
+    this._navStack = [];
+    this._addParent = null;
+    this.renderLevel(roots, box, '续火花', null);
+  },
+
+  // 套娃式下钻：每一级单独一页；点「组」进入其子级页面，点「叶子」进入自身日历
+  renderLevel(list, box, title, parentId) {
     box.innerHTML = '';
-    // 自救计划（只显示第几天，与续火花并列更直观；项目与续火花重叠故不列）
-    const _sr = S.get('selfRescue');
-    const _srStart = (_sr && _sr.start) || '2026-07-13';
-    const _srDay = Math.max(1, daysBetween(_srStart, todayStr()) + 1);
-    const srIntro = document.createElement('div'); srIntro.style.marginBottom = '12px';
-    srIntro.innerHTML = `<div class="branch-title" style="margin:0;padding:0;border:none;font-size:17px">365天自救计划 · 第 ${_srDay} 天</div>`;
-    box.appendChild(srIntro);
+    this._curLevel = { list, title, parentId };
+    this._addParent = parentId;
+    const isTop = !this._navStack.length;
+    if (isTop) {
+      const _sr = S.get('selfRescue');
+      const _srStart = (_sr && _sr.start) || '2026-07-13';
+      const _srDay = Math.max(1, daysBetween(_srStart, todayStr()) + 1);
+      const sr = document.createElement('div'); sr.style.marginBottom = '10px';
+      sr.innerHTML = '<div class="branch-title" style="margin:0;padding:0;border:none;font-size:17px">365天自救计划 · 第 ' + _srDay + ' 天</div>';
+      box.appendChild(sr);
+    }
     const top = document.createElement('div'); top.style.marginBottom = '12px'; box.appendChild(top);
     const bar = document.createElement('div');
-    bar.style.cssText = 'display:flex;align-items:center;justify-content:space-between;margin-top:10px';
-    bar.innerHTML = `<span class="branch-title" style="margin:0;padding:0;border:none;font-size:17px">续火花</span>
-      <div style="display:flex;gap:2px;align-items:center">
-        <button class="icon-btn" id="stAdd" title="新增项目">${icon('plus', 18)}</button>
-        <button class="icon-btn" id="stBack" title="返回今日计划">${icon('back', 18)}</button>
-      </div>`;
+    bar.style.cssText = 'display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:6px';
+    bar.innerHTML = '<button class="icon-btn" id="lvBack" title="返回">' + icon('back', 18) + '</button>'
+      + '<div style="flex:1;min-width:0;text-align:center;font-size:17px;font-weight:800;color:var(--ink)">' + esc(title) + '</div>'
+      + '<button class="icon-btn" id="lvAdd" title="新增项目">' + icon('plus', 18) + '</button>';
     top.appendChild(bar);
-    // v386：四个上级组（备考/运动/创作/成长），子火花挂在组下
-    const ORDER = ['group:kg', 'group:sport', 'group:work', 'group:growth'];
-    const GMAC = { 'group:kg': '#9FC3E8', 'group:sport': '#8FD9B6', 'group:work': '#F6AFC4', 'group:growth': '#C2A8E0' };
-    const wrap = document.createElement('div'); wrap.className = 'stk-groups'; box.appendChild(wrap);
-    ORDER.forEach(gid => {
-      const g = items.find(it => it.id === gid);
-      if (g) wrap.appendChild(this.renderGroup(g, 0, GMAC[gid], box));
-    });
-    // 其他（无上级的孤儿项：用户自定义的旅行/娱乐/三餐等）
-    const orphans = items.filter(it => it.type !== 'group' && !it.parent);
-    if (orphans.length) {
-      const oh = document.createElement('div'); oh.className = 'stk-group'; oh.style.marginTop = '6px';
-      oh.innerHTML = '<div class="branch-title stk-other-title">其他</div>';
-      const og = document.createElement('div'); og.className = 'stk-children';
-      orphans.forEach(it => og.appendChild(this.childCard(it, box)));
-      oh.appendChild(og); wrap.appendChild(oh);
-    }
-    box.querySelector('#stBack').onclick = () => { Daily._sub = null; Daily.render(Daily._root); };
-    box.querySelector('#stAdd').onclick = () => this.addDialog(box);
+    const grid = document.createElement('div'); grid.className = 'stk-children'; grid.style.marginTop = '12px'; box.appendChild(grid);
+    list.forEach(it => grid.appendChild(this.listCard(it, box)));
+    box.querySelector('#lvBack').onclick = () => {
+      if (isTop) { Daily._sub = null; Daily.render(Daily._root); }
+      else { const prev = this._navStack.pop(); this.renderLevel(prev.list, box, prev.title, prev.parentId); }
+    };
+    box.querySelector('#lvAdd').onclick = () => this.addDialog(box);
     box.appendChild(Daily.renderSubTabs(box, 'streak'));
   },
+
+  listCard(item, box) {
+    const isGrp = item.type === 'group';
+    const st = this.curStreak(item);
+    const card = document.createElement('div'); card.className = 'stk-card' + (isGrp ? ' stk-card-grp' : '');
+    const GMAC = { 'group:kg': '#9FC3E8', 'group:sport': '#8FD9B6', 'group:work': '#F6AFC4', 'group:growth': '#C2A8E0', 'group:english': '#C2A8E0' };
+    const CM = { kg: '#9FC3E8', sport: '#8FD9B6', work: '#F6AFC4', growth: '#C2A8E0', read: '#C2A8E0', custom: '#AEBCCB', travel: '#7FD4CB', fun: '#F4A38C', meals: '#EFC15A' };
+    const color = isGrp ? (GMAC[item.id] || '#AEBCCB') : (CM[item.type] || '#AEBCCB');
+    card.style.setProperty('--mac', color);
+    card.innerHTML = '<div class="stk-flame">' + icon('fire', 26) + '</div>'
+      + '<div class="stk-num">' + st + '</div>'
+      + '<div class="stk-name">' + esc(item.name) + '</div>'
+      + (isGrp ? '<div class="stk-go">›</div>' : '');
+    card.onclick = () => {
+      if (isGrp) { this._navStack.push({ list: this._curLevel.list, title: this._curLevel.title, parentId: this._curLevel.parentId }); this.renderLevel(this.childrenOf(item.id), box, item.name, item.id); }
+      else { this.detail(item, box); }
+    };
+    return card;
+  },
+
 
   // 单个上级组（可嵌套子组，如 成长→英语→多邻国）
   renderGroup(g, depth, color, box) {
@@ -338,7 +359,7 @@ const Streak = {
       del.onclick = () => { if (confirm('删除「' + item.name + '」？')) { const d = this.data(); d.items = d.items.filter(x => x.id !== item.id); this.save(d); this.render(box); } };
       box.appendChild(del);
     }
-    box.querySelector('#dtBack').onclick = () => this.render(box);
+    box.querySelector('#dtBack').onclick = () => { if (this._navStack && this._navStack.length) { const prev = this._navStack.pop(); this.renderLevel(prev.list, box, prev.title, prev.parentId); } else { this.render(box); } };
     // 年月切换：点「年月 ▾」下拉，先选年份再点月份直接跳转（取代左右箭头）
     const yb = box.querySelector('#dtYm'), yd = box.querySelector('#dtYmDrop');
     if (yb && yd) {
@@ -406,7 +427,7 @@ const Streak = {
       ch.forEach(c => { if (c.type === 'group') cw.appendChild(this.renderGroup(c, 0, '#C2A8E0', box)); else cw.appendChild(this.childCard(c, box)); });
       box.appendChild(cw);
     }
-    box.querySelector('#dtBack').onclick = () => this.render(box);
+    box.querySelector('#dtBack').onclick = () => { if (this._navStack && this._navStack.length) { const prev = this._navStack.pop(); this.renderLevel(prev.list, box, prev.title, prev.parentId); } else { this.render(box); } };
     box.appendChild(Daily.renderSubTabs(box, 'streak'));
   },
 
@@ -568,7 +589,7 @@ const Streak = {
       if (d.items.some(x => x.id === id)) return toast('「' + name + '」已经在续火花里了');
       const newItem = { id, type: m.k, name, ref, user: 1, makeup: 0, rest: {}, madeup: {}, done: {} };
       const P = { kg: 'group:kg', sport: 'group:sport', work: 'group:work', growth: 'group:growth', read: 'group:growth' };
-      if (P[m.k]) newItem.parent = P[m.k];
+      if (P[m.k] || this._addParent) newItem.parent = this._addParent || P[m.k];
       d.items.push(newItem);
       this.save(d); closeModal();
       toast(ref ? `已添加「${name}」：完成${m.label}打卡会自动续火花` : `已添加「${name}」：当天有${m.label}记录会自动续火花`);
