@@ -2184,12 +2184,11 @@ const Review = {
     const rows = boards.map(b => {
       const c = days.filter(d => b.fn(d)).length;
       const col = color[b.cls];
-      const cls = c === 0 ? 'bs-empty' : (c === 1 ? 'bs-solid' : 'bs-num');
-      const txt = c === 0 ? '—' : (c === 1 ? '' : String(c));
-      const style = c > 0 ? ('background:' + col + ';border-color:' + col + ';color:' + (c === 1 ? '#fff' : '#333')) : '';
-      return '<div class="bs-row"><span class="bs-dot" style="background:' + col + '"></span><span class="bs-label">' + b.label + '</span><span class="bs-tile ' + cls + '" style="' + style + '">' + txt + '</span></div>';
+      const cnt = c === 0 ? '本周未打卡' : ('本周打卡 ' + c + ' 次');
+      const cls = c === 0 ? 'bs-empty' : '';
+      return '<div class="bs-row"><span class="bs-dot" style="background:' + col + '"></span><span class="bs-label">' + b.label + '</span><span class="bs-count ' + cls + '">' + cnt + '</span></div>';
     }).join('');
-    return '<div class="card" style="margin-top:16px;margin-bottom:14px"><h3>板块打卡（本周）</h3><div class="bs-wrap">' + rows + '</div><div class="muted" style="font-size:11px;margin-top:8px">完成 1 次显示纯色 · ≥2 次显示次数</div></div>';
+    return '<div class="card" style="margin-top:16px;margin-bottom:14px"><h3>板块打卡（本周）</h3><div class="bs-wrap">' + rows + '</div><div class="muted" style="font-size:11px;margin-top:8px">按板块统计本周打卡次数</div></div>';
   },
 
   weekSummary(facts, abandoned) {
