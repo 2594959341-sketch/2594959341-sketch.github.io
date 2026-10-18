@@ -281,7 +281,7 @@ const KG = {
       arr.forEach(l => { const c = KG.subjectColor(KG.normSubject(l.subject)); if (!seen[c]) { seen[c] = 1; out.push(c); } });
       return out;
     }});
-    renderMonthCal(box.querySelector('#kgMonthCal'), { ym, marks: marksProxy, restSet: calRestSet, menstrualSet: menstrualSet(), madeupSet: new Set(madeupSetInRange('2020-01-01', '2050-12-31')), legendEl: '#kgHl', legendHTML: v => holidayLegendHTML(v), onLongPress: ds => openRestMenu(ds, 'kaogong', () => this.render(root), d => this.toggleRest(root, d)) });
+    renderMonthCal(box.querySelector('#kgMonthCal'), { ym, mod: 'kaogong', marks: marksProxy, restSet: calRestSet, menstrualSet: menstrualSet(), madeupSet: new Set(madeupSetInRange('2020-01-01', '2050-12-31')), legendEl: '#kgHl', legendHTML: v => holidayLegendHTML(v, 'kaogong'), onLongPress: ds => openRestMenu(ds, 'kaogong', () => this.render(root), d => this.toggleRest(root, d)) });
     const calLegendTgl = box.querySelector('#kgCalLegendToggle');
     const calLegendEl = box.querySelector('#kgCalLegend');
     if (calLegendTgl) calLegendTgl.onclick = () => { calLegendEl.classList.toggle('collapsed'); calLegendTgl.textContent = calLegendEl.classList.contains('collapsed') ? '▾' : '▸'; };
