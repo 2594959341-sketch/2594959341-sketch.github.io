@@ -43,16 +43,46 @@ const Streak = {
       const day = S.get('meals', {})[date]; if (!day) return false;
       return item.ref ? !!day[item.ref] : !!(day.breakfast || day.lunch || day.dinner);
     }
-    if (item.type === 'custom') return !!(item.done && item.done[date]);
+    if (item.type === 'custom') { if (item.done && item.done[date]) return true; if (item.ref && (S.get('growthLogs', {})[date] || []).some(l => (l.area || '').trim() === (item.ref || '').trim())) return true; return false; }
     return false;
   },
   // 是否覆盖（真实打卡 / 休息日 / 补签日都算续上；休息日含每日计划里的运动/备考休息日）
   covered(item, date) {
+    if (item.type === 'group') return this.groupCovered(item, date); // 上级火花：所有子项当天都点亮才算覆盖
     if (isSickLeave(date)) return true; // 病假：保护所有板块续火花，等同月经假/年度假期
     if (isAnnualHoliday(date)) return true; // 年度固定假期（生日/纪念日）：全局保护所有板块续火花，等同月经假
     if ((S.get('menstrualRest', []) || []).indexOf(date) >= 0) return true; // 月经假：保护所有板块续火花
     if (item.type === 'kg' && typeof isExamDay === 'function' && isExamDay(date)) return true; // 考试日：保护备考板块续火花（不要求打卡也不中断）
     return this.isDone(item, date) || !!(item.rest && item.rest[date]) || !!(item.madeup && item.madeup[date]);
+  },
+
+  // v386 层级辅助：上级组与子项的递归关系
+  childrenOf(parentId) {
+    return (this.data().items || []).filter(it => it.parent === parentId);
+  },
+  // 递归收集某组下所有叶子（非 group）续火花项
+  leafItems(groupId) {
+    const out = [];
+    const walk = (id) => {
+      this.childrenOf(id).forEach(ch => { if (ch.type === 'group') walk(ch.id); else out.push(ch); });
+    };
+    walk(groupId);
+    return out;
+  },
+  // 上级当天是否「全部点亮」：所有叶子项当天都覆盖
+  groupCovered(item, date) {
+    const leaves = this.leafItems(item.id);
+    if (!leaves.length) return false;
+    return leaves.every(l => this.covered(l, date));
+  },
+  // 上级连续天数：从今天往回数「全部点亮」的连续天数
+  groupCurStreak(item) {
+    const origin = '2025-01-01';
+    let cur = todayStr();
+    while (cur >= origin && !this.groupCovered(item, cur)) cur = addDays(cur, -1);
+    let c = 0;
+    while (cur >= origin && this.groupCovered(item, cur)) { c++; cur = addDays(cur, -1); }
+    return c;
   },
 
   // 收集续火花项目：默认种子 + 从日志自动发现（后续新增学习科目/运动项目自动进入）+ 已存自定义
@@ -61,8 +91,15 @@ const Streak = {
     if (!d.items) d.items = [];
     const byId = {};
     d.items.forEach(it => byId[it.id] = it);
-    const base = () => ({ makeup: 0, rest: {}, madeup: {}, done: {} });
+    const base = () => ({ makeup: 0, rest: {}, madeup: {}, done: {}, parent: null });
     const seed = [
+      { id: 'group:kg', type: 'group', key: 'kg', name: '备考', parent: null },
+      { id: 'group:sport', type: 'group', key: 'sport', name: '运动', parent: null },
+      { id: 'group:work', type: 'group', key: 'work', name: '创作', parent: null },
+      { id: 'group:growth', type: 'group', key: 'growth', name: '成长', parent: null },
+      { id: 'group:english', type: 'group', key: 'english', name: '英语', parent: 'group:growth' },
+      { id: 'read:all', type: 'read', name: '阅读', parent: 'group:growth' },
+      { id: 'growth:多邻国', type: 'custom', name: '多邻国', ref: '多邻国', parent: 'group:english' },
       { id: 'work:game', type: 'work', sub: 'game', name: '游戏', ref: '' },
       { id: 'work:write', type: 'work', sub: 'write', name: '写作', ref: '' },
       { id: 'kg:言语', type: 'kg', name: '学习·言语', ref: '言语' },
@@ -94,6 +131,13 @@ const Streak = {
       if (it.type === 'kg') { it.ref = kgNorm(it.ref); it.name = '学习·' + it.ref; }
       else if (it.type === 'sport') { it.ref = sportNorm(it.ref); it.name = it.ref; }
     });
+    // v386：挂接层级——为各续火花项指定上级组（备考/运动/创作/成长）；多邻国已 seed 到 group:english 保留
+    const PARENT = { kg: 'group:kg', sport: 'group:sport', work: 'group:work', growth: 'group:growth', read: 'group:growth' };
+    d.items.forEach(it => {
+      if (it.type === 'group') return;          // 组本身不动
+      if (it.type === 'custom') return;          // 自定义（含 seed 的多邻国→group:english）保留 parent
+      if (PARENT[it.type]) it.parent = PARENT[it.type];
+    });
     // v363 迁移：旧 section 级休息数组(sportRest/kgRest/workRest) → 各 streak item 的 per-item rest；迁移后清空旧数组
     ['sportRest', 'kgRest', 'workRest'].forEach(function (secKey) {
       var mtype = secKey === 'sportRest' ? 'sport' : secKey === 'kgRest' ? 'kg' : 'work';
@@ -103,6 +147,12 @@ const Streak = {
         S.set(secKey, []);
       }
     });
+    // v386：多邻国一次性种入 411 个连续「已打卡」日（含今天），后续在 411 上累加
+    const duo = d.items.find(x => x.id === 'growth:多邻国');
+    if (duo && (!duo.done || Object.keys(duo.done).length === 0)) {
+      let cur = todayStr();
+      for (let i = 0; i < 411; i++) { duo.done[cur] = 1; cur = addDays(cur, -1); }
+    }
     this.save(d);
     return d.items;
   },
@@ -119,6 +169,7 @@ const Streak = {
 
   // 当前连续天数：休息/月经假/补签日不中断连续性，但也不计入连续天数；只有真实打卡日才计入
   curStreak(item) {
+    if (item.type === 'group') return this.groupCurStreak(item); // 上级连续天数 = 全部点亮的天数
     const origin = '2025-01-01';
     let cur = todayStr();
     // covered = 真实打卡 / 休息日 / 月经假 / 补签日，任意一条都算「续上」（不中断）
@@ -176,25 +227,61 @@ const Streak = {
         <button class="icon-btn" id="stBack" title="返回今日计划">${icon('back', 18)}</button>
       </div>`;
     top.appendChild(bar);
-    const grid = document.createElement('div'); grid.className = 'stk-grid'; box.appendChild(grid);
-    const MAC = ['#F4A6B8', '#8FB8E0', '#7CB390', '#F5B971', '#B8A4D4', '#4FB0AE', '#F6C56E', '#A8B5C4', '#F4A38C', '#C58AB0'];
-    items.forEach((item, idx) => {
-      const st = this.curStreak(item);
-      const mk = this.makeupAvail(item);
-      const card = document.createElement('div'); card.className = 'stk-card';
-      card.style.setProperty('--mac', MAC[idx % MAC.length]);
-      card.innerHTML = `<div class="stk-flame">${icon('fire', 30)}</div>
-        <div class="stk-num">${st}</div>
-        <div class="stk-name">${esc(item.name)}</div>`;
-      card.onclick = () => this.detail(item, box);
-      grid.appendChild(card);
+    // v386：四个上级组（备考/运动/创作/成长），子火花挂在组下
+    const ORDER = ['group:kg', 'group:sport', 'group:work', 'group:growth'];
+    const GMAC = { 'group:kg': '#9FC3E8', 'group:sport': '#8FD9B6', 'group:work': '#F6AFC4', 'group:growth': '#C2A8E0' };
+    const wrap = document.createElement('div'); wrap.className = 'stk-groups'; box.appendChild(wrap);
+    ORDER.forEach(gid => {
+      const g = items.find(it => it.id === gid);
+      if (g) wrap.appendChild(this.renderGroup(g, 0, GMAC[gid], box));
     });
+    // 其他（无上级的孤儿项：用户自定义的旅行/娱乐/三餐等）
+    const orphans = items.filter(it => it.type !== 'group' && !it.parent);
+    if (orphans.length) {
+      const oh = document.createElement('div'); oh.className = 'stk-group'; oh.style.marginTop = '6px';
+      oh.innerHTML = '<div class="branch-title stk-other-title">其他</div>';
+      const og = document.createElement('div'); og.className = 'stk-children';
+      orphans.forEach(it => og.appendChild(this.childCard(it, box)));
+      oh.appendChild(og); wrap.appendChild(oh);
+    }
     box.querySelector('#stBack').onclick = () => { Daily._sub = null; Daily.render(Daily._root); };
     box.querySelector('#stAdd').onclick = () => this.addDialog(box);
     box.appendChild(Daily.renderSubTabs(box, 'streak'));
   },
 
+  // 单个上级组（可嵌套子组，如 成长→英语→多邻国）
+  renderGroup(g, depth, color, box) {
+    const sec = document.createElement('div');
+    sec.className = 'stk-group' + (depth > 0 ? ' nested' : '');
+    sec.style.setProperty('--mac', color);
+    const leaves = this.leafItems(g.id);
+    const lit = leaves.filter(l => this.covered(l, todayStr())).length;
+    const head = document.createElement('div');
+    head.className = 'stk-group-head';
+    head.innerHTML = `<div class="stk-group-l"><span class="stk-group-name">${esc(g.name)}</span><span class="stk-group-sub">${lit}/${leaves.length} 已点亮</span></div><span class="stk-group-num">${this.curStreak(g)}</span>`;
+    head.onclick = (e) => { e.stopPropagation(); this.detail(g, box); };
+    sec.appendChild(head);
+    const ch = document.createElement('div'); ch.className = 'stk-children'; sec.appendChild(ch);
+    this.childrenOf(g.id).filter(c => c.type === 'group').forEach(sub => ch.appendChild(this.renderGroup(sub, depth + 1, color, box)));
+    this.childrenOf(g.id).filter(c => c.type !== 'group').forEach(c => ch.appendChild(this.childCard(c, box)));
+    return sec;
+  },
+
+  // 子火花卡片（叶子项）
+  childCard(item, box) {
+    const st = this.curStreak(item);
+    const card = document.createElement('div'); card.className = 'stk-card stk-child';
+    const CM = { kg: '#9FC3E8', sport: '#8FD9B6', work: '#F6AFC4', growth: '#C2A8E0', read: '#C2A8E0', custom: '#AEBCCB', travel: '#7FD4CB', fun: '#F4A38C', meals: '#EFC15A' };
+    card.style.setProperty('--mac', CM[item.type] || '#AEBCCB');
+    card.innerHTML = `<div class="stk-flame">${icon('fire', 26)}</div>
+      <div class="stk-num">${st}</div>
+      <div class="stk-name">${esc(item.name)}</div>`;
+    card.onclick = () => this.detail(item, box);
+    return card;
+  },
+
   detail(item, box) {
+    if (item.type === 'group') return this.detailGroup(item, box);
     if (!Daily._monthYm) Daily._monthYm = todayStr().slice(0, 7);
     const ym = Daily._monthYm;
     const [yy, mm] = ym.split('-').map(Number);
@@ -279,6 +366,50 @@ const Streak = {
     }
     box.appendChild(Daily.renderSubTabs(box, 'streak'));
   },
+  // 上级组详情：日历显示「全部点亮」的天；不可手动打卡
+  detailGroup(item, box) {
+    if (!Daily._monthYm) Daily._monthYm = todayStr().slice(0, 7);
+    const ym = Daily._monthYm;
+    const [yy, mm] = ym.split('-').map(Number);
+    const dim = new Date(yy, mm, 0).getDate();
+    box.innerHTML = '';
+    const top = document.createElement('div'); top.style.marginBottom = '12px'; box.appendChild(top);
+    const bar = document.createElement('div');
+    bar.style.cssText = 'display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:10px';
+    bar.innerHTML = `<div style="display:flex;align-items:center;gap:8px;min-width:0">
+        <span class="branch-title stk-dt-name" style="margin:0;padding:0;border:none;font-size:17px">${esc(item.name)}</span>
+      </div>
+      <button class="icon-btn" id="dtBack" title="返回">${icon('back', 18)}</button>`;
+    top.appendChild(bar);
+    const stat = document.createElement('div'); stat.className = 'stk-stat';
+    stat.innerHTML = `连续 <b>${this.curStreak(item)}</b> 天 · 上级火花由子项自动点亮（全部子项当天点亮才算）`;
+    box.appendChild(stat);
+    const grid = document.createElement('div'); grid.className = 'stk-days'; box.appendChild(grid);
+    const leavesAll = this.leafItems(item.id);
+    for (let dd = 1; dd <= dim; dd++) {
+      const ds = ym + '-' + String(dd).padStart(2, '0');
+      const allLit = this.groupCovered(item, ds);
+      const lit = leavesAll.filter(l => this.covered(l, ds)).length;
+      const cls = allLit ? 'done' : (lit > 0 ? 'part' : 'gap');
+      const lab = allLit ? '' : (lit > 0 ? lit + '/' + leavesAll.length : '');
+      const cell = document.createElement('div');
+      cell.className = 'stk-day ' + cls;
+      cell.innerHTML = `<span class="d">${dd}</span>${lab ? '<span class="mk">' + lab + '</span>' : ''}`;
+      cell.onclick = () => toast('上级火花由子项自动点亮，不可手动打卡');
+      grid.appendChild(cell);
+    }
+    // 子项快捷入口
+    const ch = this.childrenOf(item.id);
+    if (ch.length) {
+      const cw = document.createElement('div'); cw.className = 'stk-children'; cw.style.marginTop = '10px';
+      const tip = document.createElement('div'); tip.className = 'stk-tip'; tip.textContent = '点下方子项查看各自的续火花'; cw.appendChild(tip);
+      ch.forEach(c => { if (c.type === 'group') cw.appendChild(this.renderGroup(c, 0, '#C2A8E0', box)); else cw.appendChild(this.childCard(c, box)); });
+      box.appendChild(cw);
+    }
+    box.querySelector('#dtBack').onclick = () => this.render(box);
+    box.appendChild(Daily.renderSubTabs(box, 'streak'));
+  },
+
   // 下拉可选年份：当年往前 3 年，并保证当前查看年份一定在列
   yearOptions(curY) {
     const now = Number(todayStr().slice(0, 4));
@@ -289,6 +420,7 @@ const Streak = {
   },
 
   toggleDay(item, ds, cls, box) {
+    if (item.type === 'group') { toast('上级火花由子项自动点亮，不可手动打卡'); return; }
     const d = this.data();
     const it = d.items.find(x => x.id === item.id) || item;
     if (it.type === 'custom') {
@@ -434,7 +566,10 @@ const Streak = {
         : m.label;
       const id = m.k === 'custom' ? 'custom:' + uid() : m.k + ':' + (ref || 'all');
       if (d.items.some(x => x.id === id)) return toast('「' + name + '」已经在续火花里了');
-      d.items.push({ id, type: m.k, name, ref, user: 1, makeup: 0, rest: {}, madeup: {}, done: {} });
+      const newItem = { id, type: m.k, name, ref, user: 1, makeup: 0, rest: {}, madeup: {}, done: {} };
+      const P = { kg: 'group:kg', sport: 'group:sport', work: 'group:work', growth: 'group:growth', read: 'group:growth' };
+      if (P[m.k]) newItem.parent = P[m.k];
+      d.items.push(newItem);
       this.save(d); closeModal();
       toast(ref ? `已添加「${name}」：完成${m.label}打卡会自动续火花` : `已添加「${name}」：当天有${m.label}记录会自动续火花`);
       this.render(box);
