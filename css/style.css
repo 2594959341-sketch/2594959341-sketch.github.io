@@ -1315,6 +1315,7 @@ details[open] > summary .car{transform:rotate(180deg)}
 .stk-flame{color:var(--mac,#ff7a3c);line-height:0}
 .stk-num{font-size:32px;font-weight:800;line-height:1;color:var(--mac,#ff7a3c)}
 .stk-name{font-size:13px;color:var(--sub,#666)}
+.stk-card-grp .stk-go{position:absolute;top:11px;right:13px;font-size:22px;font-weight:800;color:var(--mac,#999);line-height:1}
 .stk-mk-corner{position:absolute;right:8px;bottom:7px;font-size:10px;color:var(--muted,#aaa);opacity:.85}
 .stk-stat{font-size:13px;color:var(--sub,#666);margin:10px 0 4px}
 .stk-stat b{color:var(--ink,#111)}
