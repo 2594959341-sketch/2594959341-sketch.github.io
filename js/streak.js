@@ -230,11 +230,13 @@ const Streak = {
       const ah = (!sick && (ahRaw === 'birth' || ahRaw === 'anni')) ? ahRaw : null;
       const rest = !!(item.rest && item.rest[ds]) || catRest(ds);
       const mu = !!(item.madeup && item.madeup[ds]);
+      // 考试日：仅备考(kg)板块，底层逻辑同假期（保护续火花、不要求打卡），但显示成考试日配色而非「已完成」标记
+      const exam = item.type === 'kg' && typeof isExamDay === 'function' && isExamDay(ds);
       // v368：假期全员上色——月经假粉、病假蓝、生日黄、纪念日紫（原先只出文字标签不上色）
-      const cls = mu ? 'mu' : sick ? 'sick' : ah ? ah : mens ? 'mens' : rest ? 'rest' : done ? 'done' : 'gap';
+      const cls = mu ? 'mu' : sick ? 'sick' : ah ? ah : mens ? 'mens' : exam ? 'exam' : rest ? 'rest' : done ? 'done' : 'gap';
       const cell = document.createElement('div');
       cell.className = 'stk-day ' + cls;
-      const lab = done ? '✓' : mu ? '补' : sick ? '病' : ah === 'birth' ? '诞' : ah === 'anni' ? '念' : mens ? '经' : rest ? '休' : '';
+      const lab = mu ? '补' : sick ? '病' : ah === 'birth' ? '诞' : ah === 'anni' ? '念' : mens ? '经' : exam ? '考' : rest ? '休' : done ? '✓' : '';
       cell.innerHTML = `<span class="d">${dd}</span>${lab ? '<span class="mk">' + lab + '</span>' : ''}`;
       cell.onclick = () => this.toggleDay(item, ds, cls, box);
       grid.appendChild(cell);
@@ -243,7 +245,7 @@ const Streak = {
     const tip = document.createElement('div'); tip.className = 'stk-tip';
     tip.textContent = item.type === 'custom' ? '点格子=打卡；再点取消' : '点空格=用补签卡补签；当天已打卡不可改；休息请在板块设置';
     box.appendChild(tip);
-    const _hl = holidayLegendHTML(ym); if (_hl) box.insertAdjacentHTML('beforeend', _hl);
+    const _hl = holidayLegendHTML(ym, item.type === 'kg' ? 'kaogong' : undefined); if (_hl) box.insertAdjacentHTML('beforeend', _hl);
     if (item.type === 'custom' || item.user) {
       const del = document.createElement('button'); del.className = 'btn ghost'; del.style.marginTop = '8px'; del.textContent = '删除该项目';
       del.onclick = () => { if (confirm('删除「' + item.name + '」？')) { const d = this.data(); d.items = d.items.filter(x => x.id !== item.id); this.save(d); this.render(box); } };
