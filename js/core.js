@@ -344,22 +344,24 @@ function clearDailyForSick(dateStr) {
 }
 // 日期 → 假期配色类（优先级：病假 > 生日 > 纪念日；返回 '' 表示无假期，沿用普通休息/月经假配色）
 // ⚠️ 返回值带前导空格：调用点直接拼进 class 字符串（v339 曾因缺空格拼出 cal-cellcal-birth，两类名同时失效致格子消失）
-function dayHolidayClass(ds) {
+function dayHolidayClass(ds, mod) {
   if (isSickLeave(ds)) return ' cal-sick';
   var t = annualHolidayType(ds);
   if (t === 'birth') return ' cal-birth';
   if (t === 'anni') return ' cal-anni';
-  if (isExamDay(ds)) return ' cal-exam';
+  // 考试日仅在备考(kaogong)日历上显现，其余板块不显
+  if (mod === 'kaogong' && isExamDay(ds)) return ' cal-exam';
   return '';
 }
 // 日历颜色图例（可折叠、默认收起；休息/月经假/补签/病假/生日/纪念日合并在一起，只标颜色对应关系）
-function holidayLegendHTML(ym) {
+function holidayLegendHTML(ym, mod) {
   if (!ym) ym = todayStr().slice(0, 7);
   var mm = ym.slice(5, 7);
   var items = [{ c: 'cal-rest', t: '休息' }, { c: 'cal-mens', t: '月经假' }];
   if (madeupSetInRange(ym + '-01', ym + '-31').length) items.push({ c: 'cal-madeup', t: '补签' });
   if (sickMonthCount(ym) > 0) items.push({ c: 'cal-sick', t: '病假' });
-  if (examSetInRange(ym + '-01', ym + '-31').length) items.push({ c: 'cal-exam', t: '考试日' });
+  // 考试日图例仅在备考(kaogong)板块出现
+  if (mod === 'kaogong' && examSetInRange(ym + '-01', ym + '-31').length) items.push({ c: 'cal-exam', t: '考试日' });
   if (mm === '09') { items.push({ c: 'cal-birth', t: '生日' }); items.push({ c: 'cal-anni', t: '纪念日' }); }
   var inner = items.map(function (it) { return '<div class="hl-item"><span class="hl-sw ' + it.c + '"></span><span>' + it.t + '</span></div>'; }).join('');
   inner += '<div class="muted" style="font-size:11px">长按日历某天可补记休息 / 月经假</div>';
@@ -1257,7 +1259,7 @@ function renderMonthCal(el, opts) {
     const ds = y + '-' + String(m).padStart(2, '0') + '-' + String(d).padStart(2, '0');
     const marks = (opts.marks && opts.marks[ds]) || [];
     const isRest = opts.restSet && (typeof opts.restSet.has === 'function' ? opts.restSet.has(ds) : opts.restSet[ds]);
-    const hcls = dayHolidayClass(ds);
+    const hcls = dayHolidayClass(ds, opts.mod);
     const isMadeup = opts.madeupSet && typeof opts.madeupSet.has === 'function' && opts.madeupSet.has(ds);
     const madeCls = (!hcls && isMadeup && !marks.length) ? ' cal-madeup' : '';
     const isMens = opts.menstrualSet && (typeof opts.menstrualSet.has === 'function' ? opts.menstrualSet.has(ds) : opts.menstrualSet[ds]);
