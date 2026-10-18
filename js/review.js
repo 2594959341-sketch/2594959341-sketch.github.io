@@ -1546,6 +1546,7 @@ const Review = {
     const sportLogs = S.get('sportLogs', {});
     const growthLogs = S.get('growthLogs', {});
     const workLogs = S.get('workLogs', {});
+    const writeLogs = S.get('writeLogs', {});
     const kgLogs = S.get('kgLogs', {});
     const readLogs = S.get('readLogs', {});
     const funLogs = S.get('funLogs', {});
@@ -1576,31 +1577,30 @@ const Review = {
       const mv = mealsStore[d];
       const mealN = mv ? ['breakfast', 'lunch', 'dinner'].filter(k => mv[k] && !mv[k].skipped).length : 0;
       if (mealN) add('meals', '三餐', 'meals', di, mealN);
-      const wn = (workLogs[d] || []).length; if (wn) add('work', '创作', 'work', di, wn);
+      const wn = (workLogs[d] || []).length + (writeLogs[d] || []).length; if (wn) add('work', '创作', 'work', di, wn);
       const outN = ((travelStore[d] || []).some(e => e.kind === 'ootd') ? 1 : 0);
       if (outN) add('travel', '出行', 'travel', di, outN);
       // 学习：按具体科目展开（言语/判断推理/资料分析/常识/申论…），不再笼统计成一行「学习」
       (kgLogs[d] || []).forEach(l => {
         const sub = kgNorm(l.subject);
-        const lab = sub || '学习';
         if (planHasUndone(d, t => t.link === 'kaogong:study' && kgNorm(t.extra && t.extra.subject) === sub)) return;
-        add('kaogong:' + (sub || '学习'), lab, 'kaogong', di, 1);
+        add('kaogong', '备考', 'kaogong', di, 1);
       });
       // 运动：按项目(子部分) 展开，如「大小脸改善」「天鹅颈」
       (sportLogs[d] || []).forEach(l => {
         const p = (l.project || '运动').trim(); if (!p) return;
         if (planHasUndone(d, t => t.link === 'sport:' + p)) return;
-        add('sport:' + p, p, 'sport', di, 1);
+        add('sport', '运动', 'sport', di, 1);
       });
-      // 成长：按领域(子部分) 展开，如「阅读」「英语」「理财」
-      (growthLogs[d] || []).forEach(l => { const a = (l.area || '成长').trim(); if (a) add('growth:' + a, a, 'growth', di, 1); });
+      // 成长（含阅读）：合并到「成长」一行，不再按领域(子部分)展开（v392）
+      (growthLogs[d] || []).forEach(l => { const a = (l.area || '成长').trim(); if (a) add('growth', '成长', 'growth', di, 1); });
       // 阅读（readLogs 也并入成长·阅读，与成长领域阅读按天去重，不重复成两行）
       // ⚠️ 排除「娱乐」类阅读（放纵放松、非知识吸纳，不纳入习惯统计，避免虚高阅读天数）
       (readLogs[d] || []).forEach(l => {
         const isFun = (window.Growth && window.Growth.readCat) ? window.Growth.readCat(l).key === 'fun' : (l && (l.cat === 'fun' || l.cat === '娱乐'));
-        if (!isFun) add('growth:阅读', '阅读', 'growth', di, 1);
+        if (!isFun) add('growth', '成长', 'growth', di, 1);
       });
-      // 娱乐：小说 / 影视 / 漫画 各占一行，数字 = 当天「作品数」（同一作品去重，一天更新多次也只算 1）
+      // 娱乐：合并到「娱乐」一行，数字 = 当天作品数（小说+影视+漫画去重合计）
       // 必须走 normFunType，否则旧类型（动漫/电视剧/漫话）会漏统计
       const funWorks = (t) => {
         const set = new Set();
@@ -1611,28 +1611,14 @@ const Review = {
         });
         return set.size;
       };
-      const novelN = funWorks('小说'); if (novelN) add('novel', '小说', 'novel', di, novelN, '本');
-      const movieN = funWorks('影视'); if (movieN) add('movie', '影视', 'movie', di, movieN, '部');
-      const comicN = funWorks('漫画'); if (comicN) add('comic', '漫画', 'comic', di, comicN, '部');
+      const funN = funWorks('小说') + funWorks('影视') + funWorks('漫画');
+      if (funN) add('fun', '娱乐', 'fun', di, funN, '部');
     });
 
-    // 排序：三餐/运动/创作/学习/成长/出行/小说/影视/漫画；运动·成长·学习内部按子部分展开（阅读置顶）
-    const baseEmoji = { meals: icon('meal', 16), sport: icon('running', 16), work: icon('creation', 16), kaogong: icon('book', 16), growth: icon('sprout', 16), travel: icon('map', 16), novel: icon('reading', 16), movie: icon('film', 16), comic: icon('comic', 16), fun: icon('game', 16) };
-    const baseOrder = ['meals', 'sport', 'work', 'kaogong', 'growth', 'travel', 'novel', 'movie', 'comic', 'fun'];
-    const ordered = [];
-    baseOrder.forEach(base => {
-      const keys = Object.keys(rows).filter(k => k === base || k.startsWith(base + ':'));
-      if (base === 'sport' || base === 'growth' || base === 'kaogong') {
-        keys.sort((a, b) => {
-          if (a === base + ':阅读') return -1;
-          if (b === base + ':阅读') return 1;
-          return 0;
-        });
-        keys.forEach(k => ordered.push(k));
-      } else if (keys.length) {
-        ordered.push(keys[0]);
-      }
-    });
+    // 排序：三餐/运动/备考/成长/创作/娱乐/出行（按板块聚合，不再按子部分展开）
+    const baseEmoji = { meals: icon('meal', 16), sport: icon('running', 16), work: icon('creation', 16), kaogong: icon('book', 16), growth: icon('sprout', 16), travel: icon('map', 16), fun: icon('film', 16) };
+    const baseOrder = ['meals', 'sport', 'kaogong', 'growth', 'work', 'fun', 'travel'];
+    const ordered = baseOrder.filter(k => rows[k]);
     Object.keys(rows).forEach(k => { if (!ordered.includes(k)) ordered.push(k); });
     const wkTotal = Object.values(rows).reduce((s, r) => s + r.days.reduce((a, b) => a + b, 0), 0);
     const wkActive = days.filter((d, di) => ordered.some(k => rows[k] && rows[k].days[di] > 0)).length;
