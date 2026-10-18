@@ -260,8 +260,7 @@ const Streak = {
     card.style.setProperty('--mac', color);
     card.innerHTML = '<div class="stk-flame">' + icon('fire', 26) + '</div>'
       + '<div class="stk-num">' + st + '</div>'
-      + '<div class="stk-name">' + esc(item.name) + '</div>'
-      + (isGrp ? '<div class="stk-go">›</div>' : '');
+      + '<div class="stk-name">' + esc(item.name) + '</div>';
     card.onclick = () => {
       if (isGrp) { this._navStack.push({ list: this._curLevel.list, title: this._curLevel.title, parentId: this._curLevel.parentId }); this.renderLevel(this.childrenOf(item.id), box, item.name, item.id); }
       else { this.detail(item, box); }
