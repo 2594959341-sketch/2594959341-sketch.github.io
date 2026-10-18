@@ -2049,14 +2049,7 @@ const Review = {
       const mealDays = facts.filter(x => x.f.mealScore != null).length;
       const abandoned = facts.flatMap(x => x.f.plan.abandoned.map(t => t.abandonReason)).filter(Boolean);
       el.insertAdjacentHTML('beforeend', `
-        <div class="grid4" style="margin-top:16px;margin-bottom:14px">
-          <div class="card" style="text-align:center;margin:0"><div class="stat-num">${workN}</div><div class="stat-lab">本周创作产出</div></div>
-          <div class="card" style="text-align:center;margin:0"><div class="stat-num">${Math.round(studyTotal / 60 * 10) / 10}h</div><div class="stat-lab">备考学习</div></div>
-          <div class="card" style="text-align:center;margin:0"><div class="stat-num">${sportN}/7</div><div class="stat-lab">运动天数</div></div>
-          <div class="card" style="text-align:center;margin:0"><div class="stat-num">${wrote}/7</div><div class="stat-lab">写日记天数</div></div>
-          <div class="card" style="text-align:center;margin:0"><div class="stat-num">${growthN}</div><div class="stat-lab">成长打卡</div></div>
-          <div class="card" style="text-align:center;margin:0"><div class="stat-num">${mealDays}/7</div><div class="stat-lab">三餐记录天</div></div>
-        </div>
+        ${this.boardStatHTML(days)}
         <div class="grid2">
           <div class="card"><h3>${icon('trending',16)} 心情曲线</h3>${svgLine(moodVals, days.map(d => d.slice(8) + '日'))}
             <h3 class="section-gap">${icon('stats',16)} 计划完成率 %</h3>${svgBars(planPct, days.map(d => d.slice(8) + '日'))}</div>
@@ -2130,14 +2123,7 @@ const Review = {
       const mealDays = facts.filter(x => x.f.mealScore != null).length;
       const abandoned = facts.flatMap(x => x.f.plan.abandoned.map(t => t.abandonReason)).filter(Boolean);
       box.innerHTML = `
-        <div class="grid4" style="margin-top:16px;margin-bottom:14px">
-          <div class="card" style="text-align:center;margin:0"><div class="stat-num">${workN}</div><div class="stat-lab">本周创作产出</div></div>
-          <div class="card" style="text-align:center;margin:0"><div class="stat-num">${Math.round(studyTotal / 60 * 10) / 10}h</div><div class="stat-lab">备考学习</div></div>
-          <div class="card" style="text-align:center;margin:0"><div class="stat-num">${sportN}/7</div><div class="stat-lab">运动天数</div></div>
-          <div class="card" style="text-align:center;margin:0"><div class="stat-num">${wrote}/7</div><div class="stat-lab">写日记天数</div></div>
-          <div class="card" style="text-align:center;margin:0"><div class="stat-num">${growthN}</div><div class="stat-lab">成长打卡</div></div>
-          <div class="card" style="text-align:center;margin:0"><div class="stat-num">${mealDays}/7</div><div class="stat-lab">三餐记录天</div></div>
-        </div>
+        ${this.boardStatHTML(days)}
         <div class="grid2">
           <div class="card"><h3>${icon('trending',16)} 心情曲线</h3>${svgLine(moodVals, days.map(d => d.slice(8) + '日'))}
             <h3 class="section-gap">${icon('stats',16)} 计划完成率 %</h3>${svgBars(planPct, days.map(d => d.slice(8) + '日'))}</div>
@@ -2176,6 +2162,36 @@ const Review = {
       box.innerHTML = '';
     }
   },
+  // v386：周总结「板块统计」取代「分类统计」——每个板块一行，按打卡天数显示（1=纯色，≥2=数字）
+  boardStatHTML(days) {
+    const MealsMod = window.Meals;
+    const mealDay = (d) => {
+      const mv = S.get('meals', {})[d];
+      if (mv && ['breakfast', 'lunch', 'dinner'].some(k => mv[k] && !mv[k].skipped)) return true;
+      if (MealsMod && MealsMod.mealState) { const sts = ['breakfast', 'lunch', 'dinner'].map(k => MealsMod.mealState(d, k)); if (sts.some(s => s === 'ontime' || s === 'late')) return true; }
+      return false;
+    };
+    const boards = [
+      { label: '三餐', cls: 'cat-meals', fn: d => mealDay(d) },
+      { label: '运动', cls: 'cat-sport', fn: d => (S.get('sportLogs', {})[d] || []).length > 0 },
+      { label: '备考', cls: 'cat-kaogong', fn: d => (S.get('kgLogs', {})[d] || []).length > 0 },
+      { label: '成长', cls: 'cat-growth', fn: d => (S.get('growthLogs', {})[d] || []).length > 0 },
+      { label: '创作', cls: 'cat-work', fn: d => (S.get('workLogs', {})[d] || []).length > 0 || (S.get('writeLogs', {})[d] || []).length > 0 },
+      { label: '娱乐', cls: 'cat-fun', fn: d => (S.get('funLogs', {})[d] || []).length > 0 },
+      { label: '出行', cls: 'cat-travel', fn: d => (S.get('travelOut', {})[d] || []).length > 0 }
+    ];
+    const color = { 'cat-meals': '#EFC15A', 'cat-sport': '#8FD9B6', 'cat-kaogong': '#9FC3E8', 'cat-growth': '#C2A8E0', 'cat-work': '#F6AFC4', 'cat-fun': '#F4A38C', 'cat-travel': '#7FD4CB' };
+    const rows = boards.map(b => {
+      const c = days.filter(d => b.fn(d)).length;
+      const col = color[b.cls];
+      const cls = c === 0 ? 'bs-empty' : (c === 1 ? 'bs-solid' : 'bs-num');
+      const txt = c === 0 ? '—' : (c === 1 ? '' : String(c));
+      const style = c > 0 ? ('background:' + col + ';border-color:' + col + ';color:' + (c === 1 ? '#fff' : '#333')) : '';
+      return '<div class="bs-row"><span class="bs-dot" style="background:' + col + '"></span><span class="bs-label">' + b.label + '</span><span class="bs-tile ' + cls + '" style="' + style + '">' + txt + '</span></div>';
+    }).join('');
+    return '<div class="card" style="margin-top:16px;margin-bottom:14px"><h3>板块打卡（本周）</h3><div class="bs-wrap">' + rows + '</div><div class="muted" style="font-size:11px;margin-top:8px">完成 1 次显示纯色 · ≥2 次显示次数</div></div>';
+  },
+
   weekSummary(facts, abandoned) {
     const out = [];
     const workN = facts.reduce((s, x) => s + x.f.work.length, 0);
