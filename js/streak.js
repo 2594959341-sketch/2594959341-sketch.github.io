@@ -258,7 +258,7 @@ const Streak = {
     const lit = leaves.filter(l => this.covered(l, todayStr())).length;
     const head = document.createElement('div');
     head.className = 'stk-group-head';
-    head.innerHTML = `<div class="stk-group-l"><span class="stk-group-name">${esc(g.name)}</span><span class="stk-group-sub">${lit}/${leaves.length} 已点亮</span></div><span class="stk-group-num">${this.curStreak(g)}</span>`;
+    head.innerHTML = `<span class="stk-group-name">${esc(g.name)}</span><span class="stk-group-meta">🔥${this.curStreak(g)} · ${lit}/${leaves.length} 亮</span>`;
     head.onclick = (e) => { e.stopPropagation(); this.detail(g, box); };
     sec.appendChild(head);
     const ch = document.createElement('div'); ch.className = 'stk-children'; sec.appendChild(ch);
