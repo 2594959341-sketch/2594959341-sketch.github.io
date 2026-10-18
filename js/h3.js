@@ -362,5 +362,16 @@ window.H3 = (function () {
     return `<div class="h3-wf">${rows}</div>`;
   }
 
+  // 一次性修正：把已存在的「事业 Vocation」打分 2（满分）改回 1（做了最低动作）。
+  // 仅对修正前已写入的数据生效一次，之后新记录不受影响；不新增任何 UI。
+  (function migrateVocFix(){
+    if (S.get('h3_vocfix_v1')) return;
+    const R = S.get('h3_review', {});
+    let n = 0;
+    Object.keys(R).forEach(d => { if (R[d] && Number(R[d].vocation) === 2) { R[d].vocation = 1; n++; } });
+    if (n) S.set('h3_review', R);
+    S.set('h3_vocfix_v1', true);
+    if (n) console.log('[mumu] 已一次性修正 ' + n + ' 天的事业打分(2→1)');
+  })();
   return { renderDaily, appendCharts, updateLevels, _draft: {}, _root: null, _Review: null };
 })();
