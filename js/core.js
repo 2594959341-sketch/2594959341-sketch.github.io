@@ -851,6 +851,7 @@ async function importData(obj, opts) {
   }
   // 导入后全量去重修复（清理可能已翻倍的数据）+ 月经假对账（补休息标/清重叠）
   try { if (!opts || !opts.skipRepair) { repairAll(); menstrualReconcile(); } } catch (e) { console.warn('post-import repair failed', e); }
+  if (window.Streak) window.Streak._cache = null; // 导入/修复后 streak 数据已变，清缓存让下次 data() 重新读 localStorage
   return stats;
 }
 
