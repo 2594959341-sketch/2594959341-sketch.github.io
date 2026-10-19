@@ -22,8 +22,9 @@ const sportNorm = p => {
 };
 const Streak = {
   KEY: 'mumu_streak',
-  data() { return S.get(this.KEY, { items: [] }); },
-  save(d) { S.set(this.KEY, d); },
+  _cache: null,
+  data() { if (!this._cache) this._cache = S.get(this.KEY, { items: [] }); return this._cache; },
+  save(d) { S.set(this.KEY, d); this._cache = d; },
 
   // 某天是否「真实打卡」（按项目类型反查现有日志）
   isDone(item, date) {
