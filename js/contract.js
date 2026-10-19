@@ -40,13 +40,11 @@ window.Contract = (function () {
     return changed;
   }
 
-  // —— 豁免判定（修正4）：休息日 / 经期假 / 年度假期 不计入分母；病假计入（用户承认存在没病也请的情况）——
+  // —— 豁免判定：经期假 / 年度假期 不计入分母；病假计入分母（用户承认存在没病也请的情况）；休息日不豁免（契约无"请假"概念，休息=没完成）——
   function isExempt(d) {
     if (isSickLeave && isSickLeave(d)) return false;          // 病假：计入分母
     if (isAnnualHoliday && isAnnualHoliday(d)) return true;    // 生日/纪念日等全局假期
     if ((S.get('menstrualRest', []) || []).indexOf(d) >= 0) return true; // 经期假
-    const rest = [].concat(restDatesOfType('sport'), restDatesOfType('kaogong'), restDatesOfType('work'));
-    if (rest.indexOf(d) >= 0) return true;                    // 各板块休息日
     return false;
   }
 
