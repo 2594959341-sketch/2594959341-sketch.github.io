@@ -195,6 +195,7 @@ const Daily = {
     return p.length ? p[Math.floor(Math.random() * p.length)] : '';
   },
   taskLoad(t) { if (t.taskLoad == null) return 1; const v = Number(t.taskLoad); return (v >= 1 && v <= 5) ? v : 1; },
+  actLoad(t) { const v = (t.taskLoadConsumed != null) ? Number(t.taskLoadConsumed) : null; if (v != null && v >= 1 && v <= 5) return v; return this.taskLoad(t); },
   /* 平台字段归一化（v283）：历史数据是字符串，新数据是数组 —— 统一读成数组，避免字符串/数组混用崩 */
   appArr(v) {
     if (v == null || v === '') return [];
@@ -237,7 +238,7 @@ const Daily = {
       const l = this.taskLoad(t);
       plannedLoad += l;
       allTasks.push(t);
-      if (this.effDone(t, date)) { doneLoad += l; doneTasks.push(t); } else { plannedTasks.push(t); }
+      if (this.effDone(t, date)) { doneLoad += this.actLoad(t); doneTasks.push(t); } else { plannedTasks.push(t); }
       if (this.taskType(t) === 'invest') investLoad += l; else consumeLoad += l;
     });
     // 今天被「移到明天」的任务，其已消耗部分仍算今日精力（在弹窗里填的 今日已消耗）
@@ -265,7 +266,7 @@ const Daily = {
     const breakPct = cap > 0 ? Math.min(100, (0.7 * cap / denom) * 100) : 70;
     const capPct = cap > 0 ? Math.min(100, (cap / denom) * 100) : 100;
     // 按待办顺序建格子（含「挪到明天」已消耗段）
-    let cells = (li.allTasks || []).map(t => ({ load: this.taskLoad(t), done: this.effDone(t, li.date), t }));
+    let cells = (li.allTasks || []).map(t => { const _d = this.effDone(t, li.date); return { load: _d ? this.actLoad(t) : this.taskLoad(t), done: _d, t }; });
     if (li.consumedMoved > 0) cells.push({ load: li.consumedMoved, done: true, moved: true });
     // 与「今日待办」排序关联：已完成（含挪到明天已消耗）归到左侧、按完成时间从左往右排列
     // （越早完成越靠左，进度从左往右涨）；未完成归到右侧，保持待办拖拽顺序。
@@ -984,7 +985,7 @@ const Daily = {
             <div class="lb-cap">${_mood.cap}</div>
             <div class="lb-sub">今日已消耗 <b>${done}</b> · 共排 ${planned}${li.over ? '（超出 ' + overExtra + '）' : ''} · 上限 ${cap}${li.recharge ? ` · 已充电 ${li.recharge} 电` : ''}</div>
           </div>
-          <button class="btn sm ghost ${_mood.remind ? 'lb-recharge-hint' : ''}" id="rechargeBtn">${icon('moon',16)} 充电${_mood.remind ? ' · 该充了' : ''}</button>
+          <button class="btn sm ghost ${_mood.remind ? 'lb-recharge-hint' : ''}" id="rechargeBtn" title="充电：记录休息/放松，回补精力">${icon('moon',16)}</button>
         </div>
         ${this.loadBarHTML(li)}
         <div class="lb-overlabel">超载区 ›</div>
@@ -1172,8 +1173,36 @@ const Daily = {
       this.render(this._root);
     });
     box.querySelectorAll('[data-edit]').forEach(b => b.onclick = e => { e.stopPropagation(); if (this._reorder) return; this.detail(this._root, b.dataset.edit); });
+    box.querySelectorAll('[data-loadedit]').forEach(b => b.onclick = e => { e.stopPropagation(); if (this._reorder) return; const arr = this.list(this.cur); const t = arr.find(x => x.id === b.dataset.loadedit); if (t) this.openLoadEditor(b, t); });
   },
 
+
+  openLoadEditor(anchor, t) {
+    document.querySelectorAll('.load-edit-menu').forEach(m => m.remove());
+    const menu = document.createElement('div');
+    menu.className = 'load-edit-menu';
+    const cur = this.actLoad(t);
+    const labels = ['轻松','一般','中等','较重','大工程'];
+    menu.innerHTML = '<div class="lem-title">实际消耗精力</div>' + [1,2,3,4,5].map(v => `<button data-v="${v}" class="${v === cur ? 'on' : ''}">${labels[v-1]} <b>${v}</b></button>`).join('') + '<div class="lem-hint">敷衍了就调小，认真做就调大</div>';
+    const r = anchor.getBoundingClientRect();
+    menu.style.position = 'fixed';
+    document.body.appendChild(menu);
+    const mw = menu.offsetWidth, mh = menu.offsetHeight;
+    let top = r.bottom + 6; if (top + mh > window.innerHeight - 8) top = r.top - mh - 6;
+    let left = Math.min(r.left, window.innerWidth - mw - 8);
+    menu.style.top = top + 'px'; menu.style.left = left + 'px';
+    const close = () => { menu.remove(); document.removeEventListener('click', onDoc, true); };
+    const onDoc = e => { if (!menu.contains(e.target)) close(); };
+    setTimeout(() => document.addEventListener('click', onDoc, true), 0);
+    menu.querySelectorAll('button[data-v]').forEach(btn => btn.onclick = e => {
+      e.stopPropagation(); close();
+      const v = Number(btn.dataset.v);
+      const arr = this.list(this.cur); const tt = arr.find(x => x.id === t.id); if (!tt) return;
+      tt.taskLoadConsumed = v; this.setList(this.cur, arr);
+      toast('已记录实际精力 ' + v + (v < this.taskLoad(tt) ? '（比计划省力啦）' : (v > this.taskLoad(tt) ? '（比计划更费神）' : '')));
+      this.render(this._root);
+    });
+  },
   taskBlock(t, reorder) {
     const holiday = isAnnualHoliday(this.cur) || isSickLeave(this.cur);
     const linked = this.linkSatisfied(t, this.cur);
@@ -1198,7 +1227,7 @@ const Daily = {
     return `<div class="task-item ${cls}" data-task="${t.id}">
         <button class="${dotCls}" data-dot ${active ? '' : 'disabled'} title="${active ? '点击：完成 / 移到明天 / 无法完成' : ''}">${dotIc}</button>
         <span class="tt">${catTag ? `<span class="task-cat-tag">${catTag}</span>` : ''}${esc(t.title)}${goalTag}${t.cat === 'kaogong' && t.studyType ? `<span class="task-study-tag">${esc(t.studyType)}</span>` : ''}</span>
-        ${reorder && !this.isMealTask(t) && !this.isLoadFree(t) ? `<span class="task-load ${this.taskType(t)}" title="${this.taskType(t) === 'invest' ? '主动投资' : '系统消耗'}">${this.taskType(t) === 'invest' ? '投' : '耗'}${this.taskLoad(t)}</span>` : ''}
+        ${(!this.isMealTask(t) && !this.isLoadFree(t)) ? `<span class="task-load ${this.taskType(t)}${done ? ' editable' : ''}"${done ? ` data-loadedit="${t.id}" role="button" tabindex="0" title="点击修改实际消耗精力（敷衍了就调小）"` : ` title="${this.taskType(t) === 'invest' ? '主动投资·计划精力' : '系统消耗·计划精力'}"`}>${this.taskType(t) === 'invest' ? '投' : '耗'}${done ? this.actLoad(t) : this.taskLoad(t)}</span>` : ''}
         ${(t.restDay || holiday) ? '<span class="rest-badge">休息</span>' : ''}
         ${reorder && !done ? `<span class="drag-handle" data-drag="${t.id}" title="按住拖动排序"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="5" y1="7" x2="19" y2="7"/><line x1="5" y1="12" x2="19" y2="12"/><line x1="5" y1="17" x2="19" y2="17"/></svg></span>` : ''}
         ${total ? `<span class="prog">${dn}/${total}</span>` : ''}
