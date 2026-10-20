@@ -632,7 +632,7 @@ const Growth = {
         <div><div class="novel-arc-num">${totalDays}</div><div class="novel-arc-lab">累计阅读天数</div></div>
         <div><div class="novel-arc-num">${finishedBooks}</div><div class="novel-arc-lab">累计读完作品</div></div>
       </div></div>`;
-    return recentSection + mainSection + heatmapSection + insightSection + archiveSection;
+    return { recent: recentSection, main: mainSection, footprint: heatmapSection, insight: insightSection, archive: archiveSection };
   },
   readingPage(allRecs, learnedToday, root) {
     if (!this._rdCalYm) this._rdCalYm = todayStr().slice(0, 7);
@@ -701,11 +701,11 @@ const Growth = {
       ? `<div class="rdcal-legend">${usedCats.map(c => `<span><i style="background:${c.color}"></i>${c.name}</span>`).join('')}</div>`
       : `<div class="rdcal-legend">${this.READ_CATS.map(c => `<span><i style="background:${c.color}"></i>${c.name}</span>`).join('')}</div>`;
 
-    const reportHTML = this.readReportHTML();
+    const rep = this.readReportHTML();
     return `<div style="display:flex;flex-direction:column;gap:12px">
-      ${reportHTML}
       <div class="card">
-        <h3>书架 <button class="btn sm" id="readCheckIn" style="margin-left:auto">＋ 新书</button></h3>
+        <h3 style="display:flex;justify-content:space-between;align-items:center">书架 <a class="novel-head-r" data-rdall="1" style="font-size:12px;font-weight:400;cursor:pointer">全部 ›</a></h3>
+        <button class="btn sm" id="readCheckIn" style="margin:6px 0 4px">＋ 新书</button>
         ${shelfHTML}
         <div class="muted" style="font-size:12px;margin:10px 0 2px">今日打卡</div>
         ${todayRead.length ? todayRead.map(l => `<div class="list-row" data-editread="${l.id}" style="cursor:pointer">
@@ -724,6 +724,10 @@ const Growth = {
           ${this.readingTimelineHTML(rLogs)}
         </div>
       </div>
+      ${rep.main}
+      ${rep.footprint}
+      ${rep.insight}
+      ${rep.archive}
       <!-- 积累快捷记录（时间轴与精选推荐之间） -->
       <div class="card"><h3>积累 <button class="btn sm" id="rnAdd" style="margin-left:auto;font-size:12px">＋ 记录</button>
         <button class="icon-btn" id="rnLib" title="记录库" style="font-size:14px">${icon('book',14)}</button></h3>
@@ -748,6 +752,7 @@ const Growth = {
         ${calHTML}
         ${isPhoto ? '' : legendHTML}${!isPhoto ? holidayLegendHTML(ym) : ''}
       </div>
+      ${this.readFabHTML()}
     </div>`;
   },
   readingTimelineHTML(rLogs) {
@@ -806,11 +811,13 @@ const Growth = {
     root.querySelector('#readCheckIn').onclick = () => this.readDialog(root);
     // 书架：点书即记（预填书名+分类），免去重复填书名
     root.querySelectorAll('[data-shelfbook]').forEach(el => el.onclick = () => {
-      this.readDialog(root, { date: todayStr(), prefill: { book: el.dataset.shelfbook, cat: el.dataset.catkey } });
+      this.bookDetail(root, el.dataset.shelfbook);
     });
     root.querySelectorAll('[data-dtcover]').forEach(el => el.onclick = () => { const entry = this._findRead(el.dataset.dtcover); if (entry) this.readView(root, entry); });
     const rdAll = root.querySelector('[data-rdall]');
-    if (rdAll) rdAll.onclick = () => { this._rdAxisOpen = true; this.render(root); };
+    if (rdAll) rdAll.onclick = () => this.bookShelfAll(root);
+    const rdfab = root.querySelector('[data-rdfab]');
+    if (rdfab) rdfab.onclick = () => this.readDialog(root, { date: todayStr() });
     const rh = root.querySelector('#rdAxisToggle');
     if (rh) rh.onclick = () => {
       this._rdAxisOpen = !this._rdAxisOpen;
@@ -1035,6 +1042,63 @@ const Growth = {
       ${tags.length ? `<div style="margin-top:12px"><div class="muted" style="font-size:11px;margin-bottom:4px">标签</div><div class="rd-tl-tags">${tags.map(t => `<span class="tag" style="background:#eee;color:#444;border:none;font-size:11px;padding:2px 8px">${esc(t)}</span>`).join('')}</div></div>` : ''}
       ${entry.review ? `<div style="margin-top:12px"><div class="muted" style="font-size:11px;margin-bottom:4px">读后感</div><div style="white-space:pre-wrap;font-size:13px">${esc(entry.review)}</div></div>` : ''}`);
   },
+  // ===== 书架 / 书籍记忆 / 详情（v399）=====
+  readBookMeta() { return S.get('readBookMeta', {}); },
+  bookNormTitle(t) { return (t || '').replace(/[《》\s]/g, '').toLowerCase(); },
+  bookMeta(t) { const m = this.readBookMeta(); return m[this.bookNormTitle(t)] || null; },
+  upsertBookMeta(title, patch) {
+    const m = this.readBookMeta(); const k = this.bookNormTitle(title);
+    const cur = m[k] || { title };
+    if (patch.cover) cur.cover = patch.cover;
+    if (patch.tags && patch.tags.length) cur.tags = patch.tags;
+    if (patch.cat) cur.cat = patch.cat;
+    if (patch.unit) cur.unit = patch.unit;
+    if (patch.total) cur.total = patch.total;
+    cur.title = title; m[k] = cur; S.set('readBookMeta', m);
+  },
+  readFabHTML() { return `<button class="rd-fab" data-rdfab="1" title="添加书籍">${icon('plus', 24)}</button>`; },
+  bookShelfAll(root) {
+    const rLogs = this.readLogs();
+    const all = Object.entries(rLogs).flatMap(([d, arr]) => arr.map(l => ({ ...l, date: d }))).sort((a, b) => b.date.localeCompare(a.date));
+    const books = []; const seen = new Set();
+    all.forEach(l => { if (!l.book || seen.has(l.book)) return; seen.add(l.book); const cover = all.find(x => x.book === l.book && x.cover) ? all.find(x => x.book === l.book && x.cover).cover : null; books.push({ book: l.book, cover, catKey: this.readCat(l).key }); });
+    const cells = books.length ? books.map(b => `<div data-shelfbook="${esc(b.book)}" data-catkey="${esc(b.catKey)}" style="flex:0 0 auto;width:84px;cursor:pointer;text-align:center">
+        <div style="width:84px;height:112px;border-radius:8px;background:#f0f0f0;${b.cover ? "background-image:url('"+b.cover+"');background-size:cover;background-position:center" : "display:flex;align-items:center;justify-content:center;font-size:40px;color:#bbb"}">${b.cover ? "" : esc(b.book.slice(0,1))}</div>
+        <div style="font-size:12px;margin-top:4px;line-height:1.2;max-height:2.4em;overflow:hidden;text-overflow:ellipsis;white-space:normal">${esc(b.book)}</div></div>`).join('') : '<div class="empty">书架还是空的</div>';
+    openModal(`<button class="close-x" onclick="closeModal()">×</button><h3>全部书籍（${books.length}）</h3>
+      <div style="display:flex;gap:10px;overflow-x:auto;padding:8px 2px 12px;-webkit-overflow-scrolling:touch">${cells}</div>`);
+    const modal = document.querySelector('.modal'); if (modal) modal.querySelectorAll('[data-shelfbook]').forEach(el => el.onclick = () => { closeModal(); this.bookDetail(root, el.dataset.shelfbook); });
+  },
+  bookDetail(root, book) {
+    const meta = this.bookMeta(book) || { title: book };
+    const rLogs = this.readLogs();
+    const entries = Object.entries(rLogs).flatMap(([d, arr]) => arr.filter(l => l.book === book).map(l => ({ ...l, date: d }))).sort((a, b) => a.date.localeCompare(b.date));
+    const last = entries[entries.length - 1];
+    const total = meta.total || 0; const unit = meta.unit || '页';
+    const cur = last ? (last.cur || 0) : 0;
+    const pct = (total && cur) ? Math.round(cur / total * 100) : (last ? (last.percent || 0) : 0);
+    const cat = this.readCat({ cat: meta.cat || (last ? last.cat : 'other') });
+    const reviews = entries.filter(e => e.review).map(e => ({ date: e.date, review: e.review, rating: e.rating }));
+    const progCap = total ? ('全书 ' + total + ' ' + unit + ' · 已读 ' + cur + ' ' + unit + '（' + pct + '%）') : (cur ? ('已读 ' + cur + ' ' + unit) : '还没记录读到哪儿');
+    const coverHTML = meta.cover ? `<img src="${esc(meta.cover)}" style="width:72px;height:100px;object-fit:cover;border-radius:8px;flex-shrink:0">` : '';
+    const tagHTML = (meta.tags && meta.tags.length) ? `<div style="margin-top:12px"><div class="muted" style="font-size:11px;margin-bottom:4px">标签</div><div class="rd-tl-tags">${meta.tags.map(t => `<span class="tag" style="background:#eee;color:#444;border:none;font-size:11px;padding:2px 8px">${esc(t)}</span>`).join('')}</div></div>` : '';
+    const revHTML = reviews.length ? `<div style="margin-top:12px"><div class="muted" style="font-size:11px;margin-bottom:4px">读后感</div>${reviews.slice().reverse().map(r => `<div style="margin-bottom:8px"><div class="muted" style="font-size:11px">${r.date}${r.rating ? ' · ' + r.rating + '星' : ''}</div><div style="white-space:pre-wrap;font-size:13px">${esc(r.review)}</div></div>`).join('')}</div>` : '';
+    const trailHTML = entries.length ? `<div style="margin-top:12px"><div class="muted" style="font-size:11px;margin-bottom:4px">阅读记录（${entries.length} 次）</div>${entries.slice().reverse().slice(0, 20).map(e => `<div class="list-row" style="cursor:pointer" data-editread="${e.id}"><div style="flex:1"><b>${esc(e.date)}</b><span class="muted"> · ${e.cur ? ('读到 ' + e.cur + ' ' + (e.unit || unit)) : (e.pages || '在读')}${e.minutes ? ' · ' + e.minutes + ' 分钟' : ''}</span></div></div>`).join('')}</div>` : '';
+    openModal(`<button class="close-x" onclick="closeModal()">×</button>
+      <div style="display:flex;gap:12px;align-items:flex-start">
+        ${coverHTML}
+        <div style="flex:1;min-width:0">
+          <h3 style="margin:0">${esc(book)}</h3>
+          <div style="margin-top:6px"><span class="tag" style="background:${cat.color};color:#fff;border:none;font-size:11px;padding:1px 8px">${cat.name}</span></div>
+          <div class="muted" style="margin-top:10px;font-size:12px">${progCap}</div>
+          <div style="height:6px;background:#eee;border-radius:3px;margin-top:6px;overflow:hidden"><div style="width:${pct}%;background:${cat.color};height:100%"></div></div>
+        </div>
+      </div>
+      ${tagHTML}${revHTML}${trailHTML}
+      <button class="btn" id="rdLogToday" style="width:100%;margin-top:14px">＋ 记今天的阅读</button>`);
+    const logBtn = document.getElementById('rdLogToday'); if (logBtn) logBtn.onclick = () => { closeModal(); this.readDialog(root, { date: todayStr(), prefill: { book, cat: meta.cat || (last ? last.cat : '') } }); };
+    const modal2 = document.querySelector('.modal'); if (modal2) modal2.querySelectorAll('[data-editread]').forEach(el => el.onclick = () => { const e = this._findRead(el.dataset.editread); if (e) this.readDialog(root, { edit: e, date: e.date }); });
+  },
   readDialog(root, opts = {}) {
     const edate = opts.date || todayStr();
     const edit = opts.edit || null;
@@ -1049,8 +1113,10 @@ const Growth = {
       <div class="form-row"><label>阅读状态</label>
         <select id="rdStatus"><option value="reading">未读完</option><option value="abandoned">弃（弃书）</option><option value="done">已读完</option></select></div>
       <div class="form-row"><label>阅读时长（分钟）</label><input id="rdMinutes" type="number" min="0" inputmode="numeric" placeholder="例如：45" value="${esc(edit ? (edit.minutes || '') : '')}"></div>
-      <div id="rdProgress"><div class="form-row"><label>读到第几页/第几章</label><input id="rdPages" placeholder="例如：P120 / 第5章" value="${esc(edit && !edit.finished ? (edit.pages || '') : '')}"></div>
-        <div class="form-row"><label>读到百分之几（可选）</label><input id="rdPercent" type="number" min="0" max="100" inputmode="numeric" placeholder="例如：60" value="${esc(edit && edit.percent ? edit.percent : '')}"></div></div>
+      <div id="rdBookMeta" class="muted" style="display:none;font-size:12px;margin:2px 0 8px;color:#7CB390"></div>
+      <div class="form-row" id="rdTotalRow"><label>全书共多少（页/章/话）</label><div style="display:flex;gap:6px"><input id="rdTotal" type="number" min="1" inputmode="numeric" placeholder="例如：320" style="flex:1"><select id="rdUnit"><option value="页">页</option><option value="章">章</option><option value="话">话</option></select></div></div>
+      <div id="rdProgress"><div class="form-row"><label id="rdCurLabel">读到第几（页/章/话）</label><input id="rdCur" type="number" min="0" inputmode="numeric" placeholder="例如：120" value="${esc(edit && !edit.finished ? (edit.cur || '') : '')}"></div>
+        <div class="form-row"><label>读到百分之几（可选，填了优先）</label><input id="rdPercent" type="number" min="0" max="100" inputmode="numeric" placeholder="例如：60" value="${esc(edit && edit.percent ? edit.percent : '')}"></div></div>
       <div id="rdDoneExtra" style="display:none">
         <div class="form-row"><label>评分</label><div id="rdRateBox" style="font-size:24px;cursor:pointer;letter-spacing:4px"></div></div>
         <div class="form-row"><label>读后感</label><textarea id="rdReview" rows="3" placeholder="读完这本书，你的感受、收获、想记住的话…">${esc(edit && edit.review ? edit.review : '')}</textarea></div>
@@ -1081,6 +1147,32 @@ const Growth = {
       });
     };
     paintRate();
+    const rdBookEl = document.getElementById('rdBook');
+    const rdApplyKnown = () => {
+      const meta = this.bookMeta(rdBookEl.value.trim());
+      const totalRow = document.getElementById('rdTotalRow');
+      const coverRow = document.getElementById('rdCover') ? document.getElementById('rdCover').closest('.form-row') : null;
+      const tagRow = document.getElementById('rdTags') ? document.getElementById('rdTags').closest('.form-row') : null;
+      const catRow = document.querySelector('.rd-cat-pick') ? document.querySelector('.rd-cat-pick').closest('.form-row') : null;
+      const hint = document.getElementById('rdBookMeta');
+      if (meta) {
+        if (meta.tags && meta.tags.length) document.getElementById('rdTags').value = meta.tags.join(' ');
+        if (meta.cat) { const b = document.querySelector('.rd-cat-btn[data-cat="' + meta.cat + '"]'); if (b) b.click(); }
+        if (meta.total) { document.getElementById('rdTotal').value = meta.total; document.getElementById('rdUnit').value = meta.unit || '页'; }
+        hint.style.display = ''; hint.textContent = '✓ 沿用《' + meta.title + '》的封面与标签，只需填时长 + 读到第几';
+        if (coverRow) coverRow.style.display = 'none';
+        if (tagRow) tagRow.style.display = 'none';
+        if (catRow) catRow.style.display = 'none';
+        if (totalRow) totalRow.style.display = 'none';
+      } else {
+        hint.style.display = 'none';
+        if (coverRow) coverRow.style.display = '';
+        if (tagRow) tagRow.style.display = '';
+        if (catRow) catRow.style.display = '';
+        if (totalRow) totalRow.style.display = '';
+      }
+    };
+    if (rdBookEl) { rdBookEl.oninput = rdApplyKnown; rdApplyKnown(); }
     document.getElementById('rdStatus').onchange = e => {
       const isDone = e.target.value === 'done';
       document.getElementById('rdProgress').style.display = isDone ? 'none' : '';
@@ -1110,14 +1202,21 @@ const Growth = {
            · 新建：写到 rLogs[useDate]；entry.date = useDate；同步读后感 date = useDate
            · 编辑：edit 可能跨日期移动（用 useDate 代替原 edit.date），同步读后感 date 跟着改 */
         const targetDate = isEdit ? useDate : useDate;
+        const rdCurEl = document.getElementById('rdCur');
+        const cur = Number(rdCurEl ? rdCurEl.value : 0) || 0;
+        const unit = (document.getElementById('rdUnit') ? document.getElementById('rdUnit').value : '页') || '页';
+        const knownMeta = this.bookMeta(book);
+        const total = Number(document.getElementById('rdTotal').value) || (knownMeta ? (knownMeta.total || 0) : 0);
+        const pct = (total && cur) ? Math.round(cur / total * 100) : (Number(document.getElementById('rdPercent').value) || 0);
+        const pagesTxt = (status !== 'done' && cur) ? (unit === '页' ? ('P' + cur) : ('第' + cur + unit)) : '';
         const entry = {
-          book, pages: status !== 'done' ? (document.getElementById('rdPages').value.trim() || '') : '',
+          book, cur, unit, pages: pagesTxt,
           status: status,
-          percent: status !== 'done' ? (Number(document.getElementById('rdPercent').value) || 0) : 0,
-          finished: status === 'done', cat, minutes: Math.max(0, Number(document.getElementById('rdMinutes').value) || 0),
-          cover: cover || (isEdit ? (edit.cover || null) : null),
+          percent: pct,
+          finished: status === 'done', cat: cat || (knownMeta ? knownMeta.cat : 'other'), minutes: Math.max(0, Number(document.getElementById('rdMinutes').value) || 0),
+          cover: cover || (knownMeta ? knownMeta.cover : (isEdit ? (edit.cover || null) : null)),
           rating: status === 'done' ? rating : 0, review,
-          tags,
+          tags: tags.length ? tags : (knownMeta ? (knownMeta.tags || []) : []),
           time: (isEdit && edit.time) ? edit.time : new Date().toTimeString().slice(0, 5)
         };
         let notes = null; // 需要落盘时才不为 null
@@ -1150,6 +1249,7 @@ const Growth = {
         try {
           S.set('readLogs', rLogs);
           if (notes) S.set('readNotes', notes);
+          try { this.upsertBookMeta(book, { cover: entry.cover, tags: entry.tags, cat: entry.cat, unit, total }); } catch(e){ console.warn(e); }
           this.syncReadingGoals(targetDate, book, entry.finished);
         } catch (e) { saved = false; console.warn(e); }
         /* 同步封面：当天如果是跨日编辑，原日期的封面可能要清理（保守策略不主动清 readCovers[oldDate]，但记录删掉后 dayCover 取最新） */
