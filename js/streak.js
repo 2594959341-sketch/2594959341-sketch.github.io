@@ -103,7 +103,7 @@ const Streak = {
       { id: 'growth:多邻国', type: 'custom', name: '多邻国', ref: '多邻国', parent: 'group:english' },
       { id: 'work:game', type: 'work', sub: 'game', name: '游戏', ref: '' },
       { id: 'work:write', type: 'work', sub: 'write', name: '写作', ref: '' },
-      { id: 'kg:言语', type: 'kg', name: '学习·言语', ref: '言语' },
+      { id: 'kg:言语', type: 'kg', name: '言语', ref: '言语' },
       { id: 'sport:大小脸改善', type: 'sport', name: '大小脸改善', ref: '大小脸改善' },
       { id: 'sport:天鹅颈', type: 'sport', name: '天鹅颈', ref: '天鹅颈' }
     ];
@@ -114,7 +114,7 @@ const Streak = {
     // 自动发现：学习各科目、运动各项目（日志里出现过就进续火花，后续新增项目自动进入）
     const kgSubs = {};
     Object.values(S.get('kgLogs', {}) || {}).forEach(arr => (arr || []).forEach(l => { if (l.subject) kgSubs[kgNorm(l.subject)] = 1; }));
-    Object.keys(kgSubs).forEach(sub => { const id = 'kg:' + sub; if (!byId[id]) { byId[id] = Object.assign(base(), { id, type: 'kg', name: '学习·' + sub, ref: sub }); d.items.push(byId[id]); } });
+    Object.keys(kgSubs).forEach(sub => { const id = 'kg:' + sub; if (!byId[id]) { byId[id] = Object.assign(base(), { id, type: 'kg', name: sub, ref: sub }); d.items.push(byId[id]); } });
     const spProjs = {};
     Object.values(S.get('sportLogs', {}) || {}).forEach(arr => (arr || []).forEach(l => { if (l.project) spProjs[sportNorm(l.project)] = 1; }));
     Object.keys(spProjs).forEach(p => { const id = 'sport:' + p; if (!byId[id]) { byId[id] = Object.assign(base(), { id, type: 'sport', name: p, ref: p }); d.items.push(byId[id]); } });
@@ -127,9 +127,9 @@ const Streak = {
       else { it.id = c; byCanon[c] = it; merged.push(it); }
     });
     d.items = merged;
-    // 归一显示名与 ref，确保合并后名称干净（如「学习·言语」而非「学习·行测-言语」）
+    // 归一显示名与 ref，确保合并后名称干净（备考二级火花直接用科目名，如「言语」，不再带"学习·"前缀）
     d.items.forEach(it => {
-      if (it.type === 'kg') { it.ref = kgNorm(it.ref); it.name = '学习·' + it.ref; }
+      if (it.type === 'kg') { it.ref = kgNorm(it.ref); it.name = it.ref; }
       else if (it.type === 'sport') { it.ref = sportNorm(it.ref); it.name = it.ref; }
     });
     // v386：挂接层级——为各续火花项指定上级组（备考/运动/创作/成长）；多邻国已 seed 到 group:english 保留
@@ -581,7 +581,7 @@ const Streak = {
       const d = this.data();
       const ref = m.k === 'kg' ? kgNorm(sub) : m.k === 'sport' ? sportNorm(sub) : sub;
       const name = m.k === 'custom' ? sub
-        : m.k === 'kg' ? '学习·' + ref
+        : m.k === 'kg' ? ref
         : (m.k === 'sport' || m.k === 'growth') ? ref
         : m.k === 'fun' ? (ref ? '娱乐·' + ref : '娱乐')
         : m.k === 'meals' ? ({ breakfast: '早餐', lunch: '午餐', dinner: '晚餐' }[ref] || '三餐')
