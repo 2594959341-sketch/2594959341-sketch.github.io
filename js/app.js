@@ -1,5 +1,5 @@
 /* ============ 首页 + 导航 ============ */
-window.APP_VER = 'mumu-v398'; // 当前前端版本（设置页可见，用于确认是否加载到最新代码）
+window.APP_VER = 'mumu-v399'; // 当前前端版本（设置页可见，用于确认是否加载到最新代码）
 const SR_LINKS = [
   { v: 'sport', n: '运动（任意跟练）' },
   { v: 'sport:', n: '运动（具体项目，选后填名）' },
@@ -57,7 +57,9 @@ const Home = {
     const plan = Daily.statsOf(d);
     const work = (S.get('workLogs', {})[d] || []).length + (S.get('writeLogs', {})[d] || []).length;
     const study = (S.get('kgLogs', {})[d] || []).reduce((s, l) => s + l.minutes, 0);
-    const growth = (S.get('growthLogs', {})[d] || []).length;
+    const growthLogsToday = S.get('growthLogs', {})[d] || [];
+    const growth = growthLogsToday.length;
+    const growthAreas = [...new Set(growthLogsToday.map(l => (l.area || '').trim()).filter(Boolean))];
     const sport = (S.get('sportLogs', {})[d] || []).reduce((s, l) => s + l.minutes, 0);
     const meals = S.get('meals', {})[d];
     const mealsN = meals ? ['breakfast', 'lunch', 'dinner'].filter(k => meals[k]).length : 0;
@@ -123,7 +125,7 @@ const Home = {
       { img: 'section-plan.png',    em: '📅', n: '计划',     val: `${plan.done}/${plan.total}`, sub: '已完成', progress: planPct, ok: plan.total > 0, go: 'daily' },
       { img: 'section-work.png',    em: '🎮', n: '创作产出', val: String(work), sub: work ? '条产出' : '待产出', progress: 0, ok: work > 0, go: 'work' },
       { img: 'section-study.png',   em: '📚', n: '备考学习', ok: study > 0, txt: study ? study + ' 分钟' : '待开始', go: 'kaogong' },
-      { img: 'section-growth.png',  em: '🌿', n: '个人成长', ok: growth > 0, txt: growth ? growth + ' 次打卡' : '待学习', go: 'growth' },
+      { img: 'section-growth.png',  em: '🌿', n: '个人成长', ok: growth > 0, txt: growthAreas.length ? growthAreas.join(' · ') : '待学习', sub: growth ? (growth + ' 次打卡') : '', go: 'growth' },
       { img: 'section-finance.png', em: '💰', n: '理财',     val: `${(S.get('finStage', 1) || 1)}/6`, sub: '理财阶段', go: 'finance' },
       { img: 'section-sport.png',   em: '🏃', n: '运动',     ok: sport > 0, txt: sport ? sport + ' 分钟' : '待运动', go: 'sport' },
       { img: 'section-meals.png',   em: '🍚', n: '三餐',     ok: mealsN > 0, txt: mealsN + '/3 餐', go: 'meals' },
