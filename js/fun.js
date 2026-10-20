@@ -181,6 +181,71 @@ const Entertainment = {
     if (changed) this.save(L);
     return changed;
   },
+  // ===== v401：作品级聚合/归一（修复「改封面后时间轴看起来像两个作品」）=====
+  normTitle(s) { return (s || '').replace(/\s+/g, ' ').trim(); },
+  workKeyOf(r) { return funNormType(r.type) + '|' + this.normTitle(r.title); },
+  workCanon(recs) {
+    const sorted = recs.slice().sort((a, b) => a.date.localeCompare(b.date) || ((a.createdAt || 0) - (b.createdAt || 0)));
+    const last = sorted[sorted.length - 1] || {};
+    const withCover = sorted.filter(r => r.cover).pop() || last;
+    const totalMin = sorted.reduce((s, r) => s + (Number(r.minutes) || 0), 0);
+    return {
+      cover: withCover.cover || '', title: this.normTitle(last.title || ''),
+      status: last.status || '', rating: Number(last.rating) || 0, tags: last.tags || [],
+      lastDate: last.date, dates: sorted.map(r => r.date), totalMin, records: sorted
+    };
+  },
+  worksOf(recs) {
+    const works = {};
+    recs.forEach(r => { const k = this.workKeyOf(r); (works[k] = works[k] || []).push(r); });
+    return Object.keys(works).map(k => this.workCanon(works[k])).sort((a, b) => b.lastDate.localeCompare(a.lastDate));
+  },
+  workRowHTML(c, type) {
+    const isFinished = c.status === '看完' || c.status === '已读完';
+    const isNovel = type === '小说';
+    const timeTxt = this.fmtMin(c.totalMin);
+    const tags = (c.tags || []).filter(t => !FUN_TAG_HIDDEN.includes(t)).slice(0, 4);
+    const tagHTML = tags.length ? `<div class="rd-tl-tags">${tags.map(t => `<span class="tag" style="background:#eee;color:#444;border:none;font-size:10px;padding:1px 6px">${esc(t)}</span>`).join('')}</div>` : '';
+    const typeTag = `<span class="tag" style="background:${this.typeColor(type)};color:#fff;border:none;font-size:10px;padding:1px 6px;margin-left:2px">${esc(type)}</span>`;
+    const months = [...new Set(c.dates.map(d => d.slice(0, 7)))].sort().map(d => Number(d.slice(5)) + '月').join('·');
+    const cap = [];
+    if (isFinished) cap.push(isNovel ? '已读完' : '已看完');
+    else if (c.status) cap.push(esc(c.status));
+    if (months) cap.push('活跃 ' + months);
+    if (timeTxt) cap.push(timeTxt);
+    if (c.records[0] && c.records[0].progress && !isFinished) cap.push('看到 ' + esc(c.records[0].progress));
+    const capHTML = cap.length ? `<span class="rd-cap">${cap.join(' · ')}</span>` : '';
+    const stars = (Number(c.rating) || 0) > 0 ? `<span class="rd-stars">${this.starsHTML(c.rating)}</span>` : '';
+    const lastId = (c.records[c.records.length - 1] || {}).id;
+    const thumb = c.cover ? `<img data-dtcover="${lastId}" src="${esc(c.cover)}" style="width:30px;height:42px;object-fit:cover;border-radius:5px;flex-shrink:0">` : `<div data-dtcover="${lastId}" class="fun-game-ic" style="width:30px;height:42px"></div>`;
+    return `<div class="list-row" style="align-items:flex-start" data-fnentry="${lastId}">
+      ${thumb}
+      <div style="flex:1;min-width:0">
+        <div style="display:flex;align-items:center;gap:6px"><b>${esc(c.title || '未命名')}</b>${typeTag}</div>
+        <div class="rd-line2">${stars}${capHTML}</div>
+        ${tagHTML}
+      </div></div>`;
+  },
+  normalizeFunWorks() {
+    const L = this.logs(); let changed = false;
+    const groups = {};
+    Object.keys(L).forEach(d => (L[d] || []).forEach(r => {
+      if (!FUN_TYPES_ALL.includes(funNormType(r.type))) return;
+      const k = this.workKeyOf(r);
+      (groups[k] = groups[k] || []).push({ d, r });
+    }));
+    Object.keys(groups).forEach(k => {
+      const items = groups[k].slice().sort((a, b) => a.d.localeCompare(b.d) || ((a.r.createdAt || 0) - (b.r.createdAt || 0)));
+      const canon = this.workCanon(items.map(x => Object.assign({ date: x.d }, x.r)));
+      items.forEach(({ d, r }) => {
+        const nt = this.normTitle(r.title);
+        if (nt !== r.title) { r.title = nt; changed = true; }
+        if (canon.cover && r.cover !== canon.cover) { r.cover = canon.cover; changed = true; }
+      });
+    });
+    if (changed) this.save(L);
+    return changed;
+  },
   all() {
     const L = this.logs(); const out = [];
     Object.keys(L).forEach(d => (L[d] || []).forEach(r => out.push(Object.assign({ date: d }, r, { type: funNormType(r.type) }))));
@@ -744,19 +809,10 @@ const Entertainment = {
   },
   weekHTML(type, off) {
     const [mon, sun] = this.weekRangeOff(off || 0);
-    const es = this.dedupLatest(this.all().filter(r => r.type === type && r.date >= mon && r.date <= sun)).sort((a, b) => a.date.localeCompare(b.date));
-    if (!es.length) return `<div class="empty">本周还没有${esc(type)}记录，点右下角「+」记一笔~</div>`;
-    const workMin = {}; this.all().filter(r => r.type === type).forEach(r => { const k = r.title; workMin[k] = (workMin[k] || 0) + (Number(r.minutes) || 0); });
-    const days = {}; es.forEach(r => { (days[r.date] = days[r.date] || []).push(r); });
-    const order = Object.keys(days).sort();
-    return `<div class="fun-axis">${order.map(d => `<div class="fun-axis-item">
-      <div class="fun-axis-left">${this.weekDayShort(d)}</div>
-      <div class="fun-axis-mid"><div class="fun-axis-dot"></div></div>
-      <div class="fun-axis-right">
-        <div class="fun-axis-date">${d.slice(5)}</div>
-        ${days[d].map(l => this.entryRowHTML(l, false, true, workMin[l.title])).join('')}
-      </div>
-    </div>`).join('')}</div>`;
+    const weekAll = this.all().filter(r => r.type === type && r.date >= mon && r.date <= sun);
+    if (!weekAll.length) return `<div class="empty">本周还没有${esc(type)}记录，点右下角「+」记一笔~</div>`;
+    const workList = this.worksOf(weekAll);
+    return `<div class="fun-axis">${workList.map(c => this.workRowHTML(c, type)).join('')}</div>`;
   },
   /* ============ 记录行（带标签） ============ */
   fmtMin(m) { m = Number(m) || 0; if (!m) return ''; return m >= 60 ? (Math.round(m / 60 * 10) / 10) + ' 小时' : m + ' 分钟'; },
@@ -950,46 +1006,26 @@ const Entertainment = {
       if (!es.length) {
         body = `<div class="empty">${y} 年还没有「${esc(t)}」记录，去打卡第一笔~</div>`;
       } else {
-        const byMonth = {};
-        yearAll.forEach(r => { const m = r.date.slice(0, 7); (byMonth[m] = byMonth[m] || []).push(r); });
-        const workMin = {};
-        yearAll.forEach(r => { const k = r.title; workMin[k] = (workMin[k] || 0) + (Number(r.minutes) || 0); });
-        const months = Object.keys(byMonth).sort();
-        const totalMin = yearAll.reduce((s, r) => s + (Number(r.minutes) || 0), 0);
-        const monthBlocks = months.map(m => {
-          const arr = byMonth[m];
-          const rows = this.dedupLatest(arr);
-          const mm = Number(m.slice(5, 7));
-          const label = monthNames[mm - 1] + '月';
-          const mMin = arr.reduce((s, r) => s + (Number(r.minutes) || 0), 0);
-          const mTime = mMin ? ` · 共计 ${Math.round(mMin / 60 * 10) / 10} 小时` : '';
-          // 修复 bug：月份标签移到左列（与周时间轴对齐），不再"悬空"在右列；同一作品每月只显示一次（取最新一条），时长显示该作品累计
-          return `<div class="fun-axis-item">
-            <div class="fun-axis-left">${label}</div>
-            <div class="fun-axis-mid"><div class="fun-axis-dot"></div></div>
-            <div class="fun-axis-right">
-              <div class="fun-axis-date">${funVerb(t)}了 ${new Set(arr.map(r => r.title)).size} ${unit}${mTime}</div>
-              ${rows.map(r => this.entryRowHTML(r, false, false, workMin[r.title])).join('')}
-            </div>
-          </div>`;
-        }).join('');
-        body = `<div class="fun-axis fun-axis-year">${monthBlocks}</div>
-          <div class="fun-tl-year-sum">${y} 年 · 共${funVerb(t)} ${new Set(es.map(r => r.title)).size} ${unit} · 时长 ${Math.round(totalMin / 60 * 10) / 10} 小时</div>`;
+        const workList = this.worksOf(yearAll);
+        const totalMin = workList.reduce((s, c) => s + c.totalMin, 0);
+        const blocks = workList.length ? workList.map(c => this.workRowHTML(c, t)).join('') : `<div class="empty">${y} 年还没有「${esc(t)}」记录，去打卡第一笔~</div>`;
+        body = `<div class="fun-axis fun-axis-year">${blocks}</div>
+          <div class="fun-tl-year-sum">${y} 年 · 共${funVerb(t)} ${workList.length} ${unit} · 时长 ${Math.round(totalMin / 60 * 10) / 10} 小时</div>`;
       }
     } else {
       // 周视图：复用 weekHTML，加上左右切换 + 周汇总
       const off = this._tlWeekOff || 0;
       const [mon, sun] = this.weekRangeOff(off);
       const weekAll = allEs.filter(r => r.date >= mon && r.date <= sun);
-      const es = this.dedupLatest(weekAll);
-      const totalMin = weekAll.reduce((s, r) => s + (Number(r.minutes) || 0), 0);
+      const workList = this.worksOf(weekAll);
+      const totalMin = workList.reduce((s, c) => s + c.totalMin, 0);
       const weekHead = `<div class="fun-tl-week-head">
         <button class="fun-wk-arrow" data-wkprev ${off <= -104 ? 'disabled' : ''}>‹</button>
         <span class="fun-week-range">${mon.slice(5)} ~ ${sun.slice(5)}</span>
         <button class="fun-wk-arrow" data-wknext ${off >= 0 ? 'disabled' : ''}>›</button>
       </div>`;
-      const weekBody = es.length ? this.weekHTML(t, off) : `<div class="empty">本周还没有「${esc(t)}」记录，去打卡第一笔~</div>`;
-      const sum = `<div class="fun-tl-year-sum">本周 · ${es.length} ${unit} · 时长 ${Math.round(totalMin / 60 * 10) / 10} 小时</div>`;
+        const weekBody = weekAll.length ? this.weekHTML(t, off) : `<div class="empty">本周还没有「${esc(t)}」记录，去打卡第一笔~</div>`;
+        const sum = `<div class="fun-tl-year-sum">本周 · ${workList.length} ${unit} · 时长 ${Math.round(totalMin / 60 * 10) / 10} 小时</div>`;
       body = weekHead + weekBody + sum;
     }
     root.innerHTML = `<div class="fun-sub">
@@ -1523,6 +1559,18 @@ const Entertainment = {
         // 编辑已保存作品改名字：把该作品全部历史记录一并改名，避免保存后裂成两个作品
         Object.keys(L).forEach(dt => (L[dt] || []).forEach(x => { if (x.type === r.type && x.title === origTitle) x.title = newTitle; }));
       }
+      // 元数据（封面/标签/评分）编辑：同步到该作品全部历史记录，保证全站一致、不裂成两个作品
+      if (ref && !appendRec) {
+        const baseType = funNormType(r.type);
+        const key = this.normTitle(newTitle || origTitle);
+        Object.keys(L).forEach(dt => (L[dt] || []).forEach(x => {
+          if (funNormType(x.type) === baseType && this.normTitle(x.title) === key) {
+            if (coverVal) x.cover = coverVal;
+            if (tags.length) x.tags = tags;
+            if (rec.rating) x.rating = rec.rating;
+          }
+        }));
+      }
       if (!L[date]) L[date] = []; L[date].push(rec); this.save(L);
       if (ref && !appendRec) { const o = JSON.parse(decodeURIComponent(ref)); funRechCleanSrc(o.date, o.id); }
       funRechSync(rec, date);
@@ -1575,3 +1623,5 @@ try { Entertainment.normalizeIds(); } catch (e) { console.warn('fun normalizeIds
 try { if (S.get('funMergeV') !== '240') { Entertainment.normalizeMerge(); S.set('funMergeV', '240'); } } catch (e) { console.warn('fun normalizeMerge failed', e); }
 // v243：小说历史基线归一——同名小说多条历史「累计式」记录合并为单条「累计起点」，避免后续按次累加重复计
 try { if (S.get('funSeedV') !== '243') { Entertainment.normalizeSeed(); S.set('funSeedV', '243'); } } catch (e) { console.warn('fun normalizeSeed failed', e); }
+// 作品级归一：标题归一化 + 规范封面同步到全部历史记录（幂等，仅在有变化时写回），修复改封面后旧记录仍显旧封面/时间轴像两个作品
+try { Entertainment.normalizeFunWorks(); } catch (e) { console.warn('fun normalizeFunWorks failed', e); }
