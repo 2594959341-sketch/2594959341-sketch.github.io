@@ -1002,13 +1002,22 @@ const Entertainment = {
     if (view === 'year') {
       const y = this._tlYear;
       const yearAll = allEs.filter(r => r.date.slice(0, 4) === y);
-      const es = this.dedupLatest(yearAll);
-      if (!es.length) {
+      const workList = this.worksOf(yearAll);
+      const totalMin = yearAll.reduce((s, r) => s + (Number(r.minutes) || 0), 0);
+      if (!yearAll.length) {
         body = `<div class="empty">${y} 年还没有「${esc(t)}」记录，去打卡第一笔~</div>`;
       } else {
-        const workList = this.worksOf(yearAll);
-        const totalMin = workList.reduce((s, c) => s + c.totalMin, 0);
-        const blocks = workList.length ? workList.map(c => this.workRowHTML(c, t)).join('') : `<div class="empty">${y} 年还没有「${esc(t)}」记录，去打卡第一笔~</div>`;
+        // 按月分组，从上到下（近月在上）；每月内按作品去重后逐条列出
+        const dedupAll = this.dedupLatest(yearAll);
+        const byMonth = {};
+        dedupAll.forEach(r => { const m = r.date.slice(0, 7); (byMonth[m] = byMonth[m] || []).push(r); });
+        const months = Object.keys(byMonth).sort().reverse();
+        const blocks = months.map(m => {
+          const mm = Number(m.slice(5)) - 1;
+          const label = m.slice(0, 4) + '年' + monthNames[mm] + '月';
+          const rows = byMonth[m].map(r => this.entryRowHTML(r, true)).join('');
+          return `<div class="fun-tl-month"><div class="fun-tl-month-h">${label}</div>${rows}</div>`;
+        }).join('');
         body = `<div class="fun-axis fun-axis-year">${blocks}</div>
           <div class="fun-tl-year-sum">${y} 年 · 共${funVerb(t)} ${workList.length} ${unit} · 时长 ${Math.round(totalMin / 60 * 10) / 10} 小时</div>`;
       }
