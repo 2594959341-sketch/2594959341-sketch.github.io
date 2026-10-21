@@ -1904,8 +1904,12 @@ body.modal-open .pv-dl{display:none!important}
 .bs-count{margin-left:auto;font-size:13px;color:var(--ink);font-weight:600}
 .bs-count.bs-empty{color:var(--sub)}
 
-/* v404：时间轴轴项（年=月份轴 / 周=周一到周日轴） */
-.fun-axis-year .fun-axis-item,.fun-axis-week .fun-axis-item{grid-template-columns:42px 12px 1fr}
-.fun-axis-week .fun-axis-left{font-size:11px}
-.fun-axis-empty{color:var(--muted);font-size:12px;padding:3px 0}
-.fun-axis-item:last-child .fun-axis-mid::before{display:none}
+/* v405：时间轴（年=月份+月总结在右；周=作品轴每个一次，日期在右）。左侧仅细节点，整体左移 */
+.fun-tl-axis{margin-top:6px}
+.fun-tl-row{display:grid;grid-template-columns:14px 1fr;gap:9px;padding-bottom:13px}
+.fun-tl-node{position:relative}
+.fun-tl-node::before{content:'';position:absolute;left:50%;top:5px;bottom:-17px;width:2px;background:var(--line);transform:translateX(-50%)}
+.fun-tl-dot{position:absolute;top:4px;left:50%;transform:translateX(-50%);width:10px;height:10px;border-radius:50%;background:var(--ink);border:2px solid #fff;box-shadow:0 0 0 1px var(--line);z-index:1}
+.fun-tl-row:last-child .fun-tl-node::before{display:none}
+.fun-tl-month{font-size:13px;font-weight:700;color:var(--ink);margin:0 0 6px}
+.fun-tl-month .sub{font-size:11px;font-weight:400;color:var(--muted);margin-left:6px}
