@@ -1028,7 +1028,7 @@ const Entertainment = {
             </div>
           </div>`;
         }).join('');
-        body = `<div class="fun-tl-axis">${items}</div>
+        body = `<div class="fun-tl-axis tl-year">${items}</div>
           <div class="fun-tl-year-sum">${y} 年 · 共${funVerb(t)} ${workList.length} ${unit} · 时长 ${Math.round(totalMin / 60 * 10) / 10} 小时</div>`;
       }
     } else {
@@ -1053,14 +1053,15 @@ const Entertainment = {
           const wdName = d ? ['周日', '周一', '周二', '周三', '周四', '周五', '周六'][new Date(d + 'T00:00:00').getDay()] : '';
           const dateShort = d ? d.slice(5).replace('-', '/') : '';
           return `<div class="fun-tl-row wk">
-            <div class="fun-tl-left"><div class="fun-tl-wd">${wdName}</div><div class="fun-tl-date">${dateShort}</div></div>
+            <div class="fun-tl-left"><div class="fun-tl-wd">${wdName}</div></div>
             <div class="fun-tl-track"><div class="fun-tl-dot"></div></div>
             <div class="fun-tl-body">
+              <div class="fun-tl-when">${dateShort}</div>
               ${this.workRowHTML(c, t, { hideType: true })}
             </div>
           </div>`;
         }).join('');
-        weekBody = `<div class="fun-tl-axis">${items}</div>`;
+        weekBody = `<div class="fun-tl-axis tl-week">${items}</div>`;
       }
       const sum = `<div class="fun-tl-year-sum">本周 · ${workList.length} ${unit} · 时长 ${Math.round(totalMin / 60 * 10) / 10} 小时</div>`;
       body = weekHead + weekBody + sum;
