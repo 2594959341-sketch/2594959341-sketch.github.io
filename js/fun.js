@@ -1007,22 +1007,26 @@ const Entertainment = {
       if (!yearAll.length) {
         body = `<div class="empty">${y} 年还没有「${esc(t)}」记录，去打卡第一笔~</div>`;
       } else {
-        // 按月分组，从上到下（近月在上）；每月内按作品去重后逐条列出
+        // 年时间轴：左侧月份轴（由早到晚，不要近月在上），右侧每月作品逐条
         const dedupAll = this.dedupLatest(yearAll);
         const byMonth = {};
         dedupAll.forEach(r => { const m = r.date.slice(0, 7); (byMonth[m] = byMonth[m] || []).push(r); });
-        const months = Object.keys(byMonth).sort().reverse();
-        const blocks = months.map(m => {
+        const months = Object.keys(byMonth).sort();
+        const items = months.map(m => {
           const mm = Number(m.slice(5)) - 1;
-          const label = m.slice(0, 4) + '年' + monthNames[mm] + '月';
+          const label = monthNames[mm] + '月';
           const rows = byMonth[m].map(r => this.entryRowHTML(r, true)).join('');
-          return `<div class="fun-tl-month"><div class="fun-tl-month-h">${label}</div>${rows}</div>`;
+          return `<div class="fun-axis-item">
+            <div class="fun-axis-left">${label}</div>
+            <div class="fun-axis-mid"><div class="fun-axis-dot"></div></div>
+            <div class="fun-axis-right">${rows}</div>
+          </div>`;
         }).join('');
-        body = `<div class="fun-axis fun-axis-year">${blocks}</div>
+        body = `<div class="fun-axis fun-axis-year">${items}</div>
           <div class="fun-tl-year-sum">${y} 年 · 共${funVerb(t)} ${workList.length} ${unit} · 时长 ${Math.round(totalMin / 60 * 10) / 10} 小时</div>`;
       }
     } else {
-      // 周视图：复用 weekHTML，加上左右切换 + 周汇总
+      // 周时间轴：左侧周+日期轴（周一到周日），右侧每日作品（按作品聚合）
       const off = this._tlWeekOff || 0;
       const [mon, sun] = this.weekRangeOff(off);
       const weekAll = allEs.filter(r => r.date >= mon && r.date <= sun);
@@ -1033,8 +1037,29 @@ const Entertainment = {
         <span class="fun-week-range">${mon.slice(5)} ~ ${sun.slice(5)}</span>
         <button class="fun-wk-arrow" data-wknext ${off >= 0 ? 'disabled' : ''}>›</button>
       </div>`;
-        const weekBody = weekAll.length ? this.weekHTML(t, off) : `<div class="empty">本周还没有「${esc(t)}」记录，去打卡第一笔~</div>`;
-        const sum = `<div class="fun-tl-year-sum">本周 · ${workList.length} ${unit} · 时长 ${Math.round(totalMin / 60 * 10) / 10} 小时</div>`;
+      let weekBody;
+      if (!weekAll.length) {
+        weekBody = `<div class="empty">本周还没有「${esc(t)}」记录，去打卡第一笔~</div>`;
+      } else {
+        const days = [];
+        for (let i = 0; i < 7; i++) {
+          const d = new Date(mon + 'T00:00:00'); d.setDate(d.getDate() + i);
+          days.push(d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'));
+        }
+        const items = days.map(d => {
+          const dayRecs = weekAll.filter(r => r.date === d);
+          const wd = this.weekDayLabel(d).split(' ')[0];
+          const dateShort = d.slice(5).replace('-', '/');
+          const right = dayRecs.length ? this.worksOf(dayRecs).map(c => this.workRowHTML(c, t)).join('') : `<div class="fun-axis-empty">—</div>`;
+          return `<div class="fun-axis-item">
+            <div class="fun-axis-left">${wd}</div>
+            <div class="fun-axis-mid"><div class="fun-axis-dot"></div></div>
+            <div class="fun-axis-right"><div class="fun-axis-date">${dateShort}</div>${right}</div>
+          </div>`;
+        }).join('');
+        weekBody = `<div class="fun-axis fun-axis-week">${items}</div>`;
+      }
+      const sum = `<div class="fun-tl-year-sum">本周 · ${workList.length} ${unit} · 时长 ${Math.round(totalMin / 60 * 10) / 10} 小时</div>`;
       body = weekHead + weekBody + sum;
     }
     root.innerHTML = `<div class="fun-sub">
