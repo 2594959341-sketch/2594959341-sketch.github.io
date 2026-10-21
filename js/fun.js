@@ -1007,26 +1007,31 @@ const Entertainment = {
       if (!yearAll.length) {
         body = `<div class="empty">${y} 年还没有「${esc(t)}」记录，去打卡第一笔~</div>`;
       } else {
-        // 年时间轴：左侧月份轴（由早到晚，不要近月在上），右侧每月作品逐条
+        // 年时间轴：左侧仅时间轴节点（细），月份与月总结放在右侧，按月由早到晚
         const dedupAll = this.dedupLatest(yearAll);
         const byMonth = {};
         dedupAll.forEach(r => { const m = r.date.slice(0, 7); (byMonth[m] = byMonth[m] || []).push(r); });
         const months = Object.keys(byMonth).sort();
         const items = months.map(m => {
           const mm = Number(m.slice(5)) - 1;
-          const label = monthNames[mm] + '月';
-          const rows = byMonth[m].map(r => this.entryRowHTML(r, true)).join('');
-          return `<div class="fun-axis-item">
-            <div class="fun-axis-left">${label}</div>
-            <div class="fun-axis-mid"><div class="fun-axis-dot"></div></div>
-            <div class="fun-axis-right">${rows}</div>
+          const recs = byMonth[m];
+          const mCnt = recs.length;
+          const mMin = recs.reduce((s, r) => s + (Number(r.minutes) || 0), 0);
+          const monthLabel = monthNames[mm] + '月';
+          const rows = recs.map(r => this.entryRowHTML(r, true)).join('');
+          return `<div class="fun-tl-row">
+            <div class="fun-tl-node"><div class="fun-tl-dot"></div></div>
+            <div class="fun-tl-body">
+              <div class="fun-tl-month">${monthLabel}<span class="sub">本月 ${mCnt} ${unit} · 共 ${Math.round(mMin / 60 * 10) / 10} 小时</span></div>
+              ${rows}
+            </div>
           </div>`;
         }).join('');
-        body = `<div class="fun-axis fun-axis-year">${items}</div>
+        body = `<div class="fun-tl-axis">${items}</div>
           <div class="fun-tl-year-sum">${y} 年 · 共${funVerb(t)} ${workList.length} ${unit} · 时长 ${Math.round(totalMin / 60 * 10) / 10} 小时</div>`;
       }
     } else {
-      // 周时间轴：左侧周+日期轴（周一到周日），右侧每日作品（按作品聚合）
+      // 周时间轴：每个作品只显示一次（以最后版本为准），按最后记录日期由早到晚，无作品日不呈现
       const off = this._tlWeekOff || 0;
       const [mon, sun] = this.weekRangeOff(off);
       const weekAll = allEs.filter(r => r.date >= mon && r.date <= sun);
@@ -1041,23 +1046,20 @@ const Entertainment = {
       if (!weekAll.length) {
         weekBody = `<div class="empty">本周还没有「${esc(t)}」记录，去打卡第一笔~</div>`;
       } else {
-        const days = [];
-        for (let i = 0; i < 7; i++) {
-          const d = new Date(mon + 'T00:00:00'); d.setDate(d.getDate() + i);
-          days.push(d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'));
-        }
-        const items = days.map(d => {
-          const dayRecs = weekAll.filter(r => r.date === d);
-          const wd = this.weekDayLabel(d).split(' ')[0];
-          const dateShort = d.slice(5).replace('-', '/');
-          const right = dayRecs.length ? this.worksOf(dayRecs).map(c => this.workRowHTML(c, t)).join('') : `<div class="fun-axis-empty">—</div>`;
-          return `<div class="fun-axis-item">
-            <div class="fun-axis-left">${wd}</div>
-            <div class="fun-axis-mid"><div class="fun-axis-dot"></div></div>
-            <div class="fun-axis-right"><div class="fun-axis-date">${dateShort}</div>${right}</div>
+        const works = this.worksOf(weekAll).slice().sort((a, b) => (a.lastDate || '').localeCompare(b.lastDate || ''));
+        const items = works.map(c => {
+          const d = c.lastDate || (c.dates && c.dates[c.dates.length - 1]) || '';
+          const wd = d ? this.weekDayLabel(d) : '';
+          const dateShort = d ? d.slice(5).replace('-', '/') : '';
+          return `<div class="fun-tl-row">
+            <div class="fun-tl-node"><div class="fun-tl-dot"></div></div>
+            <div class="fun-tl-body">
+              <div class="fun-axis-date">${wd} ${dateShort}</div>
+              ${this.workRowHTML(c, t)}
+            </div>
           </div>`;
         }).join('');
-        weekBody = `<div class="fun-axis fun-axis-week">${items}</div>`;
+        weekBody = `<div class="fun-tl-axis">${items}</div>`;
       }
       const sum = `<div class="fun-tl-year-sum">本周 · ${workList.length} ${unit} · 时长 ${Math.round(totalMin / 60 * 10) / 10} 小时</div>`;
       body = weekHead + weekBody + sum;
