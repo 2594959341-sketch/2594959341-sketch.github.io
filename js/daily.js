@@ -1231,8 +1231,8 @@ const Daily = {
         ${reorder && !done ? `<span class="drag-handle" data-drag="${t.id}" title="按住拖动排序"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="5" y1="7" x2="19" y2="7"/><line x1="5" y1="12" x2="19" y2="12"/><line x1="5" y1="17" x2="19" y2="17"/></svg></span>` : ''}
         ${total ? `<span class="prog">${dn}/${total}</span>` : ''}
         ${t.cat === 'kaogong' && t.actMin != null ? `<span class="ltime">实际${t.actMin}分钟</span>` : ''}
-        ${(done && !this.isMealTask(t) && !this.isLoadFree(t)) ? `<span class="task-load ${this.taskType(t)}${done ? ' editable' : ''}"${done ? ` data-loadedit="${t.id}" role="button" tabindex="0" title="点击修改实际消耗精力（敷衍了就调小）"` : ` title="${this.taskType(t) === 'invest' ? '主动投资·计划精力' : '系统消耗·计划精力'}"`}>${this.taskType(t) === 'invest' ? '投' : '耗'}${done ? this.actLoad(t) : this.taskLoad(t)}</span>` : ''}
         ${t.steps.length ? `<span class="t-caret">${open ? '▾' : '▸'}</span>` : ''}
+        ${(done && !this.isMealTask(t) && !this.isLoadFree(t)) ? `<span class="task-load ${this.taskType(t)}${done ? ' editable' : ''}"${done ? ` data-loadedit="${t.id}" role="button" tabindex="0" title="点击修改实际消耗精力（敷衍了就调小）"` : ` title="${this.taskType(t) === 'invest' ? '主动投资·计划精力' : '系统消耗·计划精力'}"`}>${this.taskType(t) === 'invest' ? '投' : '耗'}${done ? this.actLoad(t) : this.taskLoad(t)}</span>` : ''}
       </div>
       <div class="t-steps" data-task="${t.id}" ${open ? '' : 'style="display:none"'}>
         ${t._tmpl ? `<div class="muted" style="padding:2px 0 6px">${icon('refresh',12)} 固定每日任务</div>` : ''}
