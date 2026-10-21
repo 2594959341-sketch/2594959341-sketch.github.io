@@ -169,7 +169,8 @@ window.Contract = (function () {
     const st = c.status;
     // 实时进度（截至今天）
     let reqT = 0, doneT = 0, d = c.start;
-    while (d <= Math.min(todayStr(), end)) { if (!isExempt(d)) { reqT++; if (dayComplete(c, d)) doneT++; } d = addDays(d, 1); }
+    const lim = todayStr() <= end ? todayStr() : end;
+    while (d <= lim) { if (!isExempt(d)) { reqT++; if (dayComplete(c, d)) doneT++; } d = addDays(d, 1); }
     const live = reqT ? Math.round(doneT / reqT * 100) : 100;
 
     const itemsHTML = c.items.map(it => `<div class="ct-item"><b>${esc(it.label)}</b>${typeBadge(it.sourceType)}</div>`).join('');
