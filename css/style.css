@@ -1922,3 +1922,7 @@ body.modal-open .pv-dl{display:none!important}
 .fun-tl-row:last-child .fun-tl-track::before{bottom:0}
 .fun-tl-month{font-size:13px;font-weight:700;color:var(--ink);margin:0 0 6px}
 .fun-tl-month .sub{font-size:11px;font-weight:400;color:var(--muted);margin-left:6px}
+/* v408：时间轴作品封面放大（仅作用于时间轴 .fun-tl-body，不波及书架/总览）；!important 覆盖内联 30x42 */
+.fun-tl-body img[data-dtcover],.fun-tl-body .fun-game-ic[data-dtcover]{width:46px!important;height:64px!important;border-radius:7px!important}
+.fun-tl-body .list-row b{font-size:15px}
+.fun-tl-body .rd-cap{font-size:12px}
