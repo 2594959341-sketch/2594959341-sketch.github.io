@@ -50,20 +50,23 @@ window.H3 = (function () {
   // 单维度 28 天窗口统计
   function dimStats(key) {
     const today = todayStr();
-    let recorded = 0, full = 0, done = 0;
+    let recorded = 0, passed = 0, excellent = 0;
     for (let i = 0; i < 28; i++) {
       const d = addDays(today, -i);
       const r = reviews()[d]; if (!r) continue;
       recorded++;
       const v = Number(r[key]) || 0;
-      if (v === 2) full++;
-      if (v >= 1) done++;
+      if (v >= 1) passed++;       // 达标：≥1 即算（糊弄做了 / 好好做了都计），用于升级达标率与雷达
+      if (v === 2) excellent++;   // 优秀：=2（好好做了），仅统计展示，不参与等级计算
     }
     const all = Object.keys(reviews());
     return {
       recorded28: recorded,
-      rateFull: recorded ? full / recorded : 0,   // “得2天数”比例（用于等级）
-      rateDone: recorded ? done / recorded : 0,    // “做了”比例（用于雷达半径）
+      ratePass: recorded ? passed / recorded : 0,        // ≥1 比例 → 升级达标率（等级用）
+      rateDone: recorded ? passed / recorded : 0,        // 雷达半径（“做了”比例，与达标一致）
+      rateExcel: recorded ? excellent / recorded : 0,     // =2 比例 → 仅统计展示，不参与等级
+      passed28: passed,
+      excellent28: excellent,
       streak: streak(key),
       recordedTotal: all.length
     };
@@ -74,7 +77,7 @@ window.H3 = (function () {
     const st = dimStats(key);
     if (st.recordedTotal < 7) return 'L1';
     const cur = (levels()[key]) || 'L1';
-    const rate = st.rateFull, sk = st.streak;
+    const rate = st.ratePass, sk = st.streak;
     if (cur === 'L1') {
       if (rate >= 0.8 && sk >= 21) return 'L2观察期';
       return 'L1';
@@ -250,6 +253,16 @@ window.H3 = (function () {
   }
 
   // ---------- 统计页（延迟加载） ----------
+  function summaryHTML() {
+    const rows = DIMS.map(d => {
+      const st = dimStats(d.key);
+      return `<div style="flex:1;min-width:120px">
+        <div style="font-size:12px;color:#3a7d5d;font-weight:600">${esc(d.label.split(' ')[0])}</div>
+        <div style="font-size:12px;color:#666">达标 ${st.passed28} · 优秀 ${st.excellent28}</div>
+      </div>`;
+    }).join('');
+    return `<div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;padding:8px;background:#fafafa;border-radius:8px">${rows}</div>`;
+  }
   function appendCharts(Review, body, root, scope) {
     H3._root = root; H3._Review = Review;
     let html = '';
@@ -257,6 +270,7 @@ window.H3 = (function () {
     html += `<div class="card h3-card"><h3>Human 3.0 复盘</h3>
       <div class="muted" style="font-size:12px">四象限达标率（28天）与等级</div>
       <div class="h3-chart" data-h3="radar" style="min-height:240px"></div>
+      ${summaryHTML()}
       <div class="muted" style="font-size:12px;margin-top:8px">90天趋势（按周·周一始·四色=四维度）</div>
       <div class="h3-chart" data-h3="trend" style="min-height:150px"></div>
       <div class="muted" style="font-size:12px;margin-top:8px">逃避对象词频 Top8</div>
