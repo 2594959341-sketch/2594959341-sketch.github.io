@@ -881,6 +881,9 @@ select.select{appearance:none;-webkit-appearance:none;background:var(--light);bo
 .fun-fab{position:fixed;right:16px;bottom:74px;z-index:45;width:54px;height:54px;border-radius:50%;background:var(--ink);color:#fff;border:none;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 6px 18px rgba(0,0,0,.28)}
 .fun-fab:active{transform:scale(.94)}
 .fun-fab svg{width:26px;height:26px}
+.rd-fab{position:fixed;right:16px;bottom:74px;z-index:45;width:54px;height:54px;border-radius:50%;background:var(--ink);color:#fff;border:none;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 6px 18px rgba(0,0,0,.28)}
+.rd-fab:active{transform:scale(.94)}
+.rd-fab svg{width:26px;height:26px}
 /* 时间轴（周/年通用，竖线 + 节点） */
 .fun-axis{margin-top:6px}
 .fun-axis-item{display:grid;grid-template-columns:34px 12px 1fr;gap:8px;padding-bottom:14px}
@@ -1842,7 +1845,7 @@ details[open] > summary .car{transform:rotate(180deg)}
 body.modal-open{overflow:hidden}
 body.modal-open .subnav,
 body.modal-open .fun-nav,
-body.modal-open .fun-fab,
+body.modal-open .fun-fab,body.modal-open .rd-fab,
 body.modal-open .rv-fab,
 body.modal-open .fun-xhs-fab,
 body.modal-open .pv-dl{display:none!important}
@@ -1900,3 +1903,9 @@ body.modal-open .pv-dl{display:none!important}
 .bs-tile.bs-solid{color:#fff}
 .bs-count{margin-left:auto;font-size:13px;color:var(--ink);font-weight:600}
 .bs-count.bs-empty{color:var(--sub)}
+
+/* v404：时间轴轴项（年=月份轴 / 周=周一到周日轴） */
+.fun-axis-year .fun-axis-item,.fun-axis-week .fun-axis-item{grid-template-columns:42px 12px 1fr}
+.fun-axis-week .fun-axis-left{font-size:11px}
+.fun-axis-empty{color:var(--muted);font-size:12px;padding:3px 0}
+.fun-axis-item:last-child .fun-axis-mid::before{display:none}
