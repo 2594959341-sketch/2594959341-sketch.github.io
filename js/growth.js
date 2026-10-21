@@ -635,6 +635,8 @@ const Growth = {
     return { recent: recentSection, main: mainSection, footprint: heatmapSection, insight: insightSection, archive: archiveSection };
   },
   readingPage(allRecs, learnedToday, root) {
+    // v411：书架点书 → 进入书籍整页详情（对标娱乐·小说详情页），返回键回阅读主页
+    if (this._rdPage === 'book' && this._rdBook) return this.bookPageHTML(this._rdBook);
     if (!this._rdCalYm) this._rdCalYm = todayStr().slice(0, 7);
     const rLogs = this.readLogs();
     const notes = this.readNotes();
@@ -808,10 +810,12 @@ const Growth = {
     return Math.floor(daysBetween(firstMon, wk) / 7) + 1;
   },
   bindReadingEvents(root, recs) {
+    // v411：书籍详情页时只绑定该页事件（阅读主页的 #readCheckIn 等此时不存在）
+    if (this._rdPage === 'book' && this._rdBook) { this.bindBookPage(root, this._rdBook); return; }
     root.querySelector('#readCheckIn').onclick = () => this.readDialog(root);
-    // 书架：点书即记（预填书名+分类），免去重复填书名
+    // 书架：点书 → 进入书籍整页详情（v411：可编辑全书页数，不必重传封面）
     root.querySelectorAll('[data-shelfbook]').forEach(el => el.onclick = () => {
-      this.bookDetail(root, el.dataset.shelfbook);
+      this.openBookPage(root, el.dataset.shelfbook);
     });
     root.querySelectorAll('[data-dtcover]').forEach(el => el.onclick = () => { const entry = this._findRead(el.dataset.dtcover); if (entry) this.readView(root, entry); });
     const rdAll = root.querySelector('[data-rdall]');
@@ -1053,7 +1057,10 @@ const Growth = {
     if (patch.tags && patch.tags.length) cur.tags = patch.tags;
     if (patch.cat) cur.cat = patch.cat;
     if (patch.unit) cur.unit = patch.unit;
-    if (patch.total) cur.total = patch.total;
+    // v411：允许把「全书页数」改小 / 清空（旧逻辑只在有值时写入，导致填错后改不了也删不掉）
+    if (Object.prototype.hasOwnProperty.call(patch, 'total')) {
+      if (patch.total) cur.total = patch.total; else delete cur.total;
+    }
     cur.title = title; m[k] = cur; S.set('readBookMeta', m);
   },
   readFabHTML() { return `<button class="rd-fab" data-rdfab="1" title="添加书籍">${icon('plus', 24)}</button>`; },
@@ -1067,7 +1074,7 @@ const Growth = {
         <div style="font-size:12px;margin-top:4px;line-height:1.2;max-height:2.4em;overflow:hidden;text-overflow:ellipsis;white-space:normal">${esc(b.book)}</div></div>`).join('') : '<div class="empty">书架还是空的</div>';
     openModal(`<button class="close-x" onclick="closeModal()">×</button><h3>全部书籍（${books.length}）</h3>
       <div style="display:flex;gap:10px;overflow-x:auto;padding:8px 2px 12px;-webkit-overflow-scrolling:touch">${cells}</div>`);
-    const modal = document.querySelector('.modal'); if (modal) modal.querySelectorAll('[data-shelfbook]').forEach(el => el.onclick = () => { closeModal(); this.bookDetail(root, el.dataset.shelfbook); });
+    const modal = document.querySelector('.modal'); if (modal) modal.querySelectorAll('[data-shelfbook]').forEach(el => el.onclick = () => { closeModal(); this.openBookPage(root, el.dataset.shelfbook); });
   },
   bookDetail(root, book) {
     const meta = this.bookMeta(book) || { title: book };
@@ -1098,6 +1105,138 @@ const Growth = {
       <button class="btn" id="rdLogToday" style="width:100%;margin-top:14px">＋ 记今天的阅读</button>`);
     const logBtn = document.getElementById('rdLogToday'); if (logBtn) logBtn.onclick = () => { closeModal(); this.readDialog(root, { date: todayStr(), prefill: { book, cat: meta.cat || (last ? last.cat : '') } }); };
     const modal2 = document.querySelector('.modal'); if (modal2) modal2.querySelectorAll('[data-editread]').forEach(el => el.onclick = () => { const e = this._findRead(el.dataset.editread); if (e) this.readDialog(root, { edit: e, date: e.date }); });
+  },
+  // ===== v411：书籍整页详情（对标「娱乐·小说详情页」）+ 书籍信息编辑（可改/清空全书页数，不必重传封面）=====
+  openBookPage(root, book) { this._rdPage = 'book'; this._rdBook = book; this.render(root); },
+  bookPageHTML(book) {
+    const meta = this.bookMeta(book) || { title: book };
+    const rLogs = this.readLogs();
+    const entries = Object.entries(rLogs).flatMap(([d, arr]) => arr.filter(l => l.book === book).map(l => Object.assign({}, l, { date: d }))).sort((a, b) => a.date.localeCompare(b.date));
+    const last = entries[entries.length - 1] || null;
+    const total = Number(meta.total) || 0;
+    const unit = meta.unit || '页';
+    const cur = last ? Number(last.cur || 0) : 0;
+    const pct = (total && cur) ? Math.max(0, Math.min(100, Math.round(cur / total * 100))) : (last ? Number(last.percent || 0) : 0);
+    const cat = this.readCat({ cat: meta.cat || (last ? last.cat : 'other') });
+    const totalMin = entries.reduce((s, e) => s + (Number(e.minutes) || 0), 0);
+    const days = new Set(entries.map(e => e.date)).size;
+    const cnt = entries.length;
+    const avg = cnt ? Math.round(totalMin / cnt) : 0;
+    const firstDate = entries.length ? entries[0].date : '';
+    const lastDate = entries.length ? entries[entries.length - 1].date : '';
+    const dayDiff = firstDate ? Math.max(0, daysBetween(todayStr(), firstDate)) : 0;
+    const cover = meta.cover || (entries.slice().reverse().find(e => e.cover) || {}).cover || '';
+    const thumb = cover ? `<img src="${esc(cover)}" class="fun-dt-cover" alt="">` : `<div class="fun-dt-cover fun-dt-cover-ph"></div>`;
+    const progCap = total
+      ? ('全书 ' + total + ' ' + unit + ' · 已读 ' + cur + ' ' + unit + '（' + pct + '%）')
+      : (cur ? ('已读 ' + cur + ' ' + unit) : '还没记录读到哪儿');
+    const tags = meta.tags || [];
+    const reviews = entries.filter(e => e.review).map(e => ({ date: e.date, review: e.review, rating: e.rating }));
+    const trailHTML = entries.slice().reverse().slice(0, 30).map(e => {
+      const ps = [];
+      if (e.minutes) ps.push(e.minutes + ' 分钟');
+      if (e.cur) ps.push('读到 ' + esc(String(e.cur)));
+      else if (e.pages) ps.push(esc(e.pages));
+      if (e.status === 'done') ps.push('已读完');
+      return `<div class="fun-trail-item"><div class="fun-trail-dot" style="background:${cat.color}"></div><div class="fun-trail-mid"><span class="fun-trail-date">${e.date.slice(5)}</span>${ps.map(x => `<span class="fun-trail-min">${x}</span>`).join('')}</div></div>`;
+    }).join('');
+    return `<div class="fun-detail-page">
+      <div class="fun-dt-topbar fun-dt-topbar--title">
+        <div class="fun-dt-titlerow">
+          <div class="fun-dt-cat">${esc(cat.name)}</div>
+          <div class="fun-dt-topbar-actions">
+            <button class="icon-btn" data-bedit="1" title="编辑书籍信息（可改全书页数）">${icon('edit', 18)}</button>
+            <button class="icon-btn fun-back" data-bback="1" title="返回">${icon('chevronLeft', 18)}</button>
+          </div>
+        </div>
+      </div>
+      <div class="fun-dt-head">
+        ${thumb}
+        <div class="fun-dt-headinfo">
+          <div class="fun-dt-name">${esc(book)}</div>
+          <div class="fun-dt-sub">${dayDiff ? '已陪伴 ' + dayDiff + ' 天 · ' : ''}最近 ${lastDate ? lastDate.slice(5) : '—'}</div>
+          <div class="fun-dt-pct">${pct}<span class="fun-dt-pctsign">%</span><span class="fun-dt-pct-lab">已读</span></div>
+          <div class="fun-dt-progbar"><div class="fun-dt-progfill" style="width:${pct}%;background:${cat.color}"></div></div>
+          <div class="fun-dt-progcap">${progCap}</div>
+        </div>
+      </div>
+      <div class="fun-dt-stats">
+        <div class="fun-dt-stat"><div class="fun-dt-val">${cnt}</div><div class="fun-dt-lab">打卡次数</div></div>
+        <div class="fun-dt-stat"><div class="fun-dt-val">${days}</div><div class="fun-dt-lab">天</div></div>
+        <div class="fun-dt-stat"><div class="fun-dt-val">${totalMin}</div><div class="fun-dt-lab">累计分钟</div></div>
+        <div class="fun-dt-stat"><div class="fun-dt-val">${avg}</div><div class="fun-dt-lab">单次均</div></div>
+      </div>
+      <div class="card">
+        <div class="fun-dt-cardhead"><h3>书籍信息</h3><button class="btn sm ghost" data-bedit="1">编辑</button></div>
+        <div style="font-size:13px">全书：${total ? (esc(String(total)) + ' ' + esc(unit)) : '<span style="color:#c0392b">还没填</span>'}${tags.length ? ' · 标签：' + esc(tags.join(' ')) : ''}</div>
+        <div class="muted" style="font-size:11px;margin-top:6px">页数填错也不怕，点「编辑」随时改，不用重新传封面。</div>
+      </div>
+      <div class="card">
+        <div class="fun-dt-cardhead"><h3>阅读轨迹</h3></div>
+        <div class="fun-trail">${trailHTML || '<div class="empty">还没有记录~</div>'}</div>
+      </div>
+      ${reviews.length ? `<div class="card"><div class="fun-dt-cardhead"><h3>读后感</h3></div>${reviews.slice().reverse().map(r => `<div style="margin-bottom:8px"><div class="muted" style="font-size:11px">${r.date}${r.rating ? ' · ' + r.rating + '星' : ''}</div><div style="white-space:pre-wrap;font-size:13px">${esc(r.review)}</div></div>`).join('')}</div>` : ''}
+      <button class="btn" data-blog="1" style="width:100%;margin-top:14px">＋ 记今天的阅读</button>
+    </div>`;
+  },
+  bindBookPage(root, book) {
+    root.querySelectorAll('[data-bedit]').forEach(b => b.onclick = () => this.bookEditDialog(root, book));
+    root.querySelectorAll('[data-bback]').forEach(b => b.onclick = () => { this._rdPage = null; this._rdBook = null; this.render(root); });
+    const bl = root.querySelector('[data-blog]');
+    if (bl) bl.onclick = () => { const meta = this.bookMeta(book) || {}; this.readDialog(root, { date: todayStr(), prefill: { book, cat: meta.cat || '' } }); };
+  },
+  // 编辑书籍信息：全书页数可改可清空；封面沿用已有，只有主动选新图才替换
+  bookEditDialog(root, book) {
+    const meta = this.bookMeta(book) || { title: book };
+    const curCat = meta.cat || 'other';
+    const curUnit = meta.unit || '页';
+    openModal(`<button class="close-x" onclick="closeModal()">×</button><h3>编辑书籍 · ${esc(book)}</h3>
+      <div class="form-row"><label>封面（不换就留空，沿用现在的封面）</label>
+        <div style="display:flex;gap:10px;align-items:center">
+          ${meta.cover ? `<img src="${esc(meta.cover)}" style="width:56px;height:78px;object-fit:cover;border-radius:6px;flex-shrink:0">` : `<div class="fun-game-ic" style="width:56px;height:78px"></div>`}
+          <input type="file" id="beCover" accept="image/*" style="flex:1">
+        </div></div>
+      <div class="form-row"><label>全书共多少（页/章/话）</label>
+        <div style="display:flex;gap:6px;align-items:center">
+          <input id="beTotal" type="number" min="0" inputmode="numeric" placeholder="例如：320" value="${esc(meta.total || '')}" style="flex:1">
+          <select id="beUnit">${['页', '章', '话'].map(u => `<option value="${u}"${u === curUnit ? ' selected' : ''}>${u}</option>`).join('')}</select>
+          <button class="btn sm ghost" id="beTotalClear">清空</button>
+        </div></div>
+      <div class="muted" style="font-size:11px;margin:-2px 0 8px">填错可以随时改；清空后进度只显示「已读到第几」。</div>
+      <div class="form-row"><label>书籍分类</label>
+        <div style="display:flex;gap:6px;margin-top:4px;flex-wrap:wrap">${this.READ_CATS.map(c => `<button class="btn sm ghost be-cat-btn" data-cat="${c.key}" data-color="${c.color}" style="border:2px solid ${c.color};${c.key === curCat ? `background:${c.color};color:#fff` : `background:#fff;color:${c.color}`}">${c.name}</button>`).join('')}</div></div>
+      <div class="form-row"><label>标签（空格分隔）</label><input id="beTags" placeholder="例如：小说 成长 治愈" value="${esc((meta.tags || []).join(' '))}"></div>
+      <button class="btn" id="beOk" style="width:100%;margin-top:12px">保存</button>`);
+    const modal = document.querySelector('.modal') || document;
+    let cat = curCat;
+    modal.querySelectorAll('.be-cat-btn').forEach(b => b.onclick = () => {
+      modal.querySelectorAll('.be-cat-btn').forEach(x => { x.style.background = '#fff'; x.style.color = x.dataset.color; });
+      b.style.background = b.dataset.color; b.style.color = '#fff';
+      cat = b.dataset.cat;
+    });
+    const clr = document.getElementById('beTotalClear');
+    if (clr) clr.onclick = () => { const t = document.getElementById('beTotal'); if (t) { t.value = ''; t.focus(); } toast('已清空，点「保存」生效'); };
+    const ok = document.getElementById('beOk');
+    if (ok) ok.onclick = () => {
+      const raw = (document.getElementById('beTotal').value || '').trim();
+      const total = raw ? Number(raw) : 0;
+      if (raw && (!Number.isFinite(total) || total <= 0)) { toast('全书页数要填大于 0 的数字；留空或点「清空」表示不填'); return; }
+      const unit = document.getElementById('beUnit').value || '页';
+      const tagsRaw = (document.getElementById('beTags').value || '').trim();
+      const tags = tagsRaw ? tagsRaw.split(/[\s,，]+/).filter(Boolean) : [];
+      const fileEl = document.getElementById('beCover');
+      const file = (fileEl && fileEl.files) ? fileEl.files[0] : null;
+      const apply = (cover) => {
+        const patch = { cat: cat, unit: unit, tags: tags, total: total };
+        if (cover) patch.cover = cover;
+        this.upsertBookMeta(book, patch);
+        closeModal();
+        toast(total ? ('已更新：全书 ' + total + ' ' + unit) : '已清空全书页数');
+        this.render(root);
+      };
+      if (file) readImageFile(file, 720, 0.72).then(apply).catch(() => apply(null));
+      else apply(null);
+    };
   },
   readDialog(root, opts = {}) {
     const edate = opts.date || todayStr();
