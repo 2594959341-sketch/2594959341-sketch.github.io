@@ -1561,33 +1561,32 @@ const Work = {
     this.bindWritingEvents(root);
   },
 
-  /* 码字日历：日期居中；打卡日格子用颜色填满并显示当天字数；可切换月份（需求15） */
+  /* 码字日历：复用通用月历渲染，显示当日字数（达标绿/未达标红）+ 休息/月经假/病假/生日/纪念日/补签染色（与创作主页日历一致）；长按可补记休息/月经假（v410） */
   renderWriteCal(el, root) {
-    const wLogs = S.get('writeLogs', {});
     if (!this.wym) this.wym = todayStr().slice(0, 7);
-    const [y, m] = this.wym.split('-').map(Number);
-    const first = new Date(y, m - 1, 1); const startW = first.getDay();
-    const daysIn = new Date(y, m, 0).getDate();
-    const today = todayStr();
+    const wLogs = S.get('writeLogs', {});
     const dg = Number(this.novel().dailyGoal) || 0; // 日均目标：达标浅绿、未达标红
-    let html = '<div class="cal-head"><button class="btn ghost sm" id="wrPrev">‹</button><b>' + y + '年' + m + '月</b><button class="btn ghost sm" id="wrNext">›</button></div>';
-    html += '<div class="cal-grid">' + ['日', '一', '二', '三', '四', '五', '六'].map(w => '<div class="wd">' + w + '</div>').join('');
-    for (let i = 0; i < startW; i++) html += '<div></div>';
-    for (let d = 1; d <= daysIn; d++) {
-      const ds = y + '-' + String(m).padStart(2, '0') + '-' + String(d).padStart(2, '0');
-      const arr = wLogs[ds] || [];
-      const total = arr.reduce((s, l) => s + (l.words || 0), 0); // 当日码字总数（构思+正文，各阶段都呈现）
-      if (total > 0) {
-        const met = dg <= 0 || total >= dg;                 // 达标浅绿、未达标红
-        html += '<div class="cal-cell wr-fill' + (ds === today ? ' today' : '') + '" data-date="' + ds + '" title="' + ds + ' · 码字 ' + total + (dg ? '（目标 ' + dg + '）' : '') + '"><span class="wr-words" style="color:' + (met ? '#3FA96A' : '#E0564E') + '">' + total + '</span></div>';
-      } else {
-        html += '<div class="cal-cell' + (ds === today ? ' today' : '') + '" data-date="' + ds + '"><div class="d">' + d + '</div></div>';
-      }
-    }
-    html += '</div>';
-    el.innerHTML = html;
-    el.querySelector('#wrPrev').onclick = () => { const nd = new Date(y, m - 2, 1); this.wym = nd.getFullYear() + '-' + String(nd.getMonth() + 1).padStart(2, '0'); this.renderWriteCal(el, root); };
-    el.querySelector('#wrNext').onclick = () => { const nd = new Date(y, m, 1); this.wym = nd.getFullYear() + '-' + String(nd.getMonth() + 1).padStart(2, '0'); this.renderWriteCal(el, root); };
+    // 创作休息日（per-item 的 restDatesOfType('work') 并上旧 workRest），与创作主页日历同源
+    const restSet = new Set([].concat(restDatesOfType('work'), S.get('workRest', []) || []));
+    const mensSet = menstrualSet();
+    const madeupSet = new Set(madeupSetInRange(this.wym + '-01', this.wym + '-31'));
+    const opts = {
+      ym: this.wym,
+      mod: 'work',
+      restSet: restSet, menstrualSet: mensSet, madeupSet: madeupSet,
+      legendEl: '#wrHl',
+      legendHTML: v => holidayLegendHTML(v),
+      cellHTML: ds => {
+        const arr = wLogs[ds] || [];
+        const total = arr.reduce((s, l) => s + (l.words || 0), 0); // 当日码字总数
+        if (total <= 0) return '';
+        const met = dg <= 0 || total >= dg;
+        return '<span class="wr-words" style="color:' + (met ? '#3FA96A' : '#E0564E') + '">' + total + '</span>';
+      },
+      onLongPress: ds => openRestMenu(ds, 'work', () => this.render(root), d => this.toggleRest(root, d)),
+      afterRender: () => { this.wym = opts.ym; }, // 翻月后把当前月份同步回 this.wym，避免整页重渲染跳回旧月份
+    };
+    renderMonthCal(el, opts);
   },
 
   writingPage(root) {
@@ -1630,6 +1629,7 @@ const Work = {
         </div>
       </div>
       <div class="card"><h3>码字日历</h3>
+        <div id="wrHl"></div>
         <div id="wrCal"></div>
       </div>
     </div>`;
