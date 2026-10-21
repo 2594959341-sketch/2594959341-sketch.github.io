@@ -200,13 +200,14 @@ const Entertainment = {
     recs.forEach(r => { const k = this.workKeyOf(r); (works[k] = works[k] || []).push(r); });
     return Object.keys(works).map(k => this.workCanon(works[k])).sort((a, b) => b.lastDate.localeCompare(a.lastDate));
   },
-  workRowHTML(c, type) {
+  workRowHTML(c, type, opts) {
+    opts = opts || {};
     const isFinished = c.status === '看完' || c.status === '已读完';
     const isNovel = type === '小说';
     const timeTxt = this.fmtMin(c.totalMin);
     const tags = (c.tags || []).filter(t => !FUN_TAG_HIDDEN.includes(t)).slice(0, 4);
     const tagHTML = tags.length ? `<div class="rd-tl-tags">${tags.map(t => `<span class="tag" style="background:#eee;color:#444;border:none;font-size:10px;padding:1px 6px">${esc(t)}</span>`).join('')}</div>` : '';
-    const typeTag = `<span class="tag" style="background:${this.typeColor(type)};color:#fff;border:none;font-size:10px;padding:1px 6px;margin-left:2px">${esc(type)}</span>`;
+    const typeTag = opts.hideType ? '' : `<span class="tag" style="background:${this.typeColor(type)};color:#fff;border:none;font-size:10px;padding:1px 6px;margin-left:2px">${esc(type)}</span>`;
     const months = [...new Set(c.dates.map(d => d.slice(0, 7)))].sort().map(d => Number(d.slice(5)) + '月').join('·');
     const cap = [];
     if (isFinished) cap.push(isNovel ? '已读完' : '已看完');
@@ -1018,7 +1019,7 @@ const Entertainment = {
           const mCnt = recs.length;
           const mMin = recs.reduce((s, r) => s + (Number(r.minutes) || 0), 0);
           const monthLabel = monthNames[mm] + '月';
-          const rows = recs.map(r => this.entryRowHTML(r, true)).join('');
+          const rows = recs.map(r => this.entryRowHTML(r, false)).join('');
           return `<div class="fun-tl-row">
             <div class="fun-tl-node"><div class="fun-tl-dot"></div></div>
             <div class="fun-tl-body">
@@ -1049,13 +1050,13 @@ const Entertainment = {
         const works = this.worksOf(weekAll).slice().sort((a, b) => (a.lastDate || '').localeCompare(b.lastDate || ''));
         const items = works.map(c => {
           const d = c.lastDate || (c.dates && c.dates[c.dates.length - 1]) || '';
-          const wd = d ? this.weekDayLabel(d) : '';
+          const wdName = d ? ['周日', '周一', '周二', '周三', '周四', '周五', '周六'][new Date(d + 'T00:00:00').getDay()] : '';
           const dateShort = d ? d.slice(5).replace('-', '/') : '';
-          return `<div class="fun-tl-row">
-            <div class="fun-tl-node"><div class="fun-tl-dot"></div></div>
+          return `<div class="fun-tl-row wk">
+            <div class="fun-tl-left"><div class="fun-tl-wd">${wdName}</div><div class="fun-tl-date">${dateShort}</div></div>
+            <div class="fun-tl-track"><div class="fun-tl-dot"></div></div>
             <div class="fun-tl-body">
-              <div class="fun-axis-date">${wd} ${dateShort}</div>
-              ${this.workRowHTML(c, t)}
+              ${this.workRowHTML(c, t, { hideType: true })}
             </div>
           </div>`;
         }).join('');
@@ -1429,7 +1430,7 @@ const Entertainment = {
   /* ============ 添加 / 编辑（打卡） ============ */
   editModal(ref, presetType, seed) {
     let r = { date: todayStr(), type: presetType || '影视', title: '', cover: '', total: '', progress: '', status: '在看', rating: 0, review: '', minutes: '', epMin: '', speed: 1, skip: 0, episodes: '', imgs: [], tags: [], playFor: '' };
-    if (ref) { const o = JSON.parse(decodeURIComponent(ref)); const arr = (this.logs()[o.date] || []); r = Object.assign(r, arr.find(x => x.id === o.id) || {}); r.type = funNormType(r.type); }
+    if (ref) { const o = JSON.parse(decodeURIComponent(ref)); const arr = (this.logs()[o.date] || []); r = Object.assign(r, arr.find(x => x.id === o.id) || {}); r.type = funNormType(r.type); r.date = o.date; }
     else if (seed) { r = Object.assign(r, seed); r.type = funNormType(r.type || presetType || '影视'); r.date = todayStr(); r.id = uid(); r.createdAt = Date.now(); }
     const origTitle = r.title;  // 编辑已保存作品改名字时，用来把该作品全部历史记录一并改名
     const isNovel = () => r.type === '小说';
@@ -1581,7 +1582,12 @@ const Entertainment = {
         tags,
         createdAt: appendRec ? Date.now() : (r.createdAt || Date.now())
       };
-      const date = document.getElementById('fDate').value || todayStr();
+      // 改日期时若 fDate 偶发为空，回退到原记录的日期（r.date），绝不直接跳成今天，避免误存
+      const date = document.getElementById('fDate').value || r.date || todayStr();
+      // 今天记录的小说必须填时长；以前补记的（日期<今天）允许不记时长
+      if (type === '小说' && date === todayStr() && Number(minutes) <= 0) {
+        toast('今天看的小说要记一下时长哦~（以前的可以不记）'); return;
+      }
       const L = this.logs();
       if (ref && !appendRec) {
         const o = JSON.parse(decodeURIComponent(ref));
