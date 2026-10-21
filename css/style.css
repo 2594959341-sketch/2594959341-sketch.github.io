@@ -1906,17 +1906,19 @@ body.modal-open .pv-dl{display:none!important}
 
 /* v405：时间轴（年=月份+月总结在右；周=作品轴每个一次，日期在右）。左侧仅细节点，整体左移 */
 .fun-tl-axis{margin-top:6px}
+.fun-tl-axis.tl-year{margin-left:10px}
+.fun-tl-axis.tl-week{margin-left:-3px}
 .fun-tl-row{display:grid;grid-template-columns:14px 1fr;gap:9px;padding-bottom:13px}
-.fun-tl-row.wk{grid-template-columns:54px 16px 1fr;gap:8px}
+.fun-tl-row.wk{grid-template-columns:44px 14px 1fr;gap:7px}
 .fun-tl-left{display:flex;flex-direction:column;align-items:flex-end;text-align:right;padding-top:2px;line-height:1.3}
 .fun-tl-wd{font-size:12px;font-weight:700;color:var(--ink)}
-.fun-tl-date{font-size:11px;color:var(--muted)}
+.fun-tl-when{font-size:11px;color:var(--muted);margin-bottom:3px}
 .fun-tl-node{position:relative}
 .fun-tl-node::before{content:'';position:absolute;left:50%;top:5px;bottom:-17px;width:2px;background:var(--line);transform:translateX(-50%)}
 .fun-tl-track{position:relative}
 .fun-tl-track::before{content:'';position:absolute;left:50%;top:4px;bottom:-17px;width:2px;background:var(--line);transform:translateX(-50%)}
 .fun-tl-dot{position:absolute;top:4px;left:50%;transform:translateX(-50%);width:10px;height:10px;border-radius:50%;background:var(--ink);border:2px solid #fff;box-shadow:0 0 0 1px var(--line);z-index:1}
-.fun-tl-row:last-child .fun-tl-node::before{display:none}
-.fun-tl-row:last-child .fun-tl-track::before{bottom:auto;height:6px}
+.fun-tl-row:last-child .fun-tl-node::before{bottom:0}
+.fun-tl-row:last-child .fun-tl-track::before{bottom:0}
 .fun-tl-month{font-size:13px;font-weight:700;color:var(--ink);margin:0 0 6px}
 .fun-tl-month .sub{font-size:11px;font-weight:400;color:var(--muted);margin-left:6px}
