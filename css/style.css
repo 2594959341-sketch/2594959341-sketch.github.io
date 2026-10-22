@@ -1926,3 +1926,16 @@ body.modal-open .pv-dl{display:none!important}
 .fun-tl-body img[data-dtcover],.fun-tl-body .fun-game-ic[data-dtcover]{width:46px!important;height:64px!important;border-radius:7px!important}
 .fun-tl-body .list-row b{font-size:15px}
 .fun-tl-body .rd-cap{font-size:12px}
+
+/* v412 每日简报 */
+.brf-head{display:flex;align-items:center;justify-content:space-between;margin:8px 0 16px}
+.brf-title{font-size:22px;font-weight:800;color:var(--ink);display:flex;align-items:center;gap:8px;letter-spacing:1px}
+.brf-refresh{display:inline-flex;align-items:center;gap:4px;font-size:13px;color:var(--sub);border:1px solid var(--line);border-radius:999px;padding:5px 12px;background:#fff;cursor:pointer}
+.brf-refresh:active{opacity:.7}
+.brf-list{display:flex;flex-direction:column;gap:14px}
+.brf-card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:14px 16px}
+.brf-card-h{display:flex;align-items:center;gap:7px;font-size:15px;margin-bottom:8px}
+.brf-date{margin-left:auto;font-size:11.5px;color:var(--muted);white-space:nowrap}
+.brf-cat{font-size:12.5px;font-weight:600;color:var(--sub);margin:8px 0 4px}
+.brf-items{margin:0;padding-left:18px}
+.brf-items li{font-size:13.5px;line-height:1.6;margin-bottom:4px;color:var(--ink)}
