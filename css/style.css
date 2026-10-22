@@ -1060,6 +1060,8 @@ select.select{appearance:none;-webkit-appearance:none;background:var(--light);bo
 .fun-trail-mid{font-size:12px;color:var(--ink);line-height:1.5}
 .fun-trail-date{font-weight:700;margin-right:6px}
 .fun-trail-min{color:var(--muted);margin-right:6px}
+.fun-trail-del{display:none;margin-left:auto;align-self:center;border:none;background:transparent;color:#c0392b;font-size:16px;line-height:1;padding:2px 6px;cursor:pointer}
+.fun-trail-item.lp-revealed .fun-trail-del{display:inline-flex}
 [data-dtcover]{cursor:pointer}
 
 /* ===== v114 阅读页 ===== */
