@@ -1132,13 +1132,22 @@ const Growth = {
       : (cur ? ('已读 ' + cur + ' ' + unit) : '还没记录读到哪儿');
     const tags = meta.tags || [];
     const reviews = entries.filter(e => e.review).map(e => ({ date: e.date, review: e.review, rating: e.rating }));
-    const trailHTML = entries.slice().reverse().slice(0, 30).map(e => {
+    // 阅读轨迹：按日期倒序，保留每条在当日数组里的真实下标（用于精确删除）
+    const trailEntries = [];
+    Object.keys(rLogs).sort().reverse().forEach(d => {
+      (rLogs[d] || []).forEach((l, i) => { if (l.book === book) trailEntries.push(Object.assign({}, l, { date: d, idx: i })); });
+    });
+    const trailHTML = trailEntries.slice(0, 30).map(e => {
       const ps = [];
       if (e.minutes) ps.push(e.minutes + ' 分钟');
       if (e.cur) ps.push('读到 ' + esc(String(e.cur)));
       else if (e.pages) ps.push(esc(e.pages));
       if (e.status === 'done') ps.push('已读完');
-      return `<div class="fun-trail-item"><div class="fun-trail-dot" style="background:${cat.color}"></div><div class="fun-trail-mid"><span class="fun-trail-date">${e.date.slice(5)}</span>${ps.map(x => `<span class="fun-trail-min">${x}</span>`).join('')}</div></div>`;
+      return `<div class="fun-trail-item" data-lp>
+        <div class="fun-trail-dot" style="background:${cat.color}"></div>
+        <div class="fun-trail-mid"><span class="fun-trail-date">${e.date.slice(5)}</span>${ps.map(x => `<span class="fun-trail-min">${x}</span>`).join('')}</div>
+        <button class="fun-trail-del" data-tdel data-tdate="${esc(e.date)}" data-tidx="${e.idx}" title="删除这条记录">🗑</button>
+      </div>`;
     }).join('');
     return `<div class="fun-detail-page">
       <div class="fun-dt-topbar fun-dt-topbar--title">
@@ -1184,6 +1193,23 @@ const Growth = {
     root.querySelectorAll('[data-bback]').forEach(b => b.onclick = () => { this._rdPage = null; this._rdBook = null; this.render(root); });
     const bl = root.querySelector('[data-blog]');
     if (bl) bl.onclick = () => { const meta = this.bookMeta(book) || {}; this.readDialog(root, { date: todayStr(), prefill: { book, cat: meta.cat || '' } }); };
+    // 阅读轨迹长按删除：每条记录独立的删除键，长按所在行才出现；删除该条记录的全部信息（含关联读后感）
+    root.querySelectorAll('[data-tdel]').forEach(b => {
+      b.onclick = () => {
+        const date = b.dataset.tdate, idx = Number(b.dataset.tidx);
+        const rLogs = this.readLogs();
+        const arr = rLogs[date] || [];
+        const entry = arr[idx];
+        if (!entry) return;
+        const kept = arr.filter((l, i) => i !== idx);
+        if (kept.length) rLogs[date] = kept; else delete rLogs[date];
+        S.set('readLogs', rLogs);
+        if (entry.id) { const notes = this.readNotes().filter(n => n.eid !== entry.id); S.set('readNotes', notes); }
+        lpCollapse(b);
+        toast('已删除这条记录');
+        this.render(root);
+      };
+    });
   },
   // 编辑书籍信息：全书页数可改可清空；封面沿用已有，只有主动选新图才替换
   bookEditDialog(root, book) {
