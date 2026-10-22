@@ -1589,7 +1589,7 @@ function lpCollapse(node) {
   });
 }
 (function () {
-  const SEL = '[data-cdel],[data-delact],[data-dellog],[data-delp],[data-delitem],[data-delplan],[data-deld],[data-delclip],[data-delstep],[data-delout],[data-deltrip],[data-delpack],[data-deln],[data-delphoto]';
+  const SEL = '[data-cdel],[data-delact],[data-dellog],[data-delp],[data-delitem],[data-delplan],[data-deld],[data-delclip],[data-delstep],[data-delout],[data-deltrip],[data-delpack],[data-deln],[data-delphoto],[data-tdel]';
   function holderOf(btn) { return btn.closest('[data-lp]') || btn.closest('.list-row') || btn.closest('.card') || btn.parentElement; }
   let timer = null, target = null;
   function clear() { clearTimeout(timer); timer = null; target = null; }
