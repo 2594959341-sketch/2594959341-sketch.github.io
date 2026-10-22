@@ -1169,7 +1169,11 @@ const Entertainment = {
       const pr = isBook && r.progress ? (' · 看到 ' + esc(r.progress)) : '';
       const st = (r.status && r.status !== '在看') ? (' · ' + esc(r.status)) : '';
       const minTxt = r.seed ? `<span class="fun-trail-min">累计 ${this.fmtMin(r.minutes)} 起点</span>` : (r.minutes ? `<span class="fun-trail-min">${this.fmtMin(r.minutes)}</span>` : '');
-      return `<div class="fun-trail-item"><div class="fun-trail-dot" style="background:${this.typeColor(type)}"></div><div class="fun-trail-mid"><span class="fun-trail-date">${r.date.slice(5)}</span>${minTxt}${pr}${st}</div></div>`;
+      return `<div class="fun-trail-item" data-lp>
+        <div class="fun-trail-dot" style="background:${this.typeColor(type)}"></div>
+        <div class="fun-trail-mid"><span class="fun-trail-date">${r.date.slice(5)}</span>${minTxt}${pr}${st}</div>
+        <button class="fun-trail-del" data-tdel data-tdate="${esc(r.date)}" data-tid="${esc(r.id)}" title="删除这条记录">🗑</button>
+      </div>`;
     }).join('');
 
     const thumb = (entry.icon || entry.cover)
@@ -1250,6 +1254,10 @@ const Entertainment = {
       this.editModal(encodeURIComponent(JSON.stringify({ date: latest.date, id: latest.id })), null);
     };
     root.querySelectorAll('[data-dtrend]').forEach(b => b.onclick = () => { this._detailTrend = b.dataset.dtrend; this.renderDetail(this._root); });
+    // 轨迹长按删除：每条记录独立删除键，长按所在行才出现；删除该条记录的全部信息（含关联充电源）
+    root.querySelectorAll('[data-tdel]').forEach(b => {
+      b.onclick = () => { const ref = encodeURIComponent(JSON.stringify({ date: b.dataset.tdate, id: b.dataset.tid })); this.del(ref); };
+    });
   },
   /* ============ 封面日历（全部 / 单类型） ============ */
   openCal(scope) { this._savedView = { activeType: this.activeType, _view: this._view }; this._calScope = scope; this._view = 'cal'; this.render(this._root); },
