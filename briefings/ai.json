@@ -1,0 +1,16 @@
+{
+  "date": "2026-10-21",
+  "title": "昨日 AI 重点资讯简报",
+  "items": [
+    { "cat": "", "text": "DeepSeek 全面开源内部推理框架 DeepInfer（Apache-2.0），多家厂商跟进支撑 V4.1-Flash 生产服务。" },
+    { "cat": "", "text": "OpenAI 被曝拟上市前融资约 300 亿美元、估值超 1.4 万亿；Gartner 称 7 万亿基建仅收回一半。" },
+    { "cat": "", "text": "美国土安全部 2026-01 号命令要求联邦文职机构移除 DeepSeek 及基于其开发的第三方产品。" },
+    { "cat": "", "text": "OpenAI GPT-6 系列补强 COBOL 等低资源语言，拓展企业级 legacy 代码能力。" },
+    { "cat": "", "text": "Inception Mercury 3 扩散 LLM 以 1068 tok/s 上线 OpenRouter，推理速度创新高。" },
+    { "cat": "", "text": "DeepSeek-V4.1-Flash-1017 登顶 Agent Arena 开源第一（总榜第 11，AA 指数并列开源第二）。" },
+    { "cat": "", "text": "Google PyTorch 大会推 TorchTPU 组合拳：TorchTitan TPU 分叉 + vLLM/SGLang 原生推理 + HF 生态。" },
+    { "cat": "", "text": "Claude Dashboards/Motion 上线，Docs/Slides/Design 转正，办公套件能力补齐。" },
+    { "cat": "", "text": "Anthropic Claude 自主 64 小时设计蝎子毒素蛋白结合剂，长程自主科研再进一步。" },
+    { "cat": "", "text": "斯坦福 HAI 医疗 Agent 三基准最佳完成率不足一半，揭示医疗智能体落地鸿沟。" }
+  ]
+}
