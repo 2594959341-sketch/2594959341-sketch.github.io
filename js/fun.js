@@ -1476,7 +1476,7 @@ const Entertainment = {
         <div class="form-row"><label>看完打分</label>${starRateBox('fRateBox', r.rating || 0)}<input id="fRating" type="hidden" value="${r.rating || 0}"></div>
         <div class="form-row"><label>观后感</label><textarea id="fReview" rows="3" placeholder="写点感受吧~">${esc(r.review || '')}</textarea></div>
       </div>
-      ${lockNovel ? '<div class="muted" style="font-size:12px;margin:8px 0 2px;color:#a07fb0">已看完 · 仅书名 / 封面 / 评星 / 标签 / 观后感可改，其余含日期已锁定</div>' : ''}
+      ${lockNovel ? '<div class="muted" style="font-size:12px;margin:8px 0 2px;color:#a07fb0">已看完 · 仅书名 / 封面 / 总量 / 评星 / 标签 / 观后感可改，其余含日期已锁定</div>' : ''}
       <div style="display:flex;gap:8px;margin-top:10px;justify-content:flex-end">
         <button class="btn ghost" onclick="closeModal()">取消</button>
         <button class="btn" id="fSave">保存</button>
@@ -1531,8 +1531,8 @@ const Entertainment = {
     };
     bindStarRate('fRateBox', 'fRating', null);
     if (lockNovel) {
-      // 完结锁定：封面允许重传（早期封面遗失可补），其余含日期/进度/总量等仍锁定
-      ['fType', 'fStatus', 'fTotal', 'fProg', 'fCat', 'fMediaMin', 'fDate'].forEach(id => { const el = document.getElementById(id); if (el) el.disabled = true; });
+      // 完结锁定：封面/总量允许补录（早期封面遗失、或完结作品未记总量都可补），其余含日期/进度等仍锁定
+      ['fType', 'fStatus', 'fProg', 'fCat', 'fMediaMin', 'fDate'].forEach(id => { const el = document.getElementById(id); if (el) el.disabled = true; });
     }
 
     // 同名记录记忆：写名字即带出上一次的基础信息（封面/图标/评分等），只填空字段，方便只改想改的
@@ -1572,15 +1572,18 @@ const Entertainment = {
       const fStatus = document.getElementById('fStatus') ? document.getElementById('fStatus').value : '';
       const fProgRaw = document.getElementById('fProg') ? document.getElementById('fProg').value.trim() : '';
       const fTotalRaw = document.getElementById('fTotal') ? document.getElementById('fTotal').value.trim() : '';
-      // 选「看完」必须填总量（章/集/话），否则详情页无法显示「全书 X 章 · 已看完」
-      if (fStatus === '看完' && !fTotalRaw) { toast('已看完需要填写总量（章/集/话）'); return; }
+      // 选「看完」必须填总量（章/集/话），否则详情页无法显示「全书 X 章 · 已看完」。
+      // 例外：已完结的旧记录（含早期未记总量的作品）编辑时允许总量留空——只补封面/元数据，不强行倒逼用户回忆未知总量。
+      const _oStatus = r.status || '';
+      const _finishingNow = fStatus === '看完' && _oStatus !== '看完';
+      if ((_finishingNow || !ref) && fStatus === '看完' && !fTotalRaw) { toast('已看完需要填写总量（章/集/话）'); return; }
       // 小说/影视/漫画：编辑=在历史基础上「新增一条本次记录」（累积轨迹，旧记录保留）；其它类型（含归档的游戏）保持就地覆盖旧记录。
       const isBook = ['小说', '影视', '漫画'].includes(r.type);
       // 仅「进度类」字段（状态/进度/总量/时长）的编辑才追加为一条新轨迹/打卡记录；
       // 其余元数据编辑（改名/标签/封面/感想/改日期等）原地更新现有记录，不计入打卡次数，避免轨迹与次数错位。
-      const _oStatus = r.status || '', _oProg = r.progress || '', _oTotal = r.total || '', _oMin = Number(r.minutes) || 0;
+      const _oProg = r.progress || '', _oTotal = r.total || '', _oMin = Number(r.minutes) || 0;
       const isProgressEdit = (fStatus !== _oStatus) || (fProgRaw !== _oProg) || (fTotalRaw !== _oTotal) || (Number(minutes) !== _oMin);
-      const appendRec = isBook && !!ref && isProgressEdit;
+      const appendRec = isBook && !!ref && isProgressEdit && !lockNovel;
       const rec = {
         id: appendRec ? uid() : (r.id || uid()), type, title: newTitle,
         cover: coverVal, total: document.getElementById('fTotal') ? document.getElementById('fTotal').value.trim() : '',
