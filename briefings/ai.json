@@ -1,16 +1,21 @@
 {
-  "date": "2026-10-21",
+  "date": "2026-10-22",
   "title": "昨日 AI 重点资讯简报",
   "items": [
-    { "cat": "", "text": "DeepSeek 全面开源内部推理框架 DeepInfer（Apache-2.0），多家厂商跟进支撑 V4.1-Flash 生产服务。" },
-    { "cat": "", "text": "OpenAI 被曝拟上市前融资约 300 亿美元、估值超 1.4 万亿；Gartner 称 7 万亿基建仅收回一半。" },
-    { "cat": "", "text": "美国土安全部 2026-01 号命令要求联邦文职机构移除 DeepSeek 及基于其开发的第三方产品。" },
-    { "cat": "", "text": "OpenAI GPT-6 系列补强 COBOL 等低资源语言，拓展企业级 legacy 代码能力。" },
-    { "cat": "", "text": "Inception Mercury 3 扩散 LLM 以 1068 tok/s 上线 OpenRouter，推理速度创新高。" },
-    { "cat": "", "text": "DeepSeek-V4.1-Flash-1017 登顶 Agent Arena 开源第一（总榜第 11，AA 指数并列开源第二）。" },
-    { "cat": "", "text": "Google PyTorch 大会推 TorchTPU 组合拳：TorchTitan TPU 分叉 + vLLM/SGLang 原生推理 + HF 生态。" },
-    { "cat": "", "text": "Claude Dashboards/Motion 上线，Docs/Slides/Design 转正，办公套件能力补齐。" },
-    { "cat": "", "text": "Anthropic Claude 自主 64 小时设计蝎子毒素蛋白结合剂，长程自主科研再进一步。" },
-    { "cat": "", "text": "斯坦福 HAI 医疗 Agent 三基准最佳完成率不足一半，揭示医疗智能体落地鸿沟。" }
+    { "cat": "大模型", "text": "Recursive 发布 Flint：首个由 AI 自动化研究系统 Eureka Machine 参与打造的 40B MoE 编程模型（2.5B 激活、Apache 2.0），笔记本可跑、上线 OpenRouter。" },
+    { "cat": "大模型", "text": "科大讯飞发布星火 X2.6 端云一体大模型：293B-A30B MoE、1M 上下文、首次基于全国产算力突破代码与智能体能力，端侧 4B 同步开源。" },
+    { "cat": "产品", "text": "Anthropic 开放 Claude Duet 研究预览：基于 Claude Opus 5.5 的主动式常驻智能体独立 App，面向美国 Pro/Max 用户，敏感操作需批准。" },
+    { "cat": "产品", "text": "沃尔玛推出 Agent Gateway：经审核的 AI 智能体可通过 MCP 检索库存并代用户下单，用户可设消费限额，与 Amazon 封禁路线相反。" },
+    { "cat": "行业", "text": "PHP2Shell 风暴：GPT-5.6 Sol 与 Gemini 4 Argon 助发现两个 CVSS 9.2 的 PHP 漏洞，NSA 敦促修复或下线，多国网站预防性关站，约 150 万台服务器仍无补丁。" },
+    { "cat": "行业", "text": "Bloomberg：DeepSeek 新一轮融资约 150 亿美元，宁德时代与腾讯为最大投资方，投前估值约 748 亿美元，6 个月共募资约 225 亿美元。" },
+    { "cat": "行业", "text": "消息称 Anthropic 最快本周五公开提交 S-1 招股书，或创史上最大 IPO。" },
+    { "cat": "行业", "text": "Meta Q3 财报：Muse 用户破 1000 万、购物成主场景，扎克伯格称达成 PMF；拟发无投票权 C 类股为 AI 筹资，年度 capex 上调至 1350-1450 亿美元。" },
+    { "cat": "研究", "text": "Microsoft 研究员借 AI 探索约 100 条路径、形成 140 页证明，证平 31 年历史的 KLS 猜想。" },
+    { "cat": "研究", "text": "OpenAI 与 Scripps 用数千个智能体 32 分钟完成小鼠全脑 CRISPR 图谱分析，人工估计需数月至一年。" },
+    { "cat": "其他值得一看", "text": "WSJ：马斯克希望以 AI 为核心推动 SpaceX 与 Tesla 合并，SpaceX AI 业务 Q3 营收 75.6 亿美元已成其最大业务。" },
+    { "cat": "其他值得一看", "text": "Symantec 披露「Skynet 模式」攻击智能体劫持无防护 LLM 端点自持续攻击，最多连续执行 10 万步；CyberCartel 串联四款 AI 模型攻击 400 多家拉美金融机构。" },
+    { "cat": "其他值得一看", "text": "Google DeepMind 多名员工因军方 AI 合同辞职（BBC）；METR 与 Redwood 红队测试 OpenAI 内部监控系统并披露多项漏洞。" },
+    { "cat": "其他值得一看", "text": "OpenAI GPT-6.1 全系将登陆 Google Cloud Model Garden 与 Antigravity；中国出口管制草案澄清开放权重模型不在禁止范围。" },
+    { "cat": "其他值得一看", "text": "可灵 Kling 4.0 上线 OpenArt/OnSolo/Morphic（30 秒原生、15 参考图）；MiniMax Code 桌面端推出 Mini App 长运行应用。" }
   ]
 }
