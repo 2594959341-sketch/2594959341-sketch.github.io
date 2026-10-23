@@ -143,7 +143,8 @@ function restDatesOfType(type) {
 }
 
 /* ---- 月经假（独立健康假，不占用运动/备考/创作的「每月4天」额度）----
-   规则：每月最多 2 天，必须连续休两天（点一次占今天+明天）；
+   规则：每月最多 2 次，每次必须连续休两天（点一次占今天+明天）；
+   月经约 26-28 天一周期，月初来一次、月底再来一次属正常，故每月放宽到 2 次；
    不与任何其它假期/补签日重叠；月经假日对所有板块续火花都算「休息」 */
 var MENS_KEY = 'menstrualRest';
 function menstrualArr() { return (S.get(MENS_KEY, []) || []); }
@@ -151,6 +152,14 @@ function menstrualSet() { return new Set(menstrualArr()); }
 function menstrualCountMonth(date) {
   var ms = date.slice(0, 7);
   return menstrualArr().filter(function (d) { return d.slice(0, 7) === ms; }).length;
+}
+// 统计某月「月经假次数」：把连续日期聚合成「一次」（每次固定连续 2 天），用于「每月最多 2 次」额度判断
+function menstrualEpisodesMonth(date) {
+  var ms = date.slice(0, 7);
+  var ds = menstrualArr().filter(function (d) { return d.slice(0, 7) === ms; }).sort();
+  var eps = 0, prev = null;
+  ds.forEach(function (d) { if (prev === null || addDays(prev, 1) !== d) eps++; prev = d; });
+  return eps;
 }
 // 收集所有其它「休息 / 补签」日期（用于重叠互斥判定，v363：休息改为 per-item，从各 streak item.rest 聚合）
 function allOtherRestDates() {
@@ -171,7 +180,7 @@ function menstrualCanAdd(ds) {
   var tmr = addDays(ds, 1);
   if (set.has(tmr)) return { ok: false, msg: '明天已经在月经假里了（月经假需连续两天）' };
   if (set.has(addDays(ds, -1))) return { ok: false, msg: '昨天已经在月经假里了（月经假需连续两天）' };
-  if (menstrualCountMonth(ds) + 2 > 2) return { ok: false, msg: '本月月经假额度已用完（每月最多 2 天，连续休两天）' };
+  if (menstrualCountMonth(ds) + 2 > 4) return { ok: false, msg: '本月月经假额度已用完（每月最多 2 次，每次连续两天）' };
   var others = allOtherRestDates();
   if (others[ds]) return { ok: false, msg: fmtCN(ds) + ' 已是其它假期 / 补签日，月经假不能与之重叠' };
   if (others[tmr]) return { ok: false, msg: fmtCN(tmr) + ' 已是其它假期 / 补签日，月经假不能与之重叠' };
@@ -382,6 +391,25 @@ function openSickLeaveDialog(root) {
     if (r.msg) { toast(r.msg); return; }
     closeModal();
     toast(r.added ? ('已请病假（本月 ' + r.count + '/3），当日未打卡任务已清空') : '已取消该病假');
+    if (window.App && window.App.renderSettings) window.App.renderSettings(root);
+  };
+}
+// 设置页「请月经假」弹窗：登记 / 取消（每次连续两天；每月最多 2 次，照顾 26-28 天周期）
+function openMensLeaveDialog(root) {
+  var ym = todayStr().slice(0, 7);
+  var used = menstrualEpisodesMonth(ym + '-01');
+  openModal('<button class="close-x" onclick="closeModal()">×</button><h3>请月经假</h3>'
+    + '<div class="form-row"><label>起假日期（连休两天）</label><input type="date" id="msDate" value="' + todayStr() + '" max="' + todayStr() + '"></div>'
+    + '<div class="muted" style="font-size:12px;margin:4px 0 12px">本月已用 <b>' + used + '</b>/2 次月经假（每次连续 2 天；月经约 26-28 天一周期，月初月底各来一次属正常）</div>'
+    + '<button class="btn" id="msOk" style="width:100%">确定请假</button>');
+  var ok = document.getElementById('msOk');
+  if (ok) ok.onclick = function () {
+    var d = document.getElementById('msDate').value;
+    if (!d) return toast('先选个日期');
+    var r = menstrualToggle(d);
+    if (r.msg) { toast(r.msg); return; }
+    closeModal();
+    toast(r.removed ? '已取消月经假' : '已请月经假（连续两天，所有板块续火花不受影响）');
     if (window.App && window.App.renderSettings) window.App.renderSettings(root);
   };
 }
