@@ -1476,7 +1476,7 @@ const Entertainment = {
         <div class="form-row"><label>看完打分</label>${starRateBox('fRateBox', r.rating || 0)}<input id="fRating" type="hidden" value="${r.rating || 0}"></div>
         <div class="form-row"><label>观后感</label><textarea id="fReview" rows="3" placeholder="写点感受吧~">${esc(r.review || '')}</textarea></div>
       </div>
-      ${lockNovel ? '<div class="muted" style="font-size:12px;margin:8px 0 2px;color:#a07fb0">已看完 · 仅书名 / 评星 / 标签 / 观后感可改，其余含日期已锁定</div>' : ''}
+      ${lockNovel ? '<div class="muted" style="font-size:12px;margin:8px 0 2px;color:#a07fb0">已看完 · 仅书名 / 封面 / 评星 / 标签 / 观后感可改，其余含日期已锁定</div>' : ''}
       <div style="display:flex;gap:8px;margin-top:10px;justify-content:flex-end">
         <button class="btn ghost" onclick="closeModal()">取消</button>
         <button class="btn" id="fSave">保存</button>
@@ -1531,8 +1531,8 @@ const Entertainment = {
     };
     bindStarRate('fRateBox', 'fRating', null);
     if (lockNovel) {
-      ['fType', 'fCover', 'fStatus', 'fTotal', 'fProg', 'fCat', 'fMediaMin', 'fDate'].forEach(id => { const el = document.getElementById(id); if (el) el.disabled = true; });
-      const _up = document.getElementById('fUp'); if (_up) _up.disabled = true;
+      // 完结锁定：封面允许重传（早期封面遗失可补），其余含日期/进度/总量等仍锁定
+      ['fType', 'fStatus', 'fTotal', 'fProg', 'fCat', 'fMediaMin', 'fDate'].forEach(id => { const el = document.getElementById(id); if (el) el.disabled = true; });
     }
 
     // 同名记录记忆：写名字即带出上一次的基础信息（封面/图标/评分等），只填空字段，方便只改想改的
@@ -1591,8 +1591,10 @@ const Entertainment = {
         tags,
         createdAt: appendRec ? Date.now() : (r.createdAt || Date.now())
       };
-      // 改日期时若 fDate 偶发为空，回退到原记录的日期（r.date），绝不直接跳成今天，避免误存
-      const date = document.getElementById('fDate').value || r.date || todayStr();
+      // 新进度记录（续读/更新进度）默认记在「今天」，不再沿用旧记录的日期；其余（元数据编辑/补记）保留原日期
+      const _fdEl = document.getElementById('fDate');
+      if (appendRec && _fdEl) _fdEl.value = todayStr();
+      const date = appendRec ? todayStr() : (_fdEl ? _fdEl.value : '') || r.date || todayStr();
       // 今天记录的小说必须填时长；以前补记的（日期<今天）允许不记时长
       if (type === '小说' && date === todayStr() && Number(minutes) <= 0) {
         toast('今天看的小说要记一下时长哦~（以前的可以不记）'); return;
