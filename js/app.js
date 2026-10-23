@@ -1,5 +1,5 @@
 /* ============ 首页 + 导航 ============ */
-window.APP_VER = 'mumu-v416'; // 当前前端版本（设置页可见，用于确认是否加载到最新代码）
+window.APP_VER = 'mumu-v417'; // 当前前端版本（设置页可见，用于确认是否加载到最新代码）
 const SR_LINKS = [
   { v: 'sport', n: '运动（任意跟练）' },
   { v: 'sport:', n: '运动（具体项目，选后填名）' },
@@ -507,6 +507,10 @@ const App = {
           <div class="setting-actions"><button class="btn sm" id="btnSickLeave">请假</button></div>
         </div>
         <div class="setting-row">
+          <div><div class="setting-label">${icon('moon',16)} 请月经假</div><div class="setting-desc" style="font-size:11px">每月最多 2 次、每次连续 2 天（月经约 26-28 天一周期，月初月底各来一次也正常）；所有板块连续天数与续火花不受影响</div></div>
+          <div class="setting-actions"><button class="btn sm" id="btnMensLeave">请假</button></div>
+        </div>
+        <div class="setting-row">
           <div><div class="setting-label">${icon('target',16)} 考试日</div><div class="setting-desc" style="font-size:11px">登记考试日：当天不安排备考任务，学习连续天数与续火花不受影响</div></div>
           <div class="setting-actions"><button class="btn sm" id="btnExamDay">登记</button></div>
         </div>
@@ -598,6 +602,8 @@ const App = {
     });
     const btnSickLeave = root.querySelector('#btnSickLeave');
     if (btnSickLeave) btnSickLeave.onclick = () => { if (window.openSickLeaveDialog) openSickLeaveDialog(root); };
+    const btnMensLeave = root.querySelector('#btnMensLeave');
+    if (btnMensLeave) btnMensLeave.onclick = () => { if (window.openMensLeaveDialog) openMensLeaveDialog(root); };
     const btnExamDay = root.querySelector('#btnExamDay');
     if (btnExamDay) btnExamDay.onclick = () => { if (window.openExamDayDialog) openExamDayDialog(root); };
   },
