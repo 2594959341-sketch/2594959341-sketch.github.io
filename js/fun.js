@@ -1010,6 +1010,9 @@ const Entertainment = {
       } else {
         // 年时间轴：左侧仅时间轴节点（细），月份与月总结放在右侧，按月由早到晚
         const dedupAll = this.dedupLatest(yearAll);
+        // 每部作品年内累计时长，行内展示用（修复「年时间轴只显示最后一次记录时长」bug）
+        const workTotals = {};
+        this.worksOf(yearAll).forEach(c => { const wid = (c.records[c.records.length - 1] || {}).id; if (wid) workTotals[wid] = c.totalMin; });
         const byMonth = {};
         dedupAll.forEach(r => { const m = r.date.slice(0, 7); (byMonth[m] = byMonth[m] || []).push(r); });
         const months = Object.keys(byMonth).sort();
@@ -1017,9 +1020,9 @@ const Entertainment = {
           const mm = Number(m.slice(5)) - 1;
           const recs = byMonth[m];
           const mCnt = recs.length;
-          const mMin = recs.reduce((s, r) => s + (Number(r.minutes) || 0), 0);
+          const mMin = yearAll.filter(r => r.date.slice(0, 7) === m).reduce((s, r) => s + (Number(r.minutes) || 0), 0);
           const monthLabel = monthNames[mm] + '月';
-          const rows = recs.map(r => this.entryRowHTML(r, false)).join('');
+          const rows = recs.map(r => this.entryRowHTML(r, false, false, workTotals[r.id])).join('');
           return `<div class="fun-tl-row">
             <div class="fun-tl-node"><div class="fun-tl-dot"></div></div>
             <div class="fun-tl-body">
