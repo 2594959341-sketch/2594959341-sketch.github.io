@@ -81,8 +81,13 @@ const Streak = {
     const origin = '2025-01-01';
     let cur = todayStr();
     while (cur >= origin && !this.groupCovered(item, cur)) cur = addDays(cur, -1);
+    const leaves = this.leafItems(item.id);
     let c = 0;
-    while (cur >= origin && this.groupCovered(item, cur)) { c++; cur = addDays(cur, -1); }
+    while (cur >= origin && this.groupCovered(item, cur)) {
+      // 与叶子一致（v332 口径）：仅「全部子项当天都真实打卡」的日子计入连续天数；休息/月经假/补签/假期不计入
+      if (leaves.length && leaves.every(l => this.isDone(l, cur))) c++;
+      cur = addDays(cur, -1);
+    }
     return c;
   },
 
@@ -265,7 +270,7 @@ const Streak = {
       + '<div class="stk-name">' + esc(item.name) + '</div>';
     card.onclick = () => {
       if (isGrp) { this._navStack.push({ list: this._curLevel.list, title: this._curLevel.title, parentId: this._curLevel.parentId }); this.renderLevel(this.childrenOf(item.id), box, item.name, item.id); }
-      else { this.detail(item, box); }
+      else { if (this._navStack && this._navStack.length) this._navStack.push({ list: this._curLevel.list, title: this._curLevel.title, parentId: this._curLevel.parentId }); this.detail(item, box); }
     };
     return card;
   },
@@ -298,7 +303,7 @@ const Streak = {
     card.innerHTML = `<div class="stk-flame">${icon('fire', 26)}</div>
       <div class="stk-num">${st}</div>
       <div class="stk-name">${esc(item.name)}</div>`;
-    card.onclick = () => this.detail(item, box);
+    card.onclick = () => { if (this._navStack && this._navStack.length) this._navStack.push({ list: this._curLevel.list, title: this._curLevel.title, parentId: this._curLevel.parentId }); this.detail(item, box); };
     return card;
   },
 
