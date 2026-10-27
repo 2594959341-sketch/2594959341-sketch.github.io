@@ -1224,7 +1224,7 @@ const Growth = {
         </div></div>
       <div class="form-row"><label>全书共多少（页/章/话）</label>
         <div style="display:flex;gap:6px;align-items:center">
-          <input id="beTotal" type="number" min="0" inputmode="numeric" placeholder="例如：320" value="${esc(meta.total || '')}" style="flex:1">
+          <input id="beTotal" type="text" inputmode="numeric" placeholder="例如：320" value="${esc(meta.total || '')}" style="flex:2;min-width:140px;direction:ltr;text-align:left">
           <select id="beUnit">${['页', '章', '话'].map(u => `<option value="${u}"${u === curUnit ? ' selected' : ''}>${u}</option>`).join('')}</select>
           <button class="btn sm ghost" id="beTotalClear">清空</button>
         </div></div>
@@ -1277,11 +1277,11 @@ const Growth = {
       <div class="form-row"><label>书名</label><input id="rdBook" placeholder="在读哪本书？" value="${esc(edit ? (edit.book || '') : (prefill ? prefill.book : ''))}"></div>
       <div class="form-row"><label>阅读状态</label>
         <select id="rdStatus"><option value="reading">未读完</option><option value="abandoned">弃（弃书）</option><option value="done">已读完</option></select></div>
-      <div class="form-row"><label>阅读时长（分钟）</label><input id="rdMinutes" type="number" min="0" inputmode="numeric" placeholder="例如：45" value="${esc(edit ? (edit.minutes || '') : '')}"></div>
+      <div class="form-row"><label>阅读时长（分钟）</label><input id="rdMinutes" type="text" inputmode="numeric" placeholder="例如：45" style="direction:ltr;text-align:left" value="${esc(edit ? (edit.minutes || '') : '')}"></div>
       <div id="rdBookMeta" class="muted" style="display:none;font-size:12px;margin:2px 0 8px;color:#7CB390"></div>
-      <div class="form-row" id="rdTotalRow"><label>全书共多少（页/章/话）</label><div style="display:flex;gap:6px"><input id="rdTotal" type="number" min="1" inputmode="numeric" placeholder="例如：320" style="flex:1"><select id="rdUnit"><option value="页">页</option><option value="章">章</option><option value="话">话</option></select></div></div>
-      <div id="rdProgress"><div class="form-row"><label id="rdCurLabel">读到第几（页/章/话）</label><input id="rdCur" type="number" min="0" inputmode="numeric" placeholder="例如：120" value="${esc(edit && !edit.finished ? (edit.cur || '') : '')}"></div>
-        <div class="form-row"><label>读到百分之几（可选，填了优先）</label><input id="rdPercent" type="number" min="0" max="100" inputmode="numeric" placeholder="例如：60" value="${esc(edit && edit.percent ? edit.percent : '')}"></div></div>
+      <div class="form-row" id="rdTotalRow"><label>全书共多少（页/章/话）</label><div style="display:flex;gap:6px"><input id="rdTotal" type="text" inputmode="numeric" placeholder="例如：320" style="flex:2;min-width:140px;direction:ltr;text-align:left"><select id="rdUnit"><option value="页">页</option><option value="章">章</option><option value="话">话</option></select></div></div>
+      <div id="rdProgress"><div class="form-row"><label id="rdCurLabel">读到第几（页/章/话）</label><input id="rdCur" type="text" inputmode="numeric" placeholder="例如：120" style="direction:ltr;text-align:left" value="${esc(edit && !edit.finished ? (edit.cur || '') : '')}"></div>
+        <div class="form-row"><label>读到百分之几（可选，填了优先）</label><input id="rdPercent" type="text" inputmode="numeric" placeholder="例如：60" style="direction:ltr;text-align:left" value="${esc(edit && edit.percent ? edit.percent : '')}"></div></div>
       <div id="rdDoneExtra" style="display:none">
         <div class="form-row"><label>评分</label><div id="rdRateBox" style="font-size:24px;cursor:pointer;letter-spacing:4px"></div></div>
         <div class="form-row"><label>读后感</label><textarea id="rdReview" rows="3" placeholder="读完这本书，你的感受、收获、想记住的话…">${esc(edit && edit.review ? edit.review : '')}</textarea></div>
