@@ -1,5 +1,5 @@
 /* ============ 首页 + 导航 ============ */
-window.APP_VER = 'mumu-v420'; // 当前前端版本（设置页可见，用于确认是否加载到最新代码）
+window.APP_VER = 'mumu-v421'; // 当前前端版本（设置页可见，用于确认是否加载到最新代码）
 const SR_LINKS = [
   { v: 'sport', n: '运动（任意跟练）' },
   { v: 'sport:', n: '运动（具体项目，选后填名）' },
@@ -10,6 +10,18 @@ const SR_LINKS = [
   { v: 'study', n: '备考学习' },
   { v: 'review', n: '复盘' }
 ];
+// 复盘是否已完成：优先 H3 结构化复盘(h3_review)，兼容旧版自由文本日记(reviews.text)
+function reviewDone(d) {
+  const h3 = (S.get('h3_review', {}) || {})[d];
+  if (h3) {
+    const four = [h3.mind, h3.body, h3.spirit, h3.vocation].every(v => v !== null && v !== undefined);
+    const avoid = !!(h3.avoidTarget && String(h3.avoidTarget).trim());
+    if (four && avoid) return true;
+    if (h3.text && String(h3.text).trim()) return true;
+  }
+  const legacy = (S.get('reviews', {}) || {})[d];
+  return !!(legacy && legacy.text && String(legacy.text).trim());
+}
 // 365天自救默认专项（稳定名称识别；用户删除后记入 selfRescue.delDef 墓碑，重导入也不复活）
 const SR_DEFA = [
   { name: '改善大小脸', days: 9, start: '2026-07-13', link: 'sport' },
@@ -70,7 +82,7 @@ const Home = {
        travelOut[date].length 已经包含全部 entry，travelPhotosToday 重复了。
        只算 entry 数（= 用户实际创建了几条出行/随记/OOTD 记录）。 */
     const travel = (S.get('travelOut', {})[d] || []).length;
-    const review = (S.get('reviews', {})[d] || {}).text;
+    const review = reviewDone(d);
     // 倒计时聚合
     const counts = [];
     (S.get('workActs', [])).forEach(a => { if (a.deadline) { const l = daysBetween(d, a.deadline); if (l >= 0) counts.push({ n: a.name, l, key: 'work:' + a.id }); } });
@@ -131,7 +143,7 @@ const Home = {
       { img: 'section-meals.png',   em: '🍚', n: '三餐',     ok: mealsN > 0, txt: mealsN + '/3 餐', go: 'meals' },
       { img: 'section-travel.png',  em: '🧭', n: '出行',     ok: travel > 0, txt: travel ? travel + ' 条记录' : '待出门', go: 'travel:out' },
       { img: 'section-fun.png',      em: '🎮', n: '娱乐',     ok: funToday > 0, txt: funToday ? funToday + ' 部在记录' : '待娱乐', go: 'fun' },
-      { img: 'section-review.png',  em: '🌙', n: '复盘', ok: !!review, txt: review ? '已写' : '睡前写', go: 'review:daily' }
+      { img: 'section-review.png',  em: '🌙', n: '复盘', ok: review, txt: review ? '已复盘' : '睡前写', go: 'review:daily' }
     ];
     const isZhiyaHome = !!(window.MUMU_THEME_IS_ZHIYA && window.MUMU_THEME_IS_ZHIYA());
     root.innerHTML = `
@@ -190,7 +202,7 @@ const Home = {
     if (link === 'meals') return !!S.get('meals', {})[d];
     if (link === 'work') return (S.get('workLogs', {})[d] || []).length > 0;
     if (link === 'study') return (S.get('kgLogs', {})[d] || []).length > 0;
-    if (link === 'review') { const r = S.get('reviews', {})[d]; return !!(r && r.text); }
+    if (link === 'review') { return reviewDone(d); }
     return false;
   },
   srCountLink(sr, link, since) {
