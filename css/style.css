@@ -125,6 +125,14 @@ textarea{resize:vertical}
 .task-item.moved{opacity:.6}
 .task-item.moved .tt{text-decoration:line-through;color:#999}
 .task-item.rest .tt{text-decoration:line-through;color:#999}
+.task-item.pass{opacity:.72}
+.task-item.pass .tt{color:#7f8fa6}
+.t-dot.pass{background:var(--light);border-color:#7f8fa6;color:#7f8fa6}
+.pass-badge{font-size:11px;background:#eef1f5;color:#7f8fa6;border:1px solid #dde3ea;padding:1px 6px;border-radius:4px;margin-left:6px;font-weight:600;vertical-align:middle}
+.cal-cell.pass{background:#eef1f5;border-color:#dde3ea}
+.cal-cell.pass .d{color:#7f8fa6}
+.cal-cell.pass .dots .dot{background:#7f8fa6}
+
 .task-item .prog{font-size:11px;color:var(--sub);white-space:nowrap}
 .task-item .ltime{font-size:11px;color:var(--sub);white-space:nowrap;margin-left:4px}
 .task-item{position:relative}
