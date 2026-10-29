@@ -231,7 +231,7 @@ const Daily = {
     const cap = this.loadCap();
     const tasks = this.list(date);
     // 三餐（meals:*）不进精力系统；阅读·娱乐（纯放松）也不消耗精力
-    const counted = tasks.filter(t => !t.abandoned && !t.moved && !t.restDay && !isAnnualHoliday(date) && !isSickLeave(date) && !this.isMealTask(t) && !this.isLoadFree(t));
+    const counted = tasks.filter(t => !t.abandoned && !t.moved && !t.restDay && !t.passToday && !isAnnualHoliday(date) && !isSickLeave(date) && !this.isMealTask(t) && !this.isLoadFree(t));
     let plannedLoad = 0, doneLoad = 0, investLoad = 0, consumeLoad = 0;
     const allTasks = [], doneTasks = [], plannedTasks = [];
     counted.forEach(t => {
@@ -939,8 +939,8 @@ const Daily = {
     // 三餐类显示去重：当天有手工三餐任务（meals:任意/具体餐）时，隐藏自动生成的重复三餐任务，避免「固定早餐 + 打卡早餐」显示两条
     const hasManualMeals = tasks.some(t => !t.autoGen && !t.abandoned && t.link && t.link.startsWith('meals:'));
     if (hasManualMeals) tasks = tasks.filter(t => !(t.autoGen && t.link && t.link.startsWith('meals:') && !t.abandoned));
-    const active = tasks.filter(t => !this.effDone(t, d) && !t.moved && !t.abandoned && !t.restDay && !isAnnualHoliday(d) && !isSickLeave(d));
-    const term = tasks.filter(t => this.effDone(t, d) || t.moved || t.abandoned || t.restDay).sort((a, b) => (b.doneAt || b.createdAt || 0) - (a.doneAt || a.createdAt || 0));
+    const active = tasks.filter(t => !this.effDone(t, d) && !t.moved && !t.abandoned && !t.restDay && !t.passToday && !isAnnualHoliday(d) && !isSickLeave(d));
+    const term = tasks.filter(t => this.effDone(t, d) || t.moved || t.abandoned || t.restDay || t.passToday).sort((a, b) => (b.doneAt || b.createdAt || 0) - (a.doneAt || a.createdAt || 0));
     const doneN = tasks.filter(t => !t.abandoned && this.effDone(t, d)).length;
     const totalN = tasks.filter(t => !t.moved).length; // 含放弃/请假：均计为"未完成"，不再从分母剔除（修复 100% 虚高）
     const pendN = totalN - doneN;
@@ -959,7 +959,7 @@ const Daily = {
     const overdue = [];
     const all = this.all();
     Object.keys(all).filter(k => k < todayStr()).forEach(k => {
-      all[k].forEach(t => { if (!this.effDone(t, k) && !t.abandoned && !t.moved && !t.restDay && !isAnnualHoliday(k) && !isSickLeave(k)) overdue.push({ date: k, t }); });
+      all[k].forEach(t => { if (!this.effDone(t, k) && !t.abandoned && !t.moved && !t.restDay && !t.passToday && !isAnnualHoliday(k) && !isSickLeave(k)) overdue.push({ date: k, t }); });
     });
 
     // 精力能量槽（格子进度条：空格=还没做，完成时填上档位色；充电从右边还回精力）
@@ -1210,12 +1210,13 @@ const Daily = {
     const byLink = (linked && !this.isDone(t)) || t.autoGen;
     const total = t.steps.length, dn = t.steps.filter(s => s.done).length;
     const open = !!this._openTasks[t.id];
-    const cls = [done ? 'done' : '', t.abandoned ? 'abandoned' : '', t.moved ? 'moved' : '', (t.restDay || holiday) ? 'rest' : '', open ? 'open' : ''].filter(Boolean).join(' ');
+    const cls = [done ? 'done' : '', t.abandoned ? 'abandoned' : '', t.moved ? 'moved' : '', (t.restDay || holiday) ? 'rest' : '', t.passToday && !done ? 'pass' : '', open ? 'open' : ''].filter(Boolean).join(' ');
     let dotCls = 't-dot', dotIc = '●';
     if (t.abandoned) { dotCls += ' abandoned'; dotIc = '×'; }
     else if (t.moved) { dotCls += ' moved'; dotIc = '›'; }
     else if (t.restDay || holiday) { dotCls += ' rest'; dotIc = '休'; }
     else if (done) { dotCls += ' done'; dotIc = '✓'; }
+    else if (t.passToday) { dotCls += ' pass'; dotIc = '过'; }
     const active = !done && !t.moved && !t.abandoned;
     const stepsHTML = t.steps.map(s => `<div class="step-row ${s.done ? 'done' : ''}" data-lp>
       <input type="checkbox" ${s.done ? 'checked' : ''} data-step="${s.id}">
@@ -1228,6 +1229,7 @@ const Daily = {
         <button class="${dotCls}" data-dot ${active ? '' : 'disabled'} title="${active ? '点击：完成 / 移到明天 / 无法完成' : ''}">${dotIc}</button>
         <span class="tt">${catTag ? `<span class="task-cat-tag">${catTag}</span>` : ''}${esc(t.title)}${goalTag}${t.cat === 'kaogong' && t.studyType ? `<span class="task-study-tag">${esc(t.studyType)}</span>` : ''}</span>
         ${(t.restDay || holiday) ? '<span class="rest-badge">休息</span>' : ''}
+        ${t.passToday ? '<span class="pass-badge">放过</span>' : ''}
         ${reorder && !done ? `<span class="drag-handle" data-drag="${t.id}" title="按住拖动排序"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="5" y1="7" x2="19" y2="7"/><line x1="5" y1="12" x2="19" y2="12"/><line x1="5" y1="17" x2="19" y2="17"/></svg></span>` : ''}
         ${total ? `<span class="prog">${dn}/${total}</span>` : ''}
         ${t.cat === 'kaogong' && t.actMin != null ? `<span class="ltime">实际${t.actMin}分钟</span>` : ''}
@@ -1249,7 +1251,7 @@ const Daily = {
     const r = dot.getBoundingClientRect();
     const menu = document.createElement('div');
     menu.className = 'dot-menu';
-    let menuHTML = '<button data-act="done">完成任务</button><button data-act="move">移到明天</button><button data-act="give">✕ 无法完成</button>';
+    let menuHTML = '<button data-act="done">完成任务</button><button data-act="move">移到明天</button><button data-act="give">✕ 无法完成</button><button data-act="pass">' + (t.passToday ? '取消今日放过' : '今日放过') + '</button>';
     menuHTML += '<button data-act="rest">' + (t.restDay ? '取消今日休息' : '今日休息') + '</button>';
     menu.innerHTML = menuHTML;
     menu.style.position = 'fixed';
@@ -1266,6 +1268,8 @@ const Daily = {
     menu.querySelector('[data-act=give]').onclick = e => { e.stopPropagation(); close(); this.promptAbandon(this.cur, t.id); };
     const restBtn = menu.querySelector('[data-act=rest]');
     if (restBtn) restBtn.onclick = e => { e.stopPropagation(); close(); this.restDay(this.cur, t.id, !!t.restDay); };
+    const passBtn = menu.querySelector('[data-act=pass]');
+    if (passBtn) passBtn.onclick = e => { e.stopPropagation(); close(); this.passToday(this.cur, t.id, !!t.passToday); };
   },
 
   // 学习任务（cat=kaogong）完成任务/移到明天前，必须先填实际学习时长；其余任务直接继续
@@ -1464,6 +1468,7 @@ const Daily = {
       else t.manualDone = true;
       if (!t.doneAt) t.doneAt = Date.now();
       if (t.restDay) { t.restDay = false; this._clearRest(date, t); }
+      if (t.passToday) t.passToday = false;
       this.setList(date, arr);
       if (t.link) {
         let extra = t.extra || null;
@@ -1517,6 +1522,7 @@ const Daily = {
       tt.moved = true;
       tt.taskLoadConsumed = consumed;          // 今日已消耗，计入今天精力
       if (tt.restDay) { tt.restDay = false; this._clearRest(date, tt); }
+      if (tt.passToday) { tt.passToday = false; this._clearPass(date, tt); }
       // 今天实际学了 → 记到备考打卡（考公专栏）；明天那份清空，完成时再问
       if (tt.cat === 'kaogong' && tt.actMin != null && tt.actMin > 0) {
         const sid = tt.srcId || tt.id;
@@ -1534,6 +1540,7 @@ const Daily = {
     const arr = this.list(date); const t = arr.find(x => x.id === id); if (!t) return;
     t.abandoned = true; t.abandonReason = reason != null ? reason : (t.abandonReason || '');
     if (t.restDay) { t.restDay = false; this._clearRest(date, t); }
+    if (t.passToday) { t.passToday = false; this._clearPass(date, t); }
     this.setList(date, arr); this.render(this._root); toast('已标记无法完成，轻装上阵');
   },
   promptAbandon(date, id) {
@@ -1621,6 +1628,83 @@ const Daily = {
     const d = St.data(); let changed = false;
     items.forEach(it => { if (it.rest && it.rest[date]) { delete it.rest[date]; changed = true; } });
     if (changed) St.save(d);
+  },
+
+  // 今日放过：单任务第三动作（与「已完成 / 无法完成」并列）。底层复用休息语义——
+  // 把对应续火花条目写入 rest[date]，使该科目当天「覆盖但不增长」（covered 但 isDone=false），
+  // 火花不前进也不中断；不动用休息额度（无限次）；任务次日由每日计划模板重生，故仅当日标记。
+  _passTargetItems(t) {
+    const St = window.Streak; if (!St || !St.data) return [];
+    const items = St.data().items || [];
+    if (t.cat === 'sport') {
+      const ref = (t.link && t.link.split(':')[1]) || (t.extra && t.extra.project) || (t.title || '');
+      const it = items.find(x => x.type === 'sport' && sportNorm(x.ref) === sportNorm(ref));
+      return it ? [it] : [];
+    }
+    if (t.cat === 'kaogong') {
+      const subj = this._taskSubject(t);
+      if (subj) {
+        const it = items.find(x => x.type === 'kg' && kgNorm(x.ref) === kgNorm(subj));
+        return it ? [it] : [];
+      }
+      return items.filter(x => x.type === 'kg'); // 无科目（通用学习打卡）→ 全部科目都放过
+    }
+    if (t.cat === 'work') {
+      const link = t.link || '';
+      if (link === 'work:video') { const it = items.find(x => x.id === 'work:game'); return it ? [it] : []; }
+      if (link === 'work:write') { const it = items.find(x => x.id === 'work:write'); return it ? [it] : []; }
+      return items.filter(x => x.type === 'work');
+    }
+    return [];
+  },
+  _taskPassKey(t) { return t._tmpl || (t.cat + '|' + (t.link || '') + '|' + t.title); },
+  countConsecutivePass(key, date) {
+    let c = 0;
+    for (let i = 0; i < 365; i++) {
+      const dd = addDays(date, -i);
+      const arr = this.list(dd);
+      const t = arr.find(x => this._taskPassKey(x) === key);
+      if (!t) break;
+      if (t.passToday) c++; else break;
+    }
+    return c;
+  },
+  _clearPass(date, t) {
+    const St = window.Streak; if (!St || !St.data) return;
+    const items = this._passTargetItems(t); if (!items.length) return;
+    const d = St.data(); let changed = false;
+    items.forEach(it => { if (it.rest && it.rest[date]) { delete it.rest[date]; changed = true; } });
+    if (changed) St.save(d);
+  },
+  passToday(date, id, cancel) {
+    const arr = this.list(date); const t = arr.find(x => x.id === id); if (!t) return;
+    if (this.effDone(t, date)) { toast('已经完成的任务不用放过啦'); return; }
+    if (cancel) {
+      t.passToday = false; this._clearPass(date, t);
+      this.setList(date, arr); this.render(this._root);
+      toast('已取消今日放过，任务回来啦');
+      return;
+    }
+    if (t.restDay) { t.restDay = false; this._clearRest(date, t); } // 与「今日休息」互斥，且不占额度
+    t.passToday = true;
+    const items = this._passTargetItems(t);
+    if (items.length) {
+      const St = window.Streak; const d = St.data();
+      items.forEach(it => { it.rest = it.rest || {}; it.rest[date] = 1; });
+      St.save(d);
+    }
+    this.setList(date, arr); this.render(this._root);
+    const key = this._taskPassKey(t);
+    const c = this.countConsecutivePass(key, date);
+    if (c >= 3) {
+      const subj = (t.cat === 'kaogong') ? this._taskSubject(t) : '';
+      const tip = subj
+        ? ('「' + subj + '」已连续 ' + c + ' 天放过了。要不降成低能量版：读 2 题、写第一步就当作完成？')
+        : ('「' + t.title + '」已连续 ' + c + ' 天放过了，是不是一直卡着？可以把它拆小，或改成每周 2 次就好～');
+      setTimeout(() => toast(tip), 450);
+    } else {
+      toast('已放过·今日不计数，但火花不停');
+    }
   },
 
   // 长按进入排序模式后，按住右侧横线上下拖动重排任务
@@ -2373,7 +2457,7 @@ const Daily = {
   // v368：全日休=当天有任务且全部处于休息/放弃/移走（月历假期染色用；动态判断，翻月无需预计算）
   _isFullRest(ds) {
     const arr = this.list(ds) || [];
-    return arr.length > 0 && arr.every(t => t.abandoned || t.moved || t.restDay);
+    return arr.length > 0 && arr.every(t => t.abandoned || t.moved || t.restDay || t.passToday);
   },
 
   renderMonthCalPage(box) {
