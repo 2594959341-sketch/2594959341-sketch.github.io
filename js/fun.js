@@ -1445,6 +1445,7 @@ const Entertainment = {
     if (ref) { const o = JSON.parse(decodeURIComponent(ref)); const arr = (this.logs()[o.date] || []); r = Object.assign(r, arr.find(x => x.id === o.id) || {}); r.type = funNormType(r.type); r.date = o.date; }
     else if (seed) { r = Object.assign(r, seed); r.type = funNormType(r.type || presetType || '影视'); r.date = todayStr(); r.id = uid(); r.createdAt = Date.now(); }
     const origTitle = r.title;  // 编辑已保存作品改名字时，用来把该作品全部历史记录一并改名
+    let dateTouched = false;  // 用户是否手动改过日期（回退补记时尊重所选日期）
     const isNovel = () => r.type === '小说';
     const lockNovel = isNovel() && (r.status === '看完' || r.status === '已读完');
     const tagsStr = (r.tags || []).join(' ');
@@ -1533,6 +1534,8 @@ const Entertainment = {
       renderStars(box, Number(box.dataset.rate) || 0);
     };
     bindStarRate('fRateBox', 'fRating', null);
+    const _fDateEl = document.getElementById('fDate');
+    if (_fDateEl) _fDateEl.addEventListener('change', () => { dateTouched = true; });
     if (lockNovel) {
       // 完结锁定：封面/总量允许补录（早期封面遗失、或完结作品未记总量都可补），其余含日期/进度等仍锁定
       ['fType', 'fStatus', 'fProg', 'fCat', 'fMediaMin', 'fDate'].forEach(id => { const el = document.getElementById(id); if (el) el.disabled = true; });
@@ -1599,8 +1602,8 @@ const Entertainment = {
       };
       // 新进度记录（续读/更新进度）默认记在「今天」，不再沿用旧记录的日期；其余（元数据编辑/补记）保留原日期
       const _fdEl = document.getElementById('fDate');
-      if (appendRec && _fdEl) _fdEl.value = todayStr();
-      const date = appendRec ? todayStr() : (_fdEl ? _fdEl.value : '') || r.date || todayStr();
+      const date = (_fdEl ? _fdEl.value : '') || r.date || todayStr();
+      if (appendRec && !dateTouched) date = todayStr();
       // 今天记录的小说必须填时长；以前补记的（日期<今天）允许不记时长
       if (type === '小说' && date === todayStr() && Number(minutes) <= 0) {
         toast('今天看的小说要记一下时长哦~（以前的可以不记）'); return;
