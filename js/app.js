@@ -1,5 +1,5 @@
 /* ============ 首页 + 导航 ============ */
-window.APP_VER = 'mumu-v423'; // 当前前端版本（设置页可见，用于确认是否加载到最新代码）
+window.APP_VER = 'mumu-v424'; // 当前前端版本（设置页可见，用于确认是否加载到最新代码）
 const SR_LINKS = [
   { v: 'sport', n: '运动（任意跟练）' },
   { v: 'sport:', n: '运动（具体项目，选后填名）' },
@@ -329,7 +329,6 @@ const App = {
     ]},
     { id:'fun', icon:'fun', label:'娱乐' },
     { id:'briefing', icon:'clipboard', label:'每日简报' },
-    { id:'ai', icon:'sparkles', label:'AI助手' },
     { id:'review', icon:'moon', label:'复盘' }
   ],
   titles: {
@@ -342,7 +341,6 @@ const App = {
     'travel': '出行', 'travel:out': '日常外出', 'travel:trip': '旅行',
     'fun': '娱乐',
     'briefing': '每日简报',
-    'ai': 'AI 助手'
   },
   cur: 'home',
   updateQuote() {
