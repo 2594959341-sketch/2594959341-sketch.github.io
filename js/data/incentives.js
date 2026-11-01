@@ -2,7 +2,7 @@
 // 说明：已过滤各平台「长期招创作者」类常年招募计划（你已是多数平台创作者），
 // 仅保留有明确截止时间的创作活动，并按紧急度 + 覆盖平台数排序。
 window.MUMU_INCENTIVES = {
-  updated: "2026-10-18 12:00",
+  updated: "2026-11-01 14:00",
   note: "以下活动均来自公开可验证的官方渠道，投稿前请点开来源链接二次确认规则与截止时间。已自动隐藏各平台「长期招创作者」计划，只呈现有明确截止的活动；标「今日/明天截止」的请抓紧最后投稿，标「已截止」的雷达不再收录、仅留底档。",
   platforms: [
     {
@@ -49,6 +49,237 @@ window.MUMU_INCENTIVES = {
     }
   ],
   campaigns: [
+    {
+      game: "炉石传说",
+      title: "《炉石传说》国服周年庆激励计划 B站",
+      platforms: [ "哔哩哔哩" ],
+      reward: "B站游戏区创作激励（贝壳现金+游戏道具，具体档位见B站有奖活动页）",
+      deadline: "2026-11-30",
+      period: "2026-10-21 ~ 11-30（国服周年庆）",
+      require: "在B站投稿《炉石传说》相关原创视频，带对应活动话题参与（详见B站有奖活动页）",
+      source: "https://member.bilibili.com/york/hot-activity"
+    },
+    {
+      game: "新天龙八部",
+      title: "《新天龙八部》昆仑创作激励计划 B站",
+      platforms: [ "哔哩哔哩" ],
+      reward: "B站游戏区创作激励（贝壳现金+游戏道具，具体档位见B站有奖活动页）",
+      deadline: "2026-11-30",
+      period: "2026-10-21 ~ 11-30",
+      require: "在B站投稿《新天龙八部》相关原创视频，带对应活动话题参与（详见B站有奖活动页）",
+      source: "https://member.bilibili.com/york/hot-activity"
+    },
+    {
+      game: "绝区零",
+      title: "《绝区零》3.3版本 UP主激励计划 B站（新版本）",
+      platforms: [ "哔哩哔哩" ],
+      reward: "B站游戏区创作激励（贝壳现金+游戏道具，具体档位见B站有奖活动页）",
+      deadline: "2026-12-01",
+      period: "2026-10-21 ~ 12-01（3.3版本）",
+      require: "在B站投稿《绝区零》3.3版本相关原创视频，带对应活动话题参与（详见B站有奖活动页）",
+      source: "https://member.bilibili.com/york/hot-activity"
+    },
+    {
+      game: "二重螺旋",
+      title: "《二重螺旋》「行于破晓」创作激励计划 B站（新版本）",
+      platforms: [ "哔哩哔哩" ],
+      reward: "B站游戏区创作激励（贝壳现金+游戏道具，具体档位见B站有奖活动页）",
+      deadline: "2026-11-30",
+      period: "2026-10-20 ~ 11-30（行于破晓版本）",
+      require: "在B站投稿《二重螺旋》「行于破晓」相关原创视频，带对应活动话题参与（详见B站有奖活动页）",
+      source: "https://member.bilibili.com/york/hot-activity"
+    },
+    {
+      game: "愚者不灭",
+      title: "《愚者不灭》创作激励活动 B站",
+      platforms: [ "哔哩哔哩" ],
+      reward: "B站游戏区创作激励（贝壳现金+游戏道具，具体档位见B站有奖活动页）",
+      deadline: "2026-11-20",
+      period: "2026-10-20 ~ 11-20",
+      require: "在B站投稿《愚者不灭》相关原创视频，带对应活动话题参与（详见B站有奖活动页）",
+      source: "https://member.bilibili.com/york/hot-activity"
+    },
+    {
+      game: "真彩修仙",
+      title: "《真彩修仙》小墨通天 二创激励计划 B站（凡人万元奖池）",
+      platforms: [ "哔哩哔哩" ],
+      reward: "凡人题材万元奖池二创激励（具体档位见B站有奖活动页）",
+      deadline: "2026-11-17",
+      period: "2026-10-16 ~ 11-17",
+      require: "在B站投稿《真彩修仙》小墨通天相关二创视频，带对应活动话题参与（详见B站有奖活动页）",
+      source: "https://member.bilibili.com/york/hot-activity"
+    },
+    {
+      game: "明日方舟：终末地",
+      title: "《明日方舟：终末地》UP主应援计划「丹青渡」B站",
+      platforms: [ "哔哩哔哩" ],
+      reward: "B站游戏区创作激励（贝壳现金+游戏道具，具体档位见B站有奖活动页）",
+      deadline: "2026-11-25",
+      period: "2026-10-15 ~ 11-25（丹青渡版本）",
+      require: "在B站投稿《明日方舟：终末地》「丹青渡」相关原创视频，带对应活动话题参与（详见B站有奖活动页）",
+      source: "https://member.bilibili.com/york/hot-activity"
+    },
+    {
+      game: "明日方舟：终末地",
+      title: "《明日方舟：终末地》塔卫二 AI 创作者应援计划 B站（AI奖池瓜分）",
+      platforms: [ "哔哩哔哩" ],
+      reward: "终末地 AI 题材奖池瓜分（具体档位见B站有奖活动页）",
+      deadline: "2026-11-25",
+      period: "2026-10-15 ~ 11-25",
+      require: "在B站投稿《明日方舟：终末地》塔卫二 AI 相关原创视频，带对应活动话题参与（详见B站有奖活动页）",
+      source: "https://member.bilibili.com/york/hot-activity"
+    },
+    {
+      game: "第五人格",
+      title: "《第五人格》赛事高光秀第十九期 IVL B站二创激励",
+      platforms: [ "哔哩哔哩" ],
+      reward: "现金瓜分（贝壳发放，多奖池可叠加）+ 应援抽奖（实物周边/CDK）",
+      deadline: "2026-11-30",
+      period: "2026-10-15 ~ 11-30（第十九期 IVL）",
+      require: "投稿第五人格赛事二创视频≥30秒，带话题 #2026IVL秋季赛（或对应期数），需为首发原创",
+      source: "https://member.bilibili.com/york/hot-activity"
+    },
+    {
+      game: "战地6",
+      title: "《战地6》第5赛季创作激励 B站（新赛季）",
+      platforms: [ "哔哩哔哩" ],
+      reward: "B站游戏区创作激励（贝壳现金+游戏道具，具体档位见B站有奖活动页）",
+      deadline: "2026-11-14",
+      period: "2026-10-14 ~ 11-14（第5赛季）",
+      require: "在B站投稿《战地6》第5赛季相关原创视频，带对应活动话题参与（详见B站有奖活动页）",
+      source: "https://member.bilibili.com/york/hot-activity"
+    },
+    {
+      game: "我叫MT：崛起",
+      title: "《我叫MT：崛起》公测创作者激励计划 B站",
+      platforms: [ "哔哩哔哩" ],
+      reward: "B站游戏区创作激励（贝壳现金+游戏道具，具体档位见B站有奖活动页）",
+      deadline: "2026-12-13",
+      period: "2026-10-13 ~ 12-13（公测）",
+      require: "在B站投稿《我叫MT：崛起》相关原创视频，带对应活动话题参与（详见B站有奖活动页）",
+      source: "https://member.bilibili.com/york/hot-activity"
+    },
+    {
+      game: "战双帕弥什",
+      title: "《战双帕弥什》「流光抛诸寰宇」UP主创作激励计划 B站",
+      platforms: [ "哔哩哔哩" ],
+      reward: "B站游戏区创作激励（贝壳现金+游戏道具，具体档位见B站有奖活动页）",
+      deadline: "2026-11-25",
+      period: "2026-10-12 ~ 11-25（流光抛诸寰宇版本）",
+      require: "在B站投稿《战双帕弥什》「流光抛诸寰宇」相关原创视频，带对应活动话题参与（详见B站有奖活动页）",
+      source: "https://member.bilibili.com/york/hot-activity"
+    },
+    {
+      game: "剑网3",
+      title: "《剑网3》音乐二创活动 B站",
+      platforms: [ "哔哩哔哩" ],
+      reward: "B站音乐/舞蹈二创激励（具体档位见B站有奖活动页）",
+      deadline: "2026-11-29",
+      period: "2026-10-23 ~ 11-29",
+      require: "在B站投稿《剑网3》音乐/舞蹈二创视频，带对应活动话题参与（详见B站有奖活动页）",
+      source: "https://member.bilibili.com/york/hot-activity"
+    },
+    {
+      game: "光·遇",
+      title: "《光·遇》「珍珠季&恶作剧之日」创作激励 B站",
+      platforms: [ "哔哩哔哩" ],
+      reward: "B站游戏区创作激励（贝壳现金+游戏道具，具体档位见B站有奖活动页）",
+      deadline: "2026-11-13",
+      period: "2026-10-22 ~ 11-13（珍珠季&恶作剧之日）",
+      require: "在B站投稿《光·遇》「珍珠季&恶作剧之日」相关原创视频，带对应活动话题参与（详见B站有奖活动页）",
+      source: "https://member.bilibili.com/york/hot-activity"
+    },
+    {
+      game: "鸣潮",
+      title: "《鸣潮》3.7版本「镜锁妄世·心照红尘」创作激励计划 B站",
+      platforms: [ "哔哩哔哩" ],
+      reward: "投稿直播瓜分奖金和星声（具体档位见B站有奖活动页）",
+      deadline: "2026-12-31",
+      period: "2026-09-30 ~ 12-31（3.7版本）",
+      require: "在B站投稿《鸣潮》3.7版本相关原创视频，带对应活动话题参与（详见B站有奖活动页）",
+      source: "https://member.bilibili.com/york/hot-activity"
+    },
+    {
+      game: "三角洲行动",
+      title: "《三角洲行动》10月创作者激励计划 B站（游戏区月度激励）",
+      platforms: [ "哔哩哔哩" ],
+      reward: "B站游戏区10月创作者激励（具体档位见B站有奖活动页）",
+      deadline: "2026-11-15",
+      period: "2026-10-01 ~ 11-15",
+      require: "在B站投稿《三角洲行动》相关原创视频，带对应活动话题参与（详见B站有奖活动页）",
+      source: "https://member.bilibili.com/york/hot-activity"
+    },
+    {
+      game: "阴阳师",
+      title: "《阴阳师》十周年音舞二创激励计划 B站",
+      platforms: [ "哔哩哔哩" ],
+      reward: "B站音舞二创激励（具体档位见B站有奖活动页）",
+      deadline: "2026-11-09",
+      period: "2026-10-09 ~ 11-09（十周年）",
+      require: "在B站投稿《阴阳师》十周年音舞二创视频，带对应活动话题参与（详见B站有奖活动页）",
+      source: "https://member.bilibili.com/york/hot-activity"
+    },
+    {
+      game: "燕云十六声",
+      title: "《燕云十六声》「侠聚平湖共此月」激励计划 B站",
+      platforms: [ "哔哩哔哩" ],
+      reward: "B站游戏区创作激励（具体档位见B站有奖活动页）",
+      deadline: "2026-11-05",
+      period: "2026-10-09 ~ 11-05",
+      require: "在B站投稿《燕云十六声》「侠聚平湖共此月」相关原创视频，带对应活动话题参与（详见B站有奖活动页）",
+      source: "https://member.bilibili.com/york/hot-activity"
+    },
+    {
+      game: "英雄联盟",
+      title: "《英雄联盟》S16 创作激励 B站（高额激励）",
+      platforms: [ "哔哩哔哩" ],
+      reward: "B站游戏区 S16 高额创作激励（具体档位见B站有奖活动页）",
+      deadline: "2026-11-22",
+      period: "2026-10-08 ~ 11-22（S16赛季）",
+      require: "在B站投稿《英雄联盟》S16相关原创视频，带对应活动话题参与（详见B站有奖活动页）",
+      source: "https://member.bilibili.com/york/hot-activity"
+    },
+    {
+      game: "王者荣耀",
+      title: "《王者荣耀》×「王者牢英雄」栏目创作激励 B站（瓜分奖金）",
+      platforms: [ "哔哩哔哩" ],
+      reward: "王者荣耀瓜分奖金高额激励（具体档位见B站有奖活动页）",
+      deadline: "2026-11-30",
+      period: "2026-09-23 ~ 11-30（数据截至12-07）",
+      require: "在B站投稿《王者荣耀》主题视频，选 #王者荣耀UP主激励计划 并加【王者荣耀】【王者牢英雄栏目】标签（详见活动规则）",
+      source: "https://link.bilibili.com/p/eden/news#/newsdetail?id=5189"
+    },
+    {
+      game: "鸣潮",
+      title: "《鸣潮》3.7版本「镜锁妄世·心照红尘」TapTap 创作激励（海量星声+周边）",
+      platforms: [ "TapTap" ],
+      reward: "TOP1-3：500元+星声*3000+主题键盘；TOP4-6：300元+星声*2000+立牌；TOP7-10：100元+星声*1000+徽章（攻略/二创双赛道）",
+      deadline: "2026-11-11",
+      period: "投稿 2026-09-30 11:00 ~ 11-11 23:59（结束后60个工作日内公示）",
+      require: "在 TapTap《鸣潮》版区带话题 #鸣潮创作激励 投递3.7版本攻略/二创（未添加活动话题不计有效参与）",
+      source: "https://www.taptap.cn/moment/854021372584658458"
+    },
+    {
+      game: "芙娅之魂",
+      title: "《芙娅之魂》巡礼测试攻略征集（TapTap/B站/小红书 三赛道）",
+      platforms: [ "TapTap", "哔哩哔哩", "小红书" ],
+      reward: "文字攻略一等奖1296元/二等奖648元/三等奖328元；视频(B站)一等奖1888元；参与奖抽30位得100元京东卡",
+      deadline: "2026-11-05",
+      period: "即日起 ~ 2026-11-05（评选 11-06~11-19，公示 11-20）",
+      require: "投递《芙娅之魂》巡礼测试攻略（TapTap图文/B站视频带 #芙娅之巡礼测试#/小红书图文），填写创作者登记表",
+      source: "https://www.taptap.cn/moment/862282574611874397?group_id=888954"
+    },
+    {
+      game: "仙山小农",
+      title: "《仙山小农》「万象」创作激励计划 TapTap（京东卡+限定好礼）",
+      platforms: [ "TapTap" ],
+      reward: "投稿即有机会赢取京东卡与限定好礼（图文/视频均可，带 #仙山小农万象计划）",
+      deadline: "2026-11-30",
+      period: "2026-10-22 ~ 11-30",
+      require: "在 TapTap《仙山小农》论坛发布原创帖文（图文/视频），带指定话题 #仙山小农万象计划",
+      source: "https://m.taptap.cn/app/213502/topic?os=android"
+    },
+
     {
       game: "绝区零",
       title: "《绝区零》3.2版本「她与她的隐秘往事」UP主激励计划 B站（今日开启）",
