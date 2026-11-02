@@ -5,7 +5,7 @@
  *   · png/    = cat（当前枝枝喵）
  *   · zhiya/  = zhiya（旧版枝丫）
  */
-const CACHE = 'mumu-v425';
+const CACHE = 'mumu-v426';
 const CAT = [
   'icon-192.png','icon-512.png','icon-maskable-512.png','apple-touch-180.png','logo-64.png','splash-kitty.png',
   'mood-great.png','mood-ok.png','mood-tired.png','mood-over.png',
@@ -16,17 +16,17 @@ const ZHIYA = [
   'icon-192.png','icon-512.png','icon-maskable-512.png','apple-touch-180.png','logo-64.png','avatar-42.png','splash.png'
 ];
 const CORE = [
-  'index.html?v=mumu-v425', 'manifest.json?v=mumu-v425', 'icon.svg?v=mumu-v425', 'css/style.css?v=mumu-v425', 'css/h3.css?v=mumu-v425', 'css/travel.css?v=mumu-v425',
-  'js/app.js?v=mumu-v425', 'js/core.js?v=mumu-v425', 'js/daily.js?v=mumu-v425', 'js/work.js?v=mumu-v425', 'js/kaogong.js?v=mumu-v425',
-  'js/growth.js?v=mumu-v425', 'js/sport.js?v=mumu-v425', 'js/meals.js?v=mumu-v425', 'js/review.js?v=mumu-v425', 'js/contract.js?v=mumu-v425', 'js/h3.js?v=mumu-v425', 'js/travel.js?v=mumu-v425',
-  'js/finance.js?v=mumu-v425', 'js/fun.js?v=mumu-v425', 'js/briefing.js?v=mumu-v425', 'js/theme.js?v=mumu-v425', 'js/streak.js?v=mumu-v425', 'js/freq.js?v=mumu-v425',
-  'js/data/incentives.js?v=mumu-v425', 'js/data/shizheng.js?v=mumu-v425', 'js/data/kaogong.js?v=mumu-v425',
-  'js/data/growth.js?v=mumu-v425', 'js/data/sport.js?v=mumu-v425', 'js/data/watch_games.js?v=mumu-v425', 'js/data/kepu.js?v=mumu-v425',
-  'js/data/chinamap.js?v=mumu-v425',
+  'index.html?v=mumu-v426', 'manifest.json?v=mumu-v426', 'icon.svg?v=mumu-v426', 'css/style.css?v=mumu-v426', 'css/h3.css?v=mumu-v426', 'css/travel.css?v=mumu-v426',
+  'js/app.js?v=mumu-v426', 'js/core.js?v=mumu-v426', 'js/daily.js?v=mumu-v426', 'js/work.js?v=mumu-v426', 'js/kaogong.js?v=mumu-v426',
+  'js/growth.js?v=mumu-v426', 'js/sport.js?v=mumu-v426', 'js/meals.js?v=mumu-v426', 'js/review.js?v=mumu-v426', 'js/contract.js?v=mumu-v426', 'js/h3.js?v=mumu-v426', 'js/travel.js?v=mumu-v426',
+  'js/finance.js?v=mumu-v426', 'js/fun.js?v=mumu-v426', 'js/briefing.js?v=mumu-v426', 'js/theme.js?v=mumu-v426', 'js/streak.js?v=mumu-v426', 'js/bbdc.js?v=mumu-v426', 'js/freq.js?v=mumu-v426',
+  'js/data/incentives.js?v=mumu-v426', 'js/data/shizheng.js?v=mumu-v426', 'js/data/kaogong.js?v=mumu-v426',
+  'js/data/growth.js?v=mumu-v426', 'js/data/sport.js?v=mumu-v426', 'js/data/watch_games.js?v=mumu-v426', 'js/data/kepu.js?v=mumu-v426',
+  'js/data/chinamap.js?v=mumu-v426',
   // 枝枝喵 · cat 主题（png/）
-  ...CAT.map(n => 'assets/kitty/png/' + n + '?v=mumu-v425'),
+  ...CAT.map(n => 'assets/kitty/png/' + n + '?v=mumu-v426'),
   // 枝枝喵 · zhiya 主题（zhiya/）旧版枝丫
-  ...ZHIYA.map(n => 'assets/kitty/zhiya/' + n + '?v=mumu-v425')
+  ...ZHIYA.map(n => 'assets/kitty/zhiya/' + n + '?v=mumu-v426')
 ];
 
 self.addEventListener('install', e => {
@@ -77,6 +77,19 @@ self.addEventListener('fetch', e => {
   }
   // 自动化简报数据(briefings/)：网络优先，保证每日自动更新即时可见
   if (p.includes('/briefings/')) {
+    e.respondWith((async () => {
+      try {
+        const r = await fetch(req);
+        if (r && r.ok) { const cp = r.clone(); caches.open(CACHE).then(c => c.put(req, cp)); }
+        return r;
+      } catch (err) {
+        return (await caches.match(req)) || Response.error();
+      }
+    })());
+    return;
+  }
+  // 不背单词自动同步数据(data/bbdc.json)：网络优先，保证每日自动更新即时可见
+  if (p.endsWith('/data/bbdc.json')) {
     e.respondWith((async () => {
       try {
         const r = await fetch(req);
