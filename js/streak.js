@@ -106,6 +106,7 @@ const Streak = {
       { id: 'group:english', type: 'group', key: 'english', name: '英语', parent: 'group:growth' },
       { id: 'read:all', type: 'read', name: '阅读', parent: 'group:growth' },
       { id: 'growth:多邻国', type: 'custom', name: '多邻国', ref: '多邻国', parent: 'group:english' },
+      { id: 'growth:不背单词', type: 'custom', name: '不背单词', ref: '不背单词', parent: 'group:english' },
       { id: 'work:game', type: 'work', sub: 'game', name: '游戏', ref: '' },
       { id: 'work:write', type: 'work', sub: 'write', name: '写作', ref: '' },
       { id: 'kg:言语', type: 'kg', name: '言语', ref: '言语' },
@@ -159,6 +160,13 @@ const Streak = {
       let cur = todayStr();
       for (let i = 0; i < 411; i++) { duo.done[cur] = 1; cur = addDays(cur, -1); }
     }
+    // v426：不背单词火花由 bbdc 自动数据驱动（纯自动，无手动打卡）；每次 ensureItems 从 mumu_bbdc 重建 done
+    const bbdcItem = d.items.find(x => x.id === 'growth:不背单词');
+    if (bbdcItem) {
+      bbdcItem.done = {};
+      const _bbd = (S.get('mumu_bbdc', null) || {}).data || {};
+      Object.keys(_bbd).forEach(dt => { const v = _bbd[dt]; if (v && (v.time > 0 || v.learn > 0 || v.review > 0)) bbdcItem.done[dt] = 1; });
+    }
     this.save(d);
     return d.items;
   },
@@ -196,6 +204,15 @@ const Streak = {
       cur = addDays(cur, -1);
     }
     return false;
+  },
+  refreshFromBbdc() {
+    const d = this.data();
+    const it = d.items.find(x => x.id === 'growth:不背单词');
+    if (!it) return;
+    it.done = {};
+    const data = (S.get('mumu_bbdc', null) || {}).data || {};
+    Object.keys(data).forEach(dt => { const v = data[dt]; if (v && (v.time > 0 || v.learn > 0 || v.review > 0)) it.done[dt] = 1; });
+    this.save(d);
   },
   // 休息日规则（按项目维度）：一周 <=1、一月 <=4
   restCanAdd(item, date) {
