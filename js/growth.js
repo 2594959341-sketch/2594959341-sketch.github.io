@@ -59,9 +59,14 @@ const Growth = {
       if (this.sub === 'english') {
         root.innerHTML = `<div id="gwBody"></div>`;
         const body = root.querySelector('#gwBody');
-        body.innerHTML = `<div class="eng-page-head"><button class="icon-btn" id="engPageBack" title="返回">${icon('back',18)}</button></div>` + this.englishCard(recs.items);
+        const engTab = this.engTab === 'bbdc' ? 'bbdc' : 'duo';
+        body.innerHTML = `<div class="eng-page-head"><button class="icon-btn" id="engPageBack" title="返回">${icon('back',18)}</button></div>` +
+          `<div class="subnav"><button class="${engTab!=='bbdc'?'on':''}" data-etab="duo">多邻国</button><button class="${engTab==='bbdc'?'on':''}" data-etab="bbdc">不背单词</button></div>` +
+          (engTab === 'bbdc' ? '<div id="bbdcMount"></div>' : this.englishCard(recs.items));
         body.querySelector('#engPageBack').onclick = () => { this.sub = 'skill'; this.render(root); };
-        this.bindEnglishCard(root, body);
+        body.querySelectorAll('[data-etab]').forEach(b => b.onclick = () => { this.engTab = b.dataset.etab; this.render(root); });
+        if (engTab === 'bbdc') { if (window.BBDC) window.BBDC.render(body.querySelector('#bbdcMount')); }
+        else this.bindEnglishCard(root, body);
         return;
       }
       root.innerHTML = `<div id="gwBody"></div>`;
