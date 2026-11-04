@@ -129,6 +129,8 @@ textarea{resize:vertical}
 .task-item.pass .tt{color:#7f8fa6}
 .t-dot.pass{background:var(--light);border-color:#7f8fa6;color:#7f8fa6}
 .pass-badge{font-size:11px;background:#eef1f5;color:#7f8fa6;border:1px solid #dde3ea;padding:1px 6px;border-radius:4px;margin-left:6px;font-weight:600;vertical-align:middle}
+.mini-badge{font-size:11px;background:#e8f5ec;color:#2e8b57;border:1px solid #cde8d6;padding:1px 6px;border-radius:4px;margin-left:6px;font-weight:600;vertical-align:middle}
+.task-item.mini .t-dot.done{background:#fff;color:#2e8b57}
 .cal-cell.pass{background:#eef1f5;border-color:#dde3ea}
 .cal-cell.pass .d{color:#7f8fa6}
 .cal-cell.pass .dots .dot{background:#7f8fa6}
