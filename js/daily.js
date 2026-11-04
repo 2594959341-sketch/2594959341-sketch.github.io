@@ -451,6 +451,8 @@ const Daily = {
     opts.push('<optgroup label="成长·领域">');
     ga.forEach(a => { if (a === '阅读') return; opts.push(`<option value="growth:${esc(a)}" ${sel === 'growth:' + a ? 'selected' : ''}>${esc(a)}</option>`); });
     if (!ga.includes('英语')) opts.push(`<option value="growth:english"${sel === 'growth:english' ? ' selected' : ''}>英语（多邻国·技能）</option>`);
+    if (!ga.includes('多邻国')) opts.push(`<option value="growth:多邻国"${sel === 'growth:多邻国' ? ' selected' : ''}>多邻国</option>`);
+    if (!ga.includes('不背单词')) opts.push(`<option value="growth:不背单词"${sel === 'growth:不背单词' ? ' selected' : ''}>不背单词</option>`);
     opts.push('</optgroup>');
     // 阅读独立成组，便于从每日计划直接关联（阅读有专属页面与续火花）
     opts.push('<optgroup label="阅读">');
@@ -536,6 +538,18 @@ const Daily = {
           S.set('mumu_skillLogs', sl);
           const d = (extra && extra.delta != null) ? Number(extra.delta) || 0 : 0;
           if (window.Growth && window.Growth.recordEngCheckIn) window.Growth.recordEngCheckIn(date, mins, d);
+        }
+        if (area === '不背单词') {
+          // 同步写入不背单词本地记录，让「成长·英语·不背单词」面板与续火花一致（续火花由 growthLogs.area=不背单词 自动点亮）
+          try {
+            const B = S.get('mumu_bbdc', null) || { updated: '', data: {} };
+            if (!B.data) B.data = {};
+            const _m = (extra && extra.minutes != null) ? Number(extra.minutes) || 0 : 0;
+            const _l = (extra && extra.learn != null) ? Number(extra.learn) || 0 : 0;
+            const _r = (extra && extra.review != null) ? Number(extra.review) || 0 : 0;
+            if (_m || _l || _r) { B.data[date] = { time: _m, learn: _l, review: _r }; B.updated = todayStr(); S.set('mumu_bbdc', B); }
+            if (window.Streak && window.Streak.refreshFromBbdc) window.Streak.refreshFromBbdc();
+          } catch (e) {}
         }
       } else if (mod === 'travel') {
         const out = S.get('travelOut', {}); out[date] = out[date] || [];
@@ -1394,11 +1408,37 @@ const Daily = {
     minp.onkeydown = e => { if (e.key === 'Enter') ok(); };
     deltap.onkeydown = e => { if (e.key === 'Enter') ok(); };
   },
+  // 不背单词任务完成前：记录 本次时长 / 新学 / 复习，写入本地不背单词记录（面板与续火花同源）
+  requireBbdcInfo(t, date, onConfirm) {
+    if (t.bbdcMin != null) { onConfirm(); return; }
+    const def = (t.extra && t.extra.minutes) || t.estMin || '';
+    openModal(`<button class="close-x" onclick="closeModal()">×</button><h3>${icon('book',18)} 记录不背单词</h3>
+      <div class="muted" style="margin-bottom:10px">「${esc(t.title)}」今天背了多少？</div>
+      <div class="form-row"><label>学习时长（分钟）</label><input id="bbdcMinInput" type="text" inputmode="numeric" style="direction:ltr" value="${def}" placeholder="如实填，比如 20" autofocus></div>
+      <div class="form-row"><label>新学词数（没学填 0）</label><input id="bbdcLearnInput" type="text" inputmode="numeric" style="direction:ltr" value="0"></div>
+      <div class="form-row"><label>复习词数（没复习填 0）</label><input id="bbdcReviewInput" type="text" inputmode="numeric" style="direction:ltr" value="0"></div>
+      <button class="btn" id="bbdcOk" style="width:100%">保存并继续</button>`);
+    const minp = document.getElementById('bbdcMinInput');
+    const ok = () => {
+      const m = Number(minp.value);
+      if (minp.value === '' || isNaN(Number(minp.value)) || Number(minp.value) < 0) return toast('填一下今天背了多少分钟吧～（没背就填 0）');
+      t.bbdcMin = m;
+      t.bbdcLearn = Math.max(0, Number(document.getElementById('bbdcLearnInput').value) || 0);
+      t.bbdcReview = Math.max(0, Number(document.getElementById('bbdcReviewInput').value) || 0);
+      const arr = this.list(date); const tt = arr.find(x => x.id === t.id);
+      if (tt) { tt.bbdcMin = t.bbdcMin; tt.bbdcLearn = t.bbdcLearn; tt.bbdcReview = t.bbdcReview; } this.setList(date, arr);
+      closeModal(); onConfirm();
+    };
+    document.getElementById('bbdcOk').onclick = ok;
+    minp.onkeydown = e => { if (e.key === 'Enter') ok(); };
+  },
   // 统一分发：学习→实际时长+学到哪里；运动→时长+程度；英语→时长+涨分；其余→直接继续
   requireTaskInfo(t, date, onConfirm) {
     if (t.cat === 'kaogong') return this.requireActMin(t, date, onConfirm);
     if (t.cat === 'sport') return this.requireSportInfo(t, date, onConfirm);
     if (t.cat === 'growth' && this.growthArea(t.link) === '英语') return this.requireEngInfo(t, date, onConfirm);
+    if (t.cat === 'growth' && this.growthArea(t.link) === '多邻国') return this.requireEngInfo(t, date, onConfirm);
+    if (t.cat === 'growth' && this.growthArea(t.link) === '不背单词') return this.requireBbdcInfo(t, date, onConfirm);
     if (t.cat === 'growth' && this.growthArea(t.link) === '阅读') return this.requireReadInfo(t, date, onConfirm);
     if (t.link === 'work:write') return this.requireWriteInfo(t, date, onConfirm);
     onConfirm();
@@ -1474,7 +1514,8 @@ const Daily = {
         let extra = t.extra || null;
         if (t.cat === 'kaogong') extra = this._kgExtra(t);
         else if (t.cat === 'sport') extra = { minutes: t.sportMin || 10, feel: t.sportFeel || '适中' };
-        else if (this.growthArea(t.link) === '英语') extra = { minutes: (t.engMin != null ? t.engMin : (extra && extra.minutes) || 20), delta: (t.engDelta != null ? t.engDelta : 0) };
+        else if (this.growthArea(t.link) === '英语' || this.growthArea(t.link) === '多邻国') extra = { minutes: (t.engMin != null ? t.engMin : (extra && extra.minutes) || 20), delta: (t.engDelta != null ? t.engDelta : 0) };
+        else if (this.growthArea(t.link) === '不背单词') extra = { minutes: (t.bbdcMin != null ? t.bbdcMin : (extra && extra.minutes) || 20), learn: t.bbdcLearn || 0, review: t.bbdcReview || 0 };
         else if (this.growthArea(t.link) === '阅读') extra = { book: t.readBook, pages: t.readPages || '', minutes: t.readMin != null ? t.readMin : 20, cat: t.readCat || '', finished: t.readFinished };
         else if (t.link === 'work:write') extra = { book: t.writeBook, content: t.writeContent, words: t.writeWords, kind: t.writeKind };
         this.pushToColumn(date, t.link, t.title, t.linkApp, extra, t.srcId || t.id);
@@ -1489,6 +1530,8 @@ const Daily = {
     const arr = this.list(date); const t = arr.find(x => x.id === id); if (!t) return;
     // 移动不记录学习/涨分，英语/阅读任务跳过填写弹窗（移动不等于打卡）
     if (t.cat === 'growth' && this.growthArea(t.link) === '英语') { this.promptMoveLoad(t, date); return; }
+    if (t.cat === 'growth' && this.growthArea(t.link) === '多邻国') { this.promptMoveLoad(t, date); return; }
+    if (t.cat === 'growth' && this.growthArea(t.link) === '不背单词') { this.promptMoveLoad(t, date); return; }
     if (t.cat === 'growth' && this.growthArea(t.link) === '阅读') { this.promptMoveLoad(t, date); return; }
     if (t.link === 'work:write') { this.promptMoveLoad(t, date); return; }
     this.requireTaskInfo(t, date, () => this.promptMoveLoad(t, date));
