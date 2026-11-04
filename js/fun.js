@@ -1449,6 +1449,11 @@ const Entertainment = {
     const isNovel = () => r.type === '小说';
     const lockNovel = isNovel() && (r.status === '看完' || r.status === '已读完');
     const tagsStr = (r.tags || []).join(' ');
+    // 日期默认：完结作品固定在其记录日期（可手动改）；未完结作品若编辑的是「最新一条」则默认今天，其余沿用该条日期
+    const _finishedW = (r.status === '看完' || r.status === '已读完');
+    let _latestDate = r.date;
+    if (r.title) { const _L0 = this.logs(); Object.keys(_L0).forEach(_dt => { if ((_L0[_dt] || []).some(x => funNormType(x.type) === funNormType(r.type) && this.normTitle(x.title) === this.normTitle(r.title))) { if (_dt > _latestDate) _latestDate = _dt; } }); }
+    const dateDefault = (!_finishedW && r.date === _latestDate) ? todayStr() : r.date;
     // 半星点击评分：点左半=半星，点右半=全星，再点同位=清零
     const starRateBox = (id, cur) => `<div id="${id}" class="star-rate" data-rate="${cur}">${[1, 2, 3, 4, 5].map(n => `<span data-rstar="${n}" style="position:relative;display:inline-block;width:1em;margin:0 -0.05em;color:#e0e0e0;font-size:20px;cursor:pointer;line-height:1">★<span style="position:absolute;left:0;top:0;overflow:hidden;white-space:nowrap;color:#F5C518;width:${cur >= n ? 100 : (cur >= n - 0.5 ? 50 : 0)}%">★</span></span>`).join('')}</div>`;
     const coverBlock = `<div class="form-row"><label>封面图（链接或上传）</label><div style="display:flex;gap:6px"><input id="fCover" value="${esc(r.cover)}" placeholder="https://…" style="flex:1"><button class="btn sm ghost" id="fUp">上传</button></div><input id="fFile" type="file" accept="image/*" style="display:none"></div>
@@ -1475,7 +1480,7 @@ const Entertainment = {
       <div class="form-row"><label>标签（空格分隔，如 治愈 悬疑 下饭）</label><input id="fTags" value="${esc(tagsStr)}" placeholder="治愈 悬疑"></div>
       <div id="fCatWrap" style="${r.type === '影视' ? '' : 'display:none'}"><div class="form-row"><label>分类（影视）</label><select id="fCat">${['电视剧', '电影', '综艺', '短剧', 'AI漫剧', '动漫', '纪录片', '其他'].map(c => `<option ${c === (r.cat || '') ? 'selected' : ''}>${c}</option>`).join('')}</select></div></div>
       ${mediaTimeBlock}
-      <div class="form-row"><label>日期</label><input id="fDate" type="date" value="${r.date}"></div>
+      <div class="form-row"><label>日期</label><input id="fDate" type="date" value="${dateDefault}"></div>
       <div id="fReviewBox" style="${r.status === '看完' ? '' : 'display:none'}">
         <div class="form-row"><label>看完打分</label>${starRateBox('fRateBox', r.rating || 0)}<input id="fRating" type="hidden" value="${r.rating || 0}"></div>
         <div class="form-row"><label>观后感</label><textarea id="fReview" rows="3" placeholder="写点感受吧~">${esc(r.review || '')}</textarea></div>
@@ -1602,7 +1607,7 @@ const Entertainment = {
       };
       // 新进度记录（续读/更新进度）默认记在「今天」，不再沿用旧记录的日期；其余（元数据编辑/补记）保留原日期
       const _fdEl = document.getElementById('fDate');
-      const date = (_fdEl ? _fdEl.value : '') || r.date || todayStr();
+      let date = (_fdEl ? _fdEl.value : '') || r.date || todayStr();
       if (appendRec && !dateTouched) date = todayStr();
       // 今天记录的小说必须填时长；以前补记的（日期<今天）允许不记时长
       if (type === '小说' && date === todayStr() && Number(minutes) <= 0) {
