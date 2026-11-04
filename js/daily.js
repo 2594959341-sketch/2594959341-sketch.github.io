@@ -1224,12 +1224,12 @@ const Daily = {
     const byLink = (linked && !this.isDone(t)) || t.autoGen;
     const total = t.steps.length, dn = t.steps.filter(s => s.done).length;
     const open = !!this._openTasks[t.id];
-    const cls = [done ? 'done' : '', t.abandoned ? 'abandoned' : '', t.moved ? 'moved' : '', (t.restDay || holiday) ? 'rest' : '', t.passToday && !done ? 'pass' : '', open ? 'open' : ''].filter(Boolean).join(' ');
+    const cls = [done ? (t.miniDone ? 'done mini' : 'done') : '', t.abandoned ? 'abandoned' : '', t.moved ? 'moved' : '', (t.restDay || holiday) ? 'rest' : '', t.passToday && !done ? 'pass' : '', open ? 'open' : ''].filter(Boolean).join(' ');
     let dotCls = 't-dot', dotIc = '●';
     if (t.abandoned) { dotCls += ' abandoned'; dotIc = '×'; }
     else if (t.moved) { dotCls += ' moved'; dotIc = '›'; }
     else if (t.restDay || holiday) { dotCls += ' rest'; dotIc = '休'; }
-    else if (done) { dotCls += ' done'; dotIc = '✓'; }
+    else if (done) { dotCls += t.miniDone ? ' done mini' : ' done'; dotIc = t.miniDone ? '微' : '✓'; }
     else if (t.passToday) { dotCls += ' pass'; dotIc = '过'; }
     const active = !done && !t.moved && !t.abandoned;
     const stepsHTML = t.steps.map(s => `<div class="step-row ${s.done ? 'done' : ''}" data-lp>
@@ -1243,7 +1243,7 @@ const Daily = {
         <button class="${dotCls}" data-dot ${active ? '' : 'disabled'} title="${active ? '点击：完成 / 移到明天 / 无法完成' : ''}">${dotIc}</button>
         <span class="tt">${catTag ? `<span class="task-cat-tag">${catTag}</span>` : ''}${esc(t.title)}${goalTag}${t.cat === 'kaogong' && t.studyType ? `<span class="task-study-tag">${esc(t.studyType)}</span>` : ''}</span>
         ${(t.restDay || holiday) ? '<span class="rest-badge">休息</span>' : ''}
-        ${t.passToday ? '<span class="pass-badge">放过</span>' : ''}
+        ${t.passToday ? '<span class="pass-badge">放过</span>' : ''}${t.miniDone ? '<span class="mini-badge">微' + (t.miniMin ? '·' + t.miniMin + '分' : '') + '</span>' : ''}
         ${reorder && !done ? `<span class="drag-handle" data-drag="${t.id}" title="按住拖动排序"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="5" y1="7" x2="19" y2="7"/><line x1="5" y1="12" x2="19" y2="12"/><line x1="5" y1="17" x2="19" y2="17"/></svg></span>` : ''}
         ${total ? `<span class="prog">${dn}/${total}</span>` : ''}
         ${t.cat === 'kaogong' && t.actMin != null ? `<span class="ltime">实际${t.actMin}分钟</span>` : ''}
@@ -1265,7 +1265,7 @@ const Daily = {
     const r = dot.getBoundingClientRect();
     const menu = document.createElement('div');
     menu.className = 'dot-menu';
-    let menuHTML = '<button data-act="done">完成任务</button><button data-act="move">移到明天</button><button data-act="give">✕ 无法完成</button><button data-act="pass">' + (t.passToday ? '取消今日放过' : '今日放过') + '</button>';
+    let menuHTML = '<button data-act="done">完成任务</button><button data-act="mini">只做一点点</button><button data-act="move">移到明天</button><button data-act="give">✕ 无法完成</button><button data-act="pass">' + (t.passToday ? '取消今日放过' : '今日放过') + '</button>';
     menuHTML += '<button data-act="rest">' + (t.restDay ? '取消今日休息' : '今日休息') + '</button>';
     menu.innerHTML = menuHTML;
     menu.style.position = 'fixed';
@@ -1278,6 +1278,8 @@ const Daily = {
     const onDoc = e => { if (!menu.contains(e.target)) close(); };
     setTimeout(() => document.addEventListener('click', onDoc, true), 0);
     menu.querySelector('[data-act=done]').onclick = e => { e.stopPropagation(); close(); this.completeTask(this.cur, t.id); };
+    const miniBtn = menu.querySelector('[data-act=mini]');
+    if (miniBtn) miniBtn.onclick = e => { e.stopPropagation(); close(); this.miniDone(this.cur, t.id); };
     menu.querySelector('[data-act=move]').onclick = e => { e.stopPropagation(); close(); this.moveTmr(this.cur, t.id); };
     menu.querySelector('[data-act=give]').onclick = e => { e.stopPropagation(); close(); this.promptAbandon(this.cur, t.id); };
     const restBtn = menu.querySelector('[data-act=rest]');
@@ -1725,6 +1727,50 @@ const Daily = {
       this.passToday(date, t.id, false, reason);
     };
     try { ta.focus(); } catch (e) {}
+  },
+  // 只做一点点（微量完成）：真实做了几分钟也算完成——点亮火花、不占任何额度，标记「微」保持数据诚实
+  miniDone(date, id) {
+    const arr = this.list(date); const t = arr.find(x => x.id === id); if (!t) return;
+    if (this.isDone(t) && !t.miniDone) { toast('这个已经完成啦'); return; }
+    const def = (t.cat === 'kaogong' && t.actMin != null) ? t.actMin : '';
+    openModal(`<button class="close-x" onclick="closeModal()">×</button><h3>${icon('sprout', 18)} 只做一点点</h3>
+      <div class="muted" style="font-size:12px;margin:6px 0 10px;line-height:1.6">「${esc(t.title || '这个任务')}」今天真实碰了几分钟？做多做少都算——小火花只看真，不看大。</div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">
+        ${[1, 5, 10, 15, 20].map(v => `<button class="btn sm ghost" data-mchip="${v}">${v} 分钟</button>`).join('')}
+      </div>
+      <div class="form-row"><label>实际时长（分钟）</label><input id="miniMinInput" type="text" inputmode="numeric" style="direction:ltr" value="${def}" placeholder="1 分钟也算"></div>
+      <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:10px">
+        <button class="btn ghost" onclick="closeModal()">取消</button>
+        <button class="btn" id="miniOk">就这么多，完成</button>
+      </div>`);
+    const minp = document.getElementById('miniMinInput');
+    document.querySelectorAll('[data-mchip]').forEach(b => b.onclick = () => { minp.value = b.dataset.mchip; });
+    const ok = () => {
+      const m = Number(minp.value);
+      if (!m || m <= 0 || isNaN(m)) { toast('做了几分钟就填几分钟，1 分钟也算～'); minp.focus(); return; }
+      t.miniDone = true; t.miniMin = m;
+      if (t.steps.length) t.steps.forEach(s => { s.done = true; s.doneAt = Date.now(); });
+      else t.manualDone = true;
+      if (!t.doneAt) t.doneAt = Date.now();
+      if (t.restDay) { t.restDay = false; this._clearRest(date, t); }
+      if (t.passToday) { t.passToday = false; this._clearPass(date, t); }
+      this.setList(date, arr);
+      if (t.link) {
+        let extra;
+        if (t.cat === 'kaogong') { extra = this._kgExtra(t) || {}; extra.minutes = m; }
+        else if (t.cat === 'sport') extra = { minutes: m, feel: '轻松' };
+        else if (this.growthArea(t.link) === '英语' || this.growthArea(t.link) === '多邻国') extra = { minutes: m, delta: 0 };
+        else if (this.growthArea(t.link) === '不背单词') extra = { minutes: m, learn: 0, review: 0 };
+        else if (this.growthArea(t.link) === '阅读') extra = { book: t.readBook || t.title || '阅读打卡', pages: '', minutes: m, cat: t.readCat || '', finished: false };
+        else extra = Object.assign({}, t.extra || {}, { minutes: m });
+        this.pushToColumn(date, t.link, t.title, t.linkApp, extra, t.srcId || t.id);
+      }
+      this.syncGoalsFromPlan(date);
+      closeModal(); this.render(this._root); toast('小赢也是赢：今天真实做了 ' + m + ' 分钟 🌱');
+    };
+    document.getElementById('miniOk').onclick = ok;
+    minp.onkeydown = e => { if (e.key === 'Enter') ok(); };
+    try { minp.focus(); } catch (e) {}
   },
   // 今日放过：单任务第三动作（与「已完成 / 无法完成」并列）。底层复用休息语义——
   // 把对应续火花条目写入 rest[date]，使该科目当天「覆盖但不增长」（covered 但 isDone=false），
