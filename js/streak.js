@@ -192,6 +192,23 @@ const Streak = {
         if (!this.covered(it, '2026-11-04')) { it.rest = it.rest || {}; it.rest['2026-11-04'] = 1; }
       });
     }
+    // v433：历史「今日放过」全量补火——v428~v431 期间成长/三餐任务选「过」时 rest 没写（映射缺失 bug），
+    // 导致多邻国/阅读等火焰断了；扫描每日计划里所有 passToday 的任务，把对应火焰项当天补 rest（已有 rest 的不重复写）
+    if (!d._healPass && window.Daily && window.Daily._passTargetItems) {
+      d._healPass = 1;
+      const _plans = S.get('plans', null);
+      if (_plans && typeof _plans === 'object') {
+        Object.keys(_plans).forEach(function (dt) {
+          const _arr = _plans[dt]; if (!Array.isArray(_arr)) return;
+          _arr.forEach(function (t) {
+            if (!t || !t.passToday) return;
+            (window.Daily._passTargetItems(t) || []).forEach(function (it) {
+              if (!it.rest || !it.rest[dt]) { it.rest = it.rest || {}; it.rest[dt] = 1; }
+            });
+          });
+        });
+      }
+    }
     this.save(d);
     return d.items;
   },
