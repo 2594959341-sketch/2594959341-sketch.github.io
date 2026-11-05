@@ -1,8 +1,8 @@
-/* 不背单词 · 手动记录面板（v427）
+/* 墨墨背单词 · 手动记录面板（v427 建，v432 由「不背单词」改名）
  * 数据存本地 localStorage（mumu_bbdc），形状：
  *   { updated:'YYYY-MM-DD', data:{ 'YYYY-MM-DD':{time:分钟, learn:新学, review:复习} } }
  * 不依赖任何远程接口：所有统计 / 连续天数 / 热力图都由本地真实记录驱动。
- * 续火花 'growth:不背单词' 由 streak.js 的 refreshFromBbdc() 从此数据重建 done。
+ * 续火花 'growth:墨墨' 由 streak.js 的 refreshFromBbdc() 从此数据重建 done。
  */
 const BBDC = {
   KEY: 'mumu_bbdc',
@@ -23,7 +23,7 @@ const BBDC = {
     const data = this.get();
     const has = Object.keys(data.data).length > 0;
     mount.innerHTML =
-      '<div class="bbdc-head"><div class="bbdc-title">不背单词 · 学习记录</div>' +
+      '<div class="bbdc-head"><div class="bbdc-title">墨墨 · 学习记录</div>' +
       '<button class="bbdc-refresh" data-badd>＋ 记一笔</button></div>' +
       '<div class="bbdc-updated" data-bdate></div>' +
       '<div id="bbdcBody" class="bbdc-body"></div>';
