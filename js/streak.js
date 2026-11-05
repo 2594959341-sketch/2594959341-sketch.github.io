@@ -184,18 +184,21 @@ const Streak = {
       const _bbd = (S.get('mumu_bbdc', null) || {}).data || {};
       Object.keys(_bbd).forEach(dt => { const v = _bbd[dt]; if (v && (v.time > 0 || v.learn > 0 || v.review > 0)) bbdcItem.done[dt] = 1; });
     }
-    // v432：一次性补 2026-11-04 火花——当日真做了的已有日志（isDone），放过/漏掉的补 rest，保证「过」了也不断火
-    if (!d._heal1104) {
-      d._heal1104 = 1;
+    // v432/v434：一次性补 2026-11-04 火花——当日真做了的已有日志（isDone），放过/漏掉的补 rest，保证「过」了也不断火；
+    // v434：改用 _heal1104b 重跑一次，给 11-04 的补火 rest 补打 pass 标记（放过日不占休息额度）
+    if (!d._heal1104b) {
+      d._heal1104b = 1;
       (d.items || []).forEach(it => {
         if (it.type === 'group') return;
         if (!this.covered(it, '2026-11-04')) { it.rest = it.rest || {}; it.rest['2026-11-04'] = 1; }
+        if (it.rest && it.rest['2026-11-04']) { it.pass = it.pass || {}; it.pass['2026-11-04'] = 1; }
       });
     }
-    // v433：历史「今日放过」全量补火——v428~v431 期间成长/三餐任务选「过」时 rest 没写（映射缺失 bug），
-    // 导致多邻国/阅读等火焰断了；扫描每日计划里所有 passToday 的任务，把对应火焰项当天补 rest（已有 rest 的不重复写）
-    if (!d._healPass && window.Daily && window.Daily._passTargetItems) {
-      d._healPass = 1;
+    // v433/v434：历史「今日放过」全量补火——v428~v431 期间成长/三餐任务选「过」时 rest 没写（映射缺失 bug），
+    // 导致多邻国/阅读等火焰断了；扫描每日计划里所有 passToday 的任务，把对应火焰项当天补 rest；
+    // v434：同时打 pass 标记（restCanAdd 跳过这些日期，「放过」彻底不占休息额度）——改用 _healPass2 标记让 v433 已跑过的设备再补跑一次
+    if (!d._healPass2 && window.Daily && window.Daily._passTargetItems) {
+      d._healPass2 = 1;
       const _plans = S.get('plans', null);
       if (_plans && typeof _plans === 'object') {
         Object.keys(_plans).forEach(function (dt) {
@@ -203,7 +206,8 @@ const Streak = {
           _arr.forEach(function (t) {
             if (!t || !t.passToday) return;
             (window.Daily._passTargetItems(t) || []).forEach(function (it) {
-              if (!it.rest || !it.rest[dt]) { it.rest = it.rest || {}; it.rest[dt] = 1; }
+              it.pass = it.pass || {}; it.pass[dt] = 1;
+              it.rest = it.rest || {}; it.rest[dt] = 1;
             });
           });
         });
@@ -262,9 +266,11 @@ const Streak = {
     const wk = mondayOf(date);
     const ym = date.slice(0, 7);
     const rest = item.rest || {};
+    const pass = item.pass || {};
     let wkN = 0, moN = 0;
     Object.keys(rest).forEach(d => {
       if (!rest[d]) return;
+      if (pass[d]) return; // v434：「今日放过」产生的休息不占额度
       if (d.slice(0, 7) === ym) moN++;
       if (mondayOf(d) === wk) wkN++;
     });
