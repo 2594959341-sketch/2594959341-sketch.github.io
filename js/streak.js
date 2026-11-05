@@ -2,7 +2,7 @@
 /* 纯新增模块（v221）：零侵入——所有打卡数据来自现有专栏日志反查，不新增独立打卡入口。
  * 内置项目（创作/学习/运动）自动从 workLogs / kgLogs.subject / sportLogs.project 反查；
  * 用户用右上角「+」新增的项目需先选「关联板块」（运动/学习/创作/成长/阅读/出行/娱乐/三餐），
- * 关联后同样由对应专栏日志反查自动续火花；只有「自定义」才需每天点格子手动打卡。
+ * 关联后同样由对应专栏日志反查自动续火花；「自定义」默认点格子手动打卡，标 auto 的项（多邻国/墨墨）只能由打卡自动点亮。
  */
 // 同义归一：学习科目 / 运动项目 名字变体合并到同一续火花项（根治「言语」与「行测言语」分裂、运动名变体导致天数对不上）
 const KG_ALIAS = { '言语理解': '言语', '言语模块': '言语', '综应': '综合应用能力', '综合应用': '综合应用能力' };
@@ -44,7 +44,7 @@ const Streak = {
       const day = S.get('meals', {})[date]; if (!day) return false;
       return item.ref ? !!day[item.ref] : !!(day.breakfast || day.lunch || day.dinner);
     }
-    if (item.type === 'custom') { if (item.done && item.done[date]) return true; if (item.ref && (S.get('growthLogs', {})[date] || []).some(l => (l.area || '').trim() === (item.ref || '').trim())) return true; return false; }
+    if (item.type === 'custom') { if (item.done && item.done[date]) return true; if (item.id === 'growth:多邻国' && (S.get('duoStreaks', []) || []).indexOf(date) >= 0) return true; if (item.ref && (S.get('growthLogs', {})[date] || []).some(l => (l.area || '').trim() === (item.ref || '').trim())) return true; return false; }
     return false;
   },
   // 是否覆盖（真实打卡 / 休息日 / 补签日都算续上；休息日含每日计划里的运动/备考休息日）
@@ -98,6 +98,21 @@ const Streak = {
     const byId = {};
     d.items.forEach(it => byId[it.id] = it);
     const base = () => ({ makeup: 0, rest: {}, madeup: {}, done: {}, parent: null });
+    // v432：①「不背单词」全站改名「墨墨」——旧 streak 项就地改名（保留 done/rest/madeup）+ growthLogs 与每日计划任务 link 一次性迁移；②多邻国/墨墨设为 auto（只能由打卡点亮，火花页不可手动点格子）
+    const _oldBB = byId['growth:不背单词'];
+    if (_oldBB) { _oldBB.id = 'growth:墨墨'; _oldBB.name = '墨墨'; _oldBB.ref = '墨墨'; _oldBB.auto = 1; byId['growth:墨墨'] = _oldBB; delete byId['growth:不背单词']; }
+    const _duoIt = byId['growth:多邻国']; if (_duoIt) _duoIt.auto = 1;
+    const _gl = S.get('growthLogs', {}); let _glDirty = false;
+    Object.keys(_gl).forEach(_d => (_gl[_d] || []).forEach(_l => { if (_l && _l.area === '不背单词') { _l.area = '墨墨'; _glDirty = true; } }));
+    if (_glDirty) S.set('growthLogs', _gl);
+    ['plans', 'plansDaily'].forEach(function (_pk) {
+      const _pv = S.get(_pk, null); if (!_pv || typeof _pv !== 'object') return;
+      let _pd = false;
+      const _fix = function (_t) { if (_t && _t.link === 'growth:不背单词') { _t.link = 'growth:墨墨'; _pd = true; } };
+      if (Array.isArray(_pv)) _pv.forEach(_fix);
+      else Object.keys(_pv).forEach(function (_d) { const _a = _pv[_d]; if (Array.isArray(_a)) _a.forEach(_fix); });
+      if (_pd) S.set(_pk, _pv);
+    });
     const seed = [
       { id: 'group:kg', type: 'group', key: 'kg', name: '备考', parent: null },
       { id: 'group:sport', type: 'group', key: 'sport', name: '运动', parent: null },
@@ -105,8 +120,8 @@ const Streak = {
       { id: 'group:growth', type: 'group', key: 'growth', name: '成长', parent: null },
       { id: 'group:english', type: 'group', key: 'english', name: '英语', parent: 'group:growth' },
       { id: 'read:all', type: 'read', name: '阅读', parent: 'group:growth' },
-      { id: 'growth:多邻国', type: 'custom', name: '多邻国', ref: '多邻国', parent: 'group:english' },
-      { id: 'growth:不背单词', type: 'custom', name: '不背单词', ref: '不背单词', parent: 'group:english' },
+      { id: 'growth:多邻国', type: 'custom', name: '多邻国', ref: '多邻国', parent: 'group:english', auto: 1 },
+      { id: 'growth:墨墨', type: 'custom', name: '墨墨', ref: '墨墨', parent: 'group:english', auto: 1 },
       { id: 'work:game', type: 'work', sub: 'game', name: '游戏', ref: '' },
       { id: 'work:write', type: 'work', sub: 'write', name: '写作', ref: '' },
       { id: 'kg:言语', type: 'kg', name: '言语', ref: '言语' },
@@ -160,12 +175,22 @@ const Streak = {
       let cur = todayStr();
       for (let i = 0; i < 411; i++) { duo.done[cur] = 1; cur = addDays(cur, -1); }
     }
-    // v426：不背单词火花由 bbdc 自动数据驱动（纯自动，无手动打卡）；每次 ensureItems 从 mumu_bbdc 重建 done
-    const bbdcItem = d.items.find(x => x.id === 'growth:不背单词');
+    // v426/v432：墨墨（原不背单词）火花由 bbdc 数据自动驱动（纯自动，无手动打卡）；重建 done = 一次性种入的历史日期 ∪ mumu_bbdc 记录
+    const bbdcItem = d.items.find(x => x.id === 'growth:墨墨');
     if (bbdcItem) {
+      if (!bbdcItem._seed) bbdcItem._seed = { '2026-11-02': 1, '2026-11-03': 1, '2026-11-04': 1, '2026-11-05': 1 }; // 木木从 11-02 开始背墨墨，种入前四天
       bbdcItem.done = {};
+      Object.keys(bbdcItem._seed).forEach(dt => { bbdcItem.done[dt] = 1; });
       const _bbd = (S.get('mumu_bbdc', null) || {}).data || {};
       Object.keys(_bbd).forEach(dt => { const v = _bbd[dt]; if (v && (v.time > 0 || v.learn > 0 || v.review > 0)) bbdcItem.done[dt] = 1; });
+    }
+    // v432：一次性补 2026-11-04 火花——当日真做了的已有日志（isDone），放过/漏掉的补 rest，保证「过」了也不断火
+    if (!d._heal1104) {
+      d._heal1104 = 1;
+      (d.items || []).forEach(it => {
+        if (it.type === 'group') return;
+        if (!this.covered(it, '2026-11-04')) { it.rest = it.rest || {}; it.rest['2026-11-04'] = 1; }
+      });
     }
     this.save(d);
     return d.items;
@@ -207,9 +232,10 @@ const Streak = {
   },
   refreshFromBbdc() {
     const d = this.data();
-    const it = d.items.find(x => x.id === 'growth:不背单词');
+    const it = d.items.find(x => x.id === 'growth:墨墨');
     if (!it) return;
     it.done = {};
+    Object.keys(it._seed || {}).forEach(dt => { it.done[dt] = 1; }); // 保留一次性种入的历史天数
     const data = (S.get('mumu_bbdc', null) || {}).data || {};
     Object.keys(data).forEach(dt => { const v = data[dt]; if (v && (v.time > 0 || v.learn > 0 || v.review > 0)) it.done[dt] = 1; });
     this.save(d);
@@ -374,10 +400,10 @@ const Streak = {
     }
     // 解释说明挪到日期格子下方，视觉上更干净
     const tip = document.createElement('div'); tip.className = 'stk-tip';
-    tip.textContent = item.type === 'custom' ? '点格子=打卡；再点取消' : '点空格=用补签卡补签；当天已打卡不可改；休息请在板块设置';
+    tip.textContent = item.auto ? '本项由每日任务/英语版块打卡自动点亮，格子不可手动点' : item.type === 'custom' ? '点格子=打卡；再点取消' : '点空格=用补签卡补签；当天已打卡不可改；休息请在板块设置';
     box.appendChild(tip);
     const _hl = holidayLegendHTML(ym, item.type === 'kg' ? 'kaogong' : undefined); if (_hl) box.insertAdjacentHTML('beforeend', _hl);
-    if (item.type === 'custom' || item.user) {
+    if ((item.type === 'custom' && !item.auto) || item.user) {
       const del = document.createElement('button'); del.className = 'btn ghost'; del.style.marginTop = '8px'; del.textContent = '删除该项目';
       del.onclick = () => { if (confirm('删除「' + item.name + '」？')) { const d = this.data(); d.items = d.items.filter(x => x.id !== item.id); this.save(d); this.render(box); } };
       box.appendChild(del);
@@ -465,6 +491,7 @@ const Streak = {
 
   toggleDay(item, ds, cls, box) {
     if (item.type === 'group') { toast('上级火花由子项自动点亮，不可手动打卡'); return; }
+    if (item.auto) { toast('「' + item.name + '」由每日任务/英语版块打卡自动点亮，不能手动点格子'); return; }
     const d = this.data();
     const it = d.items.find(x => x.id === item.id) || item;
     if (it.type === 'custom') {
