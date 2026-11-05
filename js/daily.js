@@ -1284,7 +1284,7 @@ const Daily = {
     const restBtn = menu.querySelector('[data-act=rest]');
     if (restBtn) restBtn.onclick = e => { e.stopPropagation(); close(); this.restDay(this.cur, t.id, !!t.restDay); };
     const passBtn = menu.querySelector('[data-act=pass]');
-    if (passBtn) passBtn.onclick = e => { e.stopPropagation(); close(); if (t.passToday) this.passToday(this.cur, t.id, true); else this.askPassReason(t); };
+    if (passBtn) passBtn.onclick = e => { e.stopPropagation(); close(); this.passToday(this.cur, t.id, !!t.passToday); };
   },
 
   // 学习任务（cat=kaogong）完成任务/移到明天前，必须先填实际学习时长；其余任务直接继续
@@ -1674,59 +1674,6 @@ const Daily = {
     if (changed) St.save(d);
   },
 
-  PASS_WEEK_CAP_DAYS: 1,  // 一周最多「放过」几天（防天天放过；改大可放宽）
-  _passWeekDays(date) {
-    const d0 = new Date(date + 'T00:00:00');
-    const off = (d0.getDay() + 6) % 7;
-    const mon = addDays(date, -off);
-    const out = [];
-    for (let i = 0; i < 7; i++) {
-      const dd = addDays(mon, i);
-      if (dd > todayStr()) break;
-      const arr = this.list(dd) || [];
-      if (arr.some(x => x.passToday)) out.push(dd);
-    }
-    return out;
-  },
-  askPassReason(t) {
-    const date = this.cur;
-    const days = this._passWeekDays(date);
-    const cap = this.PASS_WEEK_CAP_DAYS;
-    const todayIsPassDay = days.indexOf(date) >= 0;
-    if (!todayIsPassDay && days.length >= cap) {
-      openModal('<button class="close-x" onclick="closeModal()">×</button><h3>' + icon('sprout', 18) + ' 本周已经放过 ' + days.length + ' 天了</h3>'
-        + '<div class="muted" style="font-size:13px;margin:6px 0 14px;line-height:1.7">一周最多放过 ' + cap + ' 天，是不想让「放过」变成每天顺手点的默认选项。今天确实需要歇一歇的话，用下面更合适的方式；只是想缓一下也没关系，明天再来。</div>'
-        + '<div style="display:flex;flex-direction:column;gap:8px">'
-        + '<button class="btn ghost" id="passAltMove">移到明天（顺延，不算放弃）</button>'
-        + '<button class="btn ghost" id="passAltRest">今日休息（走休息额度）</button>'
-        + '<button class="btn" id="passAltClose">算啦，我去做一点</button>'
-        + '</div>');
-      const mv = document.getElementById('passAltMove'); if (mv) mv.onclick = () => { closeModal(); this.moveTmr(date, t.id); };
-      const rs = document.getElementById('passAltRest'); if (rs) rs.onclick = () => { closeModal(); this.restDay(date, t.id, false); };
-      const cl = document.getElementById('passAltClose'); if (cl) cl.onclick = () => closeModal();
-      return;
-    }
-    const leftTxt = todayIsPassDay ? '今天是放过日，可以继续放过其它任务' : ('本周还可用 ' + Math.max(0, cap - days.length) + ' 个「放过日」');
-    openModal('<button class="close-x" onclick="closeModal()">×</button><h3>' + icon('sprout', 18) + ' 放过「' + esc(t.title || '这个任务') + '」</h3>'
-      + '<div class="muted" style="font-size:12px;margin:6px 0 10px;line-height:1.6">放过后今天不算完成，但火花不停。先写一句：今天为什么放过它？<br>' + leftTxt + '</div>'
-      + '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">'
-      + ['累了', '今天没时间', '状态不好', '这事不急', '先做别的'].map(function (x) { return '<button class="btn sm ghost" data-pchip="' + esc(x) + '">' + esc(x) + '</button>'; }).join('')
-      + '</div>'
-      + '<div class="form-row"><label>原因</label><textarea id="passReason" rows="2" placeholder="一句话就行，写给明天的自己看"></textarea></div>'
-      + '<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:10px">'
-      + '<button class="btn ghost" onclick="closeModal()">取消</button>'
-      + '<button class="btn" id="passOk">确认放过</button>'
-      + '</div>');
-    const ta = document.getElementById('passReason');
-    document.querySelectorAll('[data-pchip]').forEach(function (b) { b.onclick = function () { ta.value = b.dataset.pchip; }; });
-    document.getElementById('passOk').onclick = () => {
-      const reason = (ta.value || '').trim();
-      if (reason.length < 2) { toast('写一句原因再放过吧～（写给明天的自己看）'); ta.focus(); return; }
-      closeModal();
-      this.passToday(date, t.id, false, reason);
-    };
-    try { ta.focus(); } catch (e) {}
-  },
   // 今日放过：单任务第三动作（与「已完成 / 无法完成」并列）。底层复用休息语义——
   // 把对应续火花条目写入 rest[date]，使该科目当天「覆盖但不增长」（covered 但 isDone=false），
   // 火花不前进也不中断；不动用休息额度（无限次）；任务次日由每日计划模板重生，故仅当日标记。
@@ -1785,7 +1732,10 @@ const Daily = {
     const St = window.Streak; if (!St || !St.data) return;
     const items = this._passTargetItems(t); if (!items.length) return;
     const d = St.data(); let changed = false;
-    items.forEach(it => { if (it.rest && it.rest[date]) { delete it.rest[date]; changed = true; } });
+    items.forEach(it => {
+      if (it.pass && it.pass[date]) { delete it.pass[date]; changed = true; }
+      if (it.rest && it.rest[date]) { delete it.rest[date]; changed = true; }
+    });
     if (changed) St.save(d);
   },
   passToday(date, id, cancel, reason) {
@@ -1803,7 +1753,7 @@ const Daily = {
     const items = this._passTargetItems(t);
     if (items.length) {
       const St = window.Streak; const d = St.data();
-      items.forEach(it => { it.rest = it.rest || {}; it.rest[date] = 1; });
+      items.forEach(it => { it.rest = it.rest || {}; it.rest[date] = 1; it.pass = it.pass || {}; it.pass[date] = 1; }); // pass 标记：restCanAdd 跳过，「放过」不占休息额度
       St.save(d);
     }
     this.setList(date, arr); this.render(this._root);
