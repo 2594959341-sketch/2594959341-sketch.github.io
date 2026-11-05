@@ -69,7 +69,7 @@ const Daily = {
     return '';
   },
   // 成长领域：把 link 里的英文 key 归一为中文领域名
-  GROWTH_AREA_MAP: { english: '英语', reading: '阅读', writing: '写作', ai: 'AI', finance: '理财' },
+  GROWTH_AREA_MAP: { english: '英语', reading: '阅读', writing: '写作', ai: 'AI', finance: '理财', '不背单词': '墨墨' },
   growthArea(link) {
     const sub = (link || '').split(':')[1] || '';
     return this.GROWTH_AREA_MAP[sub] || sub;
@@ -369,7 +369,8 @@ const Daily = {
       }
       if (mod === 'growth') {
         const logs = (S.get('growthLogs', {})[date]) || [];
-        return logs.some(l => (l.area || '') === sub);
+        const ga = this.growthArea(t.link) || sub; // v432：经 growthArea 归一（english→英语、不背单词→墨墨），顺带修复旧 growth:english 任务永不自动满足
+        return logs.some(l => (l.area || '') === ga);
       }
     } catch (e) {}
     return false;
@@ -452,7 +453,7 @@ const Daily = {
     ga.forEach(a => { if (a === '阅读') return; opts.push(`<option value="growth:${esc(a)}" ${sel === 'growth:' + a ? 'selected' : ''}>${esc(a)}</option>`); });
     if (!ga.includes('英语')) opts.push(`<option value="growth:english"${sel === 'growth:english' ? ' selected' : ''}>英语（多邻国·技能）</option>`);
     if (!ga.includes('多邻国')) opts.push(`<option value="growth:多邻国"${sel === 'growth:多邻国' ? ' selected' : ''}>多邻国</option>`);
-    if (!ga.includes('不背单词')) opts.push(`<option value="growth:不背单词"${sel === 'growth:不背单词' ? ' selected' : ''}>不背单词</option>`);
+    if (!ga.includes('墨墨')) opts.push(`<option value="growth:墨墨"${sel === 'growth:墨墨' ? ' selected' : ''}>墨墨</option>`);
     opts.push('</optgroup>');
     // 阅读独立成组，便于从每日计划直接关联（阅读有专属页面与续火花）
     opts.push('<optgroup label="阅读">');
@@ -539,8 +540,8 @@ const Daily = {
           const d = (extra && extra.delta != null) ? Number(extra.delta) || 0 : 0;
           if (window.Growth && window.Growth.recordEngCheckIn) window.Growth.recordEngCheckIn(date, mins, d);
         }
-        if (area === '不背单词') {
-          // 同步写入不背单词本地记录，让「成长·英语·不背单词」面板与续火花一致（续火花由 growthLogs.area=不背单词 自动点亮）
+        if (area === '墨墨') {
+          // 同步写入墨墨本地记录，让「成长·英语·墨墨」面板与续火花一致（续火花由 growthLogs.area=墨墨 自动点亮）
           try {
             const B = S.get('mumu_bbdc', null) || { updated: '', data: {} };
             if (!B.data) B.data = {};
@@ -1224,12 +1225,12 @@ const Daily = {
     const byLink = (linked && !this.isDone(t)) || t.autoGen;
     const total = t.steps.length, dn = t.steps.filter(s => s.done).length;
     const open = !!this._openTasks[t.id];
-    const cls = [done ? (t.miniDone ? 'done mini' : 'done') : '', t.abandoned ? 'abandoned' : '', t.moved ? 'moved' : '', (t.restDay || holiday) ? 'rest' : '', t.passToday && !done ? 'pass' : '', open ? 'open' : ''].filter(Boolean).join(' ');
+    const cls = [done ? 'done' : '', t.abandoned ? 'abandoned' : '', t.moved ? 'moved' : '', (t.restDay || holiday) ? 'rest' : '', t.passToday && !done ? 'pass' : '', open ? 'open' : ''].filter(Boolean).join(' ');
     let dotCls = 't-dot', dotIc = '●';
     if (t.abandoned) { dotCls += ' abandoned'; dotIc = '×'; }
     else if (t.moved) { dotCls += ' moved'; dotIc = '›'; }
     else if (t.restDay || holiday) { dotCls += ' rest'; dotIc = '休'; }
-    else if (done) { dotCls += t.miniDone ? ' done mini' : ' done'; dotIc = t.miniDone ? '微' : '✓'; }
+    else if (done) { dotCls += ' done'; dotIc = '✓'; }
     else if (t.passToday) { dotCls += ' pass'; dotIc = '过'; }
     const active = !done && !t.moved && !t.abandoned;
     const stepsHTML = t.steps.map(s => `<div class="step-row ${s.done ? 'done' : ''}" data-lp>
@@ -1243,7 +1244,7 @@ const Daily = {
         <button class="${dotCls}" data-dot ${active ? '' : 'disabled'} title="${active ? '点击：完成 / 移到明天 / 无法完成' : ''}">${dotIc}</button>
         <span class="tt">${catTag ? `<span class="task-cat-tag">${catTag}</span>` : ''}${esc(t.title)}${goalTag}${t.cat === 'kaogong' && t.studyType ? `<span class="task-study-tag">${esc(t.studyType)}</span>` : ''}</span>
         ${(t.restDay || holiday) ? '<span class="rest-badge">休息</span>' : ''}
-        ${t.passToday ? '<span class="pass-badge">放过</span>' : ''}${t.miniDone ? '<span class="mini-badge">微' + (t.miniMin ? '·' + t.miniMin + '分' : '') + '</span>' : ''}
+        ${t.passToday ? '<span class="pass-badge">放过</span>' : ''}
         ${reorder && !done ? `<span class="drag-handle" data-drag="${t.id}" title="按住拖动排序"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="5" y1="7" x2="19" y2="7"/><line x1="5" y1="12" x2="19" y2="12"/><line x1="5" y1="17" x2="19" y2="17"/></svg></span>` : ''}
         ${total ? `<span class="prog">${dn}/${total}</span>` : ''}
         ${t.cat === 'kaogong' && t.actMin != null ? `<span class="ltime">实际${t.actMin}分钟</span>` : ''}
@@ -1265,7 +1266,7 @@ const Daily = {
     const r = dot.getBoundingClientRect();
     const menu = document.createElement('div');
     menu.className = 'dot-menu';
-    let menuHTML = '<button data-act="done">完成任务</button><button data-act="mini">只做一点点</button><button data-act="move">移到明天</button><button data-act="give">✕ 无法完成</button><button data-act="pass">' + (t.passToday ? '取消今日放过' : '今日放过') + '</button>';
+    let menuHTML = '<button data-act="done">完成任务</button><button data-act="move">移到明天</button><button data-act="give">✕ 无法完成</button><button data-act="pass">' + (t.passToday ? '取消今日放过' : '今日放过') + '</button>';
     menuHTML += '<button data-act="rest">' + (t.restDay ? '取消今日休息' : '今日休息') + '</button>';
     menu.innerHTML = menuHTML;
     menu.style.position = 'fixed';
@@ -1278,8 +1279,6 @@ const Daily = {
     const onDoc = e => { if (!menu.contains(e.target)) close(); };
     setTimeout(() => document.addEventListener('click', onDoc, true), 0);
     menu.querySelector('[data-act=done]').onclick = e => { e.stopPropagation(); close(); this.completeTask(this.cur, t.id); };
-    const miniBtn = menu.querySelector('[data-act=mini]');
-    if (miniBtn) miniBtn.onclick = e => { e.stopPropagation(); close(); this.miniDone(this.cur, t.id); };
     menu.querySelector('[data-act=move]').onclick = e => { e.stopPropagation(); close(); this.moveTmr(this.cur, t.id); };
     menu.querySelector('[data-act=give]').onclick = e => { e.stopPropagation(); close(); this.promptAbandon(this.cur, t.id); };
     const restBtn = menu.querySelector('[data-act=rest]');
@@ -1410,11 +1409,11 @@ const Daily = {
     minp.onkeydown = e => { if (e.key === 'Enter') ok(); };
     deltap.onkeydown = e => { if (e.key === 'Enter') ok(); };
   },
-  // 不背单词任务完成前：记录 本次时长 / 新学 / 复习，写入本地不背单词记录（面板与续火花同源）
+  // 墨墨任务完成前：记录 本次时长 / 新学 / 复习，写入本地墨墨记录（面板与续火花同源）
   requireBbdcInfo(t, date, onConfirm) {
     if (t.bbdcMin != null) { onConfirm(); return; }
     const def = (t.extra && t.extra.minutes) || t.estMin || '';
-    openModal(`<button class="close-x" onclick="closeModal()">×</button><h3>${icon('book',18)} 记录不背单词</h3>
+    openModal(`<button class="close-x" onclick="closeModal()">×</button><h3>${icon('book',18)} 记录墨墨</h3>
       <div class="muted" style="margin-bottom:10px">「${esc(t.title)}」今天背了多少？</div>
       <div class="form-row"><label>学习时长（分钟）</label><input id="bbdcMinInput" type="text" inputmode="numeric" style="direction:ltr" value="${def}" placeholder="如实填，比如 20" autofocus></div>
       <div class="form-row"><label>新学词数（没学填 0）</label><input id="bbdcLearnInput" type="text" inputmode="numeric" style="direction:ltr" value="0"></div>
@@ -1440,7 +1439,7 @@ const Daily = {
     if (t.cat === 'sport') return this.requireSportInfo(t, date, onConfirm);
     if (t.cat === 'growth' && this.growthArea(t.link) === '英语') return this.requireEngInfo(t, date, onConfirm);
     if (t.cat === 'growth' && this.growthArea(t.link) === '多邻国') return this.requireEngInfo(t, date, onConfirm);
-    if (t.cat === 'growth' && this.growthArea(t.link) === '不背单词') return this.requireBbdcInfo(t, date, onConfirm);
+    if (t.cat === 'growth' && this.growthArea(t.link) === '墨墨') return this.requireBbdcInfo(t, date, onConfirm);
     if (t.cat === 'growth' && this.growthArea(t.link) === '阅读') return this.requireReadInfo(t, date, onConfirm);
     if (t.link === 'work:write') return this.requireWriteInfo(t, date, onConfirm);
     onConfirm();
@@ -1517,7 +1516,7 @@ const Daily = {
         if (t.cat === 'kaogong') extra = this._kgExtra(t);
         else if (t.cat === 'sport') extra = { minutes: t.sportMin || 10, feel: t.sportFeel || '适中' };
         else if (this.growthArea(t.link) === '英语' || this.growthArea(t.link) === '多邻国') extra = { minutes: (t.engMin != null ? t.engMin : (extra && extra.minutes) || 20), delta: (t.engDelta != null ? t.engDelta : 0) };
-        else if (this.growthArea(t.link) === '不背单词') extra = { minutes: (t.bbdcMin != null ? t.bbdcMin : (extra && extra.minutes) || 20), learn: t.bbdcLearn || 0, review: t.bbdcReview || 0 };
+        else if (this.growthArea(t.link) === '墨墨') extra = { minutes: (t.bbdcMin != null ? t.bbdcMin : (extra && extra.minutes) || 20), learn: t.bbdcLearn || 0, review: t.bbdcReview || 0 };
         else if (this.growthArea(t.link) === '阅读') extra = { book: t.readBook, pages: t.readPages || '', minutes: t.readMin != null ? t.readMin : 20, cat: t.readCat || '', finished: t.readFinished };
         else if (t.link === 'work:write') extra = { book: t.writeBook, content: t.writeContent, words: t.writeWords, kind: t.writeKind };
         this.pushToColumn(date, t.link, t.title, t.linkApp, extra, t.srcId || t.id);
@@ -1533,7 +1532,7 @@ const Daily = {
     // 移动不记录学习/涨分，英语/阅读任务跳过填写弹窗（移动不等于打卡）
     if (t.cat === 'growth' && this.growthArea(t.link) === '英语') { this.promptMoveLoad(t, date); return; }
     if (t.cat === 'growth' && this.growthArea(t.link) === '多邻国') { this.promptMoveLoad(t, date); return; }
-    if (t.cat === 'growth' && this.growthArea(t.link) === '不背单词') { this.promptMoveLoad(t, date); return; }
+    if (t.cat === 'growth' && this.growthArea(t.link) === '墨墨') { this.promptMoveLoad(t, date); return; }
     if (t.cat === 'growth' && this.growthArea(t.link) === '阅读') { this.promptMoveLoad(t, date); return; }
     if (t.link === 'work:write') { this.promptMoveLoad(t, date); return; }
     this.requireTaskInfo(t, date, () => this.promptMoveLoad(t, date));
@@ -1728,56 +1727,27 @@ const Daily = {
     };
     try { ta.focus(); } catch (e) {}
   },
-  // 只做一点点（微量完成）：真实做了几分钟也算完成——点亮火花、不占任何额度，标记「微」保持数据诚实
-  miniDone(date, id) {
-    const arr = this.list(date); const t = arr.find(x => x.id === id); if (!t) return;
-    if (this.isDone(t) && !t.miniDone) { toast('这个已经完成啦'); return; }
-    const def = (t.cat === 'kaogong' && t.actMin != null) ? t.actMin : '';
-    openModal(`<button class="close-x" onclick="closeModal()">×</button><h3>${icon('sprout', 18)} 只做一点点</h3>
-      <div class="muted" style="font-size:12px;margin:6px 0 10px;line-height:1.6">「${esc(t.title || '这个任务')}」今天真实碰了几分钟？做多做少都算——小火花只看真，不看大。</div>
-      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">
-        ${[1, 5, 10, 15, 20].map(v => `<button class="btn sm ghost" data-mchip="${v}">${v} 分钟</button>`).join('')}
-      </div>
-      <div class="form-row"><label>实际时长（分钟）</label><input id="miniMinInput" type="text" inputmode="numeric" style="direction:ltr" value="${def}" placeholder="1 分钟也算"></div>
-      <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:10px">
-        <button class="btn ghost" onclick="closeModal()">取消</button>
-        <button class="btn" id="miniOk">就这么多，完成</button>
-      </div>`);
-    const minp = document.getElementById('miniMinInput');
-    document.querySelectorAll('[data-mchip]').forEach(b => b.onclick = () => { minp.value = b.dataset.mchip; });
-    const ok = () => {
-      const m = Number(minp.value);
-      if (!m || m <= 0 || isNaN(m)) { toast('做了几分钟就填几分钟，1 分钟也算～'); minp.focus(); return; }
-      t.miniDone = true; t.miniMin = m;
-      if (t.steps.length) t.steps.forEach(s => { s.done = true; s.doneAt = Date.now(); });
-      else t.manualDone = true;
-      if (!t.doneAt) t.doneAt = Date.now();
-      if (t.restDay) { t.restDay = false; this._clearRest(date, t); }
-      if (t.passToday) { t.passToday = false; this._clearPass(date, t); }
-      this.setList(date, arr);
-      if (t.link) {
-        let extra;
-        if (t.cat === 'kaogong') { extra = this._kgExtra(t) || {}; extra.minutes = m; }
-        else if (t.cat === 'sport') extra = { minutes: m, feel: '轻松' };
-        else if (this.growthArea(t.link) === '英语' || this.growthArea(t.link) === '多邻国') extra = { minutes: m, delta: 0 };
-        else if (this.growthArea(t.link) === '不背单词') extra = { minutes: m, learn: 0, review: 0 };
-        else if (this.growthArea(t.link) === '阅读') extra = { book: t.readBook || t.title || '阅读打卡', pages: '', minutes: m, cat: t.readCat || '', finished: false };
-        else extra = Object.assign({}, t.extra || {}, { minutes: m });
-        this.pushToColumn(date, t.link, t.title, t.linkApp, extra, t.srcId || t.id);
-      }
-      this.syncGoalsFromPlan(date);
-      closeModal(); this.render(this._root); toast('小赢也是赢：今天真实做了 ' + m + ' 分钟 🌱');
-    };
-    document.getElementById('miniOk').onclick = ok;
-    minp.onkeydown = e => { if (e.key === 'Enter') ok(); };
-    try { minp.focus(); } catch (e) {}
-  },
   // 今日放过：单任务第三动作（与「已完成 / 无法完成」并列）。底层复用休息语义——
   // 把对应续火花条目写入 rest[date]，使该科目当天「覆盖但不增长」（covered 但 isDone=false），
   // 火花不前进也不中断；不动用休息额度（无限次）；任务次日由每日计划模板重生，故仅当日标记。
   _passTargetItems(t) {
     const St = window.Streak; if (!St || !St.data) return [];
     const items = St.data().items || [];
+    // v432 修复：成长/三餐任务此前不在映射里——选「今日放过」时对应火花 rest 根本没写，导致断火
+    if (t.cat === 'growth') {
+      const link = t.link || '';
+      const sub = link.split(':')[1] || '';
+      const ga = this.growthArea(link) || sub;
+      if (ga === '阅读') { const it = items.find(x => x.id === 'read:all'); return it ? [it] : []; }
+      if (link === 'growth:english' || ga === '英语') return items.filter(x => x.parent === 'group:english' && x.type !== 'group'); // 通用英语 → 英语组全部叶子（多邻国/墨墨）
+      const it = items.find(x => x.id === 'growth:' + ga || ((x.type === 'custom' || x.type === 'growth') && x.ref === ga));
+      return it ? [it] : [];
+    }
+    if (t.cat === 'meals') {
+      const sub = (t.link || '').split(':')[1] || '';
+      const slot = { b: 'breakfast', l: 'lunch', d: 'dinner' }[sub];
+      return items.filter(x => x.type === 'meals' && (!slot || !x.ref || x.ref === slot));
+    }
     if (t.cat === 'sport') {
       const ref = (t.link && t.link.split(':')[1]) || (t.extra && t.extra.project) || (t.title || '');
       const it = items.find(x => x.type === 'sport' && sportNorm(x.ref) === sportNorm(ref));
