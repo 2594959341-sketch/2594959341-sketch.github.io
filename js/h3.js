@@ -145,6 +145,9 @@ window.H3 = (function () {
     const fourDone = [dft.mind, dft.body, dft.spirit, dft.vocation].every(v => v !== null);
     const avoidOk = String(avoidVal || '').trim() !== '';
     const canSubmit = isToday && fourDone && avoidOk;
+    // v435：心情记录（回到每日复盘页；存 h3_review[d].mood，0-4 对应 😊🙂😐😟😢）
+    const moodVal = isToday ? (dft.mood != null ? dft.mood : (saved ? saved.mood : null)) : (saved ? saved.mood : null);
+    const moodRow = `<div class="h3-field" style="margin-bottom:10px"><label>今日心情</label><div class="h3-mood">${[0, 1, 2, 3, 4].map(v => `<button class="h3-mood-b${moodVal === v ? ' on' : ''}" data-h3mood="${v}"${isToday ? '' : ' disabled'}>${['😊', '🙂', '😐', '😟', '😢'][v]}</button>`).join('')}<span class="muted" style="font-size:11px;margin-left:6px">点一下就记下了</span></div></div>`;
 
     box.innerHTML = `
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;padding-right:12px">
@@ -154,6 +157,7 @@ window.H3 = (function () {
       <input type="date" id="rDate" value="${cur}" style="position:absolute;opacity:0;pointer-events:none">
       <div class="card">
         <div class="muted" style="font-size:12px;margin-bottom:8px">当前等级：${esc(lvLine)}</div>
+        ${moodRow}
         <div class="h3-quad">${quadRows}</div>
         <div class="h3-field" style="margin-top:12px"><label>小说时长</label>
           <div class="muted">自动读取娱乐模块记录：${novelAuto} 分钟</div>
@@ -164,7 +168,7 @@ window.H3 = (function () {
         ${isToday ? `<button class="btn h3-submit" id="h3Save"${canSubmit ? '' : ' disabled'}>保存复盘</button>` : `<div class="muted" style="margin-top:12px">这是过去的记录，已锁定不可改。</div>`}
         ${!isToday && saved ? `<div class="muted" style="margin-top:8px">保存于 ${new Date(saved.ts || 0).toLocaleString('zh-CN')}</div>` : ''}
       </div>
-      ${oldDiaryHTML()}`;
+      <div style="margin-top:10px"><button class="btn ghost" id="h3Arc" style="width:100%">${icon('book', 14)} 日记归档</button></div>`;
 
     // 日期切换
     const dc = box.querySelector('#rDateClick');
@@ -193,7 +197,17 @@ window.H3 = (function () {
       };
       const save = box.querySelector('#h3Save');
       if (save) save.onclick = () => submit(cur, Review, root);
+      box.querySelectorAll('[data-h3mood]').forEach(b => b.onclick = () => {
+        const v = Number(b.dataset.h3mood);
+        H3._draft[cur].mood = v;
+        const o = reviews()[cur] || {};
+        setReview(cur, Object.assign({}, o, { mood: v, moodTs: Date.now() }));
+        toast('心情已记录');
+        renderDaily(Review, box, root);
+      });
     }
+    const arc = box.querySelector('#h3Arc');
+    if (arc) arc.onclick = () => openDiaryArchive();
   }
 
   function submit(cur, Review, root) {
@@ -236,6 +250,38 @@ window.H3 = (function () {
     return `<div class="card h3-week"><h3>本周概览</h3>
       <table class="wg"><thead><tr><th></th>${head}</tr></thead><tbody>${rows}</tbody></table>
       <div class="muted" style="font-size:11px;margin-top:4px">深绿=2 浅绿=1 灰=0 空=未记</div></div>`;
+  }
+
+  // v435：日记归档——旧日记(reviews.text) + 低谷日记(mumu_valley) 按日期倒序，点开看全文
+  function moodEmojiOf(d) {
+    const h = (S.get('h3_review', {}) || {})[d] || {};
+    const r = (S.get('reviews', {}) || {})[d] || {};
+    return ['😊', '🙂', '😐', '😟', '😢'][h.mood != null ? h.mood : (r.mood != null ? r.mood : 2)];
+  }
+  function openDiaryArchive() {
+    const R = S.get('reviews', {}) || {};
+    const V = S.get('mumu_valley', {}) || {};
+    const dates = Array.from(new Set(Object.keys(R).concat(Object.keys(V)))).filter(d => /^\d{4}-\d{2}-\d{2}$/.test(d) && (((R[d] || {}).text || '').trim() || ((V[d] || {}).text || '').trim())).sort().reverse();
+    if (!dates.length) { toast('还没有日记——低谷时写的日记、复盘里的日记都会存到这里'); return; }
+    const rows = dates.map(d => {
+      const r = R[d] || {}, v = V[d] || {};
+      const src = [];
+      if ((r.text || '').trim()) src.push('日记');
+      if ((v.text || '').trim()) src.push('低谷');
+      const txt = ((v.text || '').trim() || (r.text || '').trim());
+      const exc = txt.length > 60 ? txt.slice(0, 60) + '…' : txt;
+      return `<div class="arc-item" data-arc="${d}"><span class="arc-date">${d}</span><span class="arc-mood">${moodEmojiOf(d)}</span><span class="arc-src">${src.join(' · ')}</span><span class="arc-exc">${esc(exc)}</span></div>`;
+    }).join('');
+    openModal(`<button class="close-x" onclick="closeModal()">×</button><h3>${icon('book', 18)} 日记归档</h3><div class="arc-list">${rows}</div>`);
+    document.querySelectorAll('[data-arc]').forEach(el => el.onclick = () => showDiary(el.dataset.arc));
+  }
+  function showDiary(d) {
+    const r = (S.get('reviews', {}) || {})[d] || {};
+    const v = (S.get('mumu_valley', {}) || {})[d] || {};
+    let html = `<button class="close-x" onclick="closeModal()">×</button><h3>${d} ${moodEmojiOf(d)}</h3>`;
+    if ((r.text || '').trim()) html += `<div class="arc-sec"><div class="arc-sec-t">日记</div><div class="arc-full">${esc(r.text)}</div></div>`;
+    if ((v.text || '').trim()) html += `<div class="arc-sec"><div class="arc-sec-t">低谷日记</div><div class="arc-full">${esc(v.text)}</div></div>`;
+    openModal(html);
   }
 
   // 旧日记只读折叠（reviews 旧键）
