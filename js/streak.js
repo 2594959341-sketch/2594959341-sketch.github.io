@@ -49,7 +49,7 @@ const Streak = {
   },
   // 是否覆盖（真实打卡 / 休息日 / 补签日都算续上；休息日含每日计划里的运动/备考休息日）
   covered(item, date) {
-    if (item.type === 'group') return this.groupCovered(item, date); // 上级火花：所有子项当天都点亮才算覆盖
+    if (item.type === 'group') return this.groupCovered(item, date); // 上级火花（v436）：板块内任一子项当天覆盖就算续上
     if (isSickLeave(date)) return true; // 病假：保护所有板块续火花，等同月经假/年度假期
     if (isAnnualHoliday(date)) return true; // 年度固定假期（生日/纪念日）：全局保护所有板块续火花，等同月经假
     if ((S.get('menstrualRest', []) || []).indexOf(date) >= 0) return true; // 月经假：保护所有板块续火花
@@ -70,13 +70,14 @@ const Streak = {
     walk(groupId);
     return out;
   },
-  // 上级当天是否「全部点亮」：所有叶子项当天都覆盖
+  // 上级当天是否「活跃」（v436 修订）：板块内至少一个叶子当天覆盖就算续上（整板块都没碰才算断）。
+  // v386 旧口径「所有叶子都覆盖才续」对科目轮换/项目轮换不友好——只要有一项当天没碰整个板块就断，导致「成长」等一级火花常显示 0
   groupCovered(item, date) {
     const leaves = this.leafItems(item.id);
     if (!leaves.length) return false;
-    return leaves.every(l => this.covered(l, date));
+    return leaves.some(l => this.covered(l, date));
   },
-  // 上级连续天数：从今天往回数「全部点亮」的连续天数
+  // 上级连续天数（v436 修订）：从今天往回数，当天板块内至少一个叶子「真实打卡」就计 1 天；全休息/全放过的日子不断但不计数（与叶子 v332 口径一致）
   groupCurStreak(item) {
     const origin = '2025-01-01';
     let cur = todayStr();
@@ -84,8 +85,7 @@ const Streak = {
     const leaves = this.leafItems(item.id);
     let c = 0;
     while (cur >= origin && this.groupCovered(item, cur)) {
-      // 与叶子一致（v332 口径）：仅「全部子项当天都真实打卡」的日子计入连续天数；休息/月经假/补签/假期不计入
-      if (leaves.length && leaves.every(l => this.isDone(l, cur))) c++;
+      if (leaves.length && leaves.some(l => this.isDone(l, cur))) c++;
       cur = addDays(cur, -1);
     }
     return c;
@@ -459,7 +459,7 @@ const Streak = {
     }
     box.appendChild(Daily.renderSubTabs(box, 'streak'));
   },
-  // 上级组详情：日历显示「全部点亮」的天；不可手动打卡
+  // 上级组详情：日历显示板块活跃的天（任一子项真实打卡=实心、仅休息=part）；不可手动打卡
   detailGroup(item, box) {
     if (!Daily._monthYm) Daily._monthYm = todayStr().slice(0, 7);
     const ym = Daily._monthYm;
@@ -475,16 +475,16 @@ const Streak = {
       <button class="icon-btn" id="dtBack" title="返回">${icon('back', 18)}</button>`;
     top.appendChild(bar);
     const stat = document.createElement('div'); stat.className = 'stk-stat';
-    stat.innerHTML = `连续 <b>${this.curStreak(item)}</b> 天 · 上级火花由子项自动点亮（全部子项当天点亮才算）`;
+    stat.innerHTML = `连续 <b>${this.curStreak(item)}</b> 天 · 板块内任一子项当天点亮就算（全休息的日子不断但不计数）`;
     box.appendChild(stat);
     const grid = document.createElement('div'); grid.className = 'stk-days'; box.appendChild(grid);
     const leavesAll = this.leafItems(item.id);
     for (let dd = 1; dd <= dim; dd++) {
       const ds = ym + '-' + String(dd).padStart(2, '0');
-      const allLit = this.groupCovered(item, ds);
+      const anyDone = leavesAll.some(l => this.isDone(l, ds)); // v436：任一子项真实打卡=实心；仅休息=part
       const lit = leavesAll.filter(l => this.covered(l, ds)).length;
-      const cls = allLit ? 'done' : (lit > 0 ? 'part' : 'gap');
-      const lab = allLit ? '' : (lit > 0 ? lit + '/' + leavesAll.length : '');
+      const cls = anyDone ? 'done' : (lit > 0 ? 'part' : 'gap');
+      const lab = anyDone ? '' : (lit > 0 ? lit + '/' + leavesAll.length : '');
       const cell = document.createElement('div');
       cell.className = 'stk-day ' + cls;
       cell.innerHTML = `<span class="d">${dd}</span>${lab ? '<span class="mk">' + lab + '</span>' : ''}`;
