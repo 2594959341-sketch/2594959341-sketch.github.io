@@ -1,5 +1,5 @@
 /* ============ 首页 + 导航 ============ */
-window.APP_VER = 'mumu-v434'; // 当前前端版本（设置页可见，用于确认是否加载到最新代码）
+window.APP_VER = 'mumu-v435'; // 当前前端版本（设置页可见，用于确认是否加载到最新代码）
 const SR_LINKS = [
   { v: 'sport', n: '运动（任意跟练）' },
   { v: 'sport:', n: '运动（具体项目，选后填名）' },
@@ -524,6 +524,10 @@ const App = {
           <div><div class="setting-label">${icon('target',16)} 考试日</div><div class="setting-desc" style="font-size:11px">登记考试日：当天不安排备考任务，学习连续天数与续火花不受影响</div></div>
           <div class="setting-actions"><button class="btn sm" id="btnExamDay">登记</button></div>
         </div>
+        <div class="setting-row">
+          <div><div class="setting-label">${icon('moon',16)} 今日低谷</div><div class="setting-desc" style="font-size:11px">非常低落、什么都不想做的时候用：写一篇不少于 500 字的低谷日记（记录并分析现在的状态），今天所有未完成任务全部「放过」——火花照常不断、不占休息额度，日记存进复盘的日记归档</div></div>
+          <div class="setting-actions"><button class="btn sm" id="btnValley">进入低谷</button></div>
+        </div>
       </div>`;
     const btnExport = root.querySelector('#btnExport');
     if (btnExport) btnExport.onclick = async () => {
@@ -616,6 +620,8 @@ const App = {
     if (btnMensLeave) btnMensLeave.onclick = () => { if (window.openMensLeaveDialog) openMensLeaveDialog(root); };
     const btnExamDay = root.querySelector('#btnExamDay');
     if (btnExamDay) btnExamDay.onclick = () => { if (window.openExamDayDialog) openExamDayDialog(root); };
+    const btnValley = root.querySelector('#btnValley');
+    if (btnValley) btnValley.onclick = () => { if (window.Daily && Daily.lowValleyToday) Daily.lowValleyToday(); };
   },
   async init() {
     try {
