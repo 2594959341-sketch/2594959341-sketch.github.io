@@ -1674,6 +1674,65 @@ const Daily = {
     if (changed) St.save(d);
   },
 
+  // v435：低谷日记门槛——「今日放过」与「今日低谷」共用：当日已写 ≥500 字则直接放行
+  _valleyOk() {
+    const v = (S.get('mumu_valley', {}) || {})[todayStr()];
+    return !!(v && v.text && v.text.trim().length >= 500);
+  },
+  askValleyDiary(onDone) {
+    const today = todayStr();
+    const oldTxt = (((S.get('mumu_valley', {}) || {})[today]) || {}).text || '';
+    openModal(`<button class="close-x" onclick="closeModal()">×</button><h3>${icon('moon', 18)} 低谷日记</h3>
+      <div class="muted" style="font-size:12px;margin:6px 0 10px;line-height:1.7">先把现在的状态写下来、分析一下——不少于 <b>500 字</b>。写完今天就可以放过了，这篇日记会存进「复盘 · 日记归档」，以后能回看。</div>
+      <div class="form-row"><textarea id="valleyText" rows="12" placeholder="今天发生了什么？现在是什么感受？为什么会有这种感受？如果愿意，接下来想怎么办？……">${esc(oldTxt)}</textarea></div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-top:8px">
+        <span class="muted" id="valleyCnt" style="font-size:12px"></span>
+        <div style="display:flex;gap:8px">
+          <button class="btn ghost" onclick="closeModal()">不写了</button>
+          <button class="btn" id="valleyOkBtn">写完了，放过今天</button>
+        </div>
+      </div>`);
+    const ta = document.getElementById('valleyText');
+    const cnt = document.getElementById('valleyCnt');
+    const upd = () => { const n = (ta.value || '').trim().length; cnt.textContent = n + ' / 500 字' + (n >= 500 ? ' · 够了' : ''); };
+    upd();
+    ta.oninput = upd;
+    document.getElementById('valleyOkBtn').onclick = () => {
+      const txt = (ta.value || '').trim();
+      if (txt.length < 500) { toast('还差 ' + (500 - txt.length) + ' 字，再写一点吧～写下来本身就是在梳理'); ta.focus(); return; }
+      const V = S.get('mumu_valley', {}) || {};
+      V[today] = { text: txt, ts: Date.now() };
+      S.set('mumu_valley', V);
+      closeModal();
+      toast('低谷日记已存档');
+      if (onDone) onDone();
+    };
+    try { ta.focus(); } catch (e) {}
+  },
+  // v435：今日低谷（设置页入口）——写完 ≥500 字低谷日记后，今天所有未完成任务全部「今日放过」
+  lowValleyToday() {
+    const run = () => {
+      const date = todayStr();
+      const arr = this.list(date) || [];
+      let n = 0;
+      arr.forEach(t => {
+        if (!t || t.abandoned || t.moved || t.passToday) return;
+        if (this.effDone(t, date)) return;
+        t.passToday = true; n++;
+        const items = this._passTargetItems(t);
+        if (items.length) {
+          const St = window.Streak; const d = St.data();
+          items.forEach(it => { it.rest = it.rest || {}; it.rest[date] = 1; it.pass = it.pass || {}; it.pass[date] = 1; });
+          St.save(d);
+        }
+      });
+      this.setList(date, arr);
+      if (window.App && window.App.go) App.go('daily'); else if (this._root) this.render(this._root);
+      toast(n ? ('今日低谷 · ' + n + ' 个任务已放过，火花都续着，好好休息 🌙') : '今天没有需要放过的任务啦');
+    };
+    if (this._valleyOk()) run(); else this.askValleyDiary(run);
+  },
+
   // 今日放过：单任务第三动作（与「已完成 / 无法完成」并列）。底层复用休息语义——
   // 把对应续火花条目写入 rest[date]，使该科目当天「覆盖但不增长」（covered 但 isDone=false），
   // 火花不前进也不中断；不动用休息额度（无限次）；任务次日由每日计划模板重生，故仅当日标记。
@@ -1748,6 +1807,7 @@ const Daily = {
       return;
     }
     if (t.restDay) { t.restDay = false; this._clearRest(date, t); } // 与「今日休息」互斥，且不占额度
+    if (!this._valleyOk()) { this.askValleyDiary(() => this.passToday(date, id, cancel, reason)); return; } // v435：先写 ≥500 字低谷日记才能放过（当日已写过则直接放行）
     t.passToday = true;
     if (reason) t.passReason = String(reason).trim();
     const items = this._passTargetItems(t);
