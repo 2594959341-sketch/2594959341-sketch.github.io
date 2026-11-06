@@ -1963,3 +1963,20 @@ body.modal-open .pv-dl{display:none!important}
 .bbdc-rec-d{font-size:13px;color:var(--ink);min-width:88px}
 .bbdc-rec-v{font-size:13px;color:var(--sub);flex:1}
 .bbdc-rec-x{border:none;background:transparent;color:var(--sub);font-size:18px;line-height:1;cursor:pointer;padding:0 4px}
+
+/* v435 心情记录 / 低谷日记 / 日记归档 */
+.h3-mood{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.h3-mood-b{width:40px;height:40px;border-radius:10px;border:1px solid var(--line);background:#fff;font-size:20px;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0}
+.h3-mood-b.on{border-color:#3a7d5d;background:#e8f5ec}
+.h3-mood-b:disabled{opacity:.5;cursor:default}
+#valleyText{width:100%;min-height:200px;font-size:13px;line-height:1.7;box-sizing:border-box;padding:8px 10px;border:1px solid var(--line);border-radius:8px;font-family:inherit;resize:vertical}
+.arc-list{max-height:60vh;overflow-y:auto}
+.arc-item{display:flex;gap:8px;align-items:baseline;padding:10px 4px;border-bottom:1px solid #eee;cursor:pointer}
+.arc-item:hover{background:#fafafa}
+.arc-date{font-weight:600;font-size:13px;flex-shrink:0}
+.arc-mood{flex-shrink:0}
+.arc-src{font-size:11px;color:#3a7d5d;border:1px solid #cde8d6;border-radius:4px;padding:1px 6px;flex-shrink:0}
+.arc-exc{font-size:12px;color:#666;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;min-width:0}
+.arc-sec{margin-top:10px}
+.arc-sec-t{font-size:12px;color:#3a7d5d;font-weight:600;margin-bottom:4px}
+.arc-full{font-size:13px;line-height:1.8;white-space:pre-wrap;word-break:break-word;max-height:50vh;overflow-y:auto;background:#fafafa;border-radius:8px;padding:10px}
