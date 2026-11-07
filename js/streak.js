@@ -49,7 +49,7 @@ const Streak = {
   },
   // 是否覆盖（真实打卡 / 休息日 / 补签日都算续上；休息日含每日计划里的运动/备考休息日）
   covered(item, date) {
-    if (item.type === 'group') return this.groupCovered(item, date); // 上级火花（v436）：板块内任一子项当天覆盖就算续上
+    if (item.type === 'group') return this.groupCovered(item, date); // 上级火花（v437）：板块内所有在用子项当天都覆盖才算重叠续上
     if (isSickLeave(date)) return true; // 病假：保护所有板块续火花，等同月经假/年度假期
     if (isAnnualHoliday(date)) return true; // 年度固定假期（生日/纪念日）：全局保护所有板块续火花，等同月经假
     if ((S.get('menstrualRest', []) || []).indexOf(date) >= 0) return true; // 月经假：保护所有板块续火花
@@ -70,25 +70,32 @@ const Streak = {
     walk(groupId);
     return out;
   },
-  // 上级当天是否「活跃」（v436 修订）：板块内至少一个叶子当天覆盖就算续上（整板块都没碰才算断）。
-  // v386 旧口径「所有叶子都覆盖才续」对科目轮换/项目轮换不友好——只要有一项当天没碰整个板块就断，导致「成长」等一级火花常显示 0
-  groupCovered(item, date) {
-    const leaves = this.leafItems(item.id);
-    if (!leaves.length) return false;
-    return leaves.some(l => this.covered(l, date));
+  // v437：参与一级火花计算的「在用子项」——近 45 天有过真实打卡（或休息/补签）的叶子。
+  // 从不做的科目 / 已废弃的项目不参与，否则一级火花会被一个永久为 0 的子项拖死（v386 老问题）
+  activeLeafItems(groupId) {
+    const leaves = this.leafItems(groupId);
+    if (!leaves.length) return [];
+    const base = todayStr();
+    const act = leaves.filter(l => {
+      const rest = l.rest || {}, made = l.madeup || {};
+      for (let i = 0; i < 45; i++) { const d = addDays(base, -i); if (this.isDone(l, d) || rest[d] || made[d]) return true; }
+      return false;
+    });
+    return act.length ? act : leaves;
   },
-  // 上级连续天数（v436 修订）：从今天往回数，当天板块内至少一个叶子「真实打卡」就计 1 天；全休息/全放过的日子不断但不计数（与叶子 v332 口径一致）
+  // 上级当天是否「点亮」（v437）：板块内所有在用子项当天都覆盖，这一天才算重叠点亮
+  groupCovered(item, date) {
+    const leaves = this.activeLeafItems(item.id);
+    if (!leaves.length) return false;
+    return leaves.every(l => this.covered(l, date));
+  },
+  // 上级连续天数（v437）：一级火花 = 各二级火花重叠的日子 = 取在用的二级火花里「最短」的那个（不是最多的那个）
   groupCurStreak(item) {
-    const origin = '2025-01-01';
-    let cur = todayStr();
-    while (cur >= origin && !this.groupCovered(item, cur)) cur = addDays(cur, -1);
-    const leaves = this.leafItems(item.id);
-    let c = 0;
-    while (cur >= origin && this.groupCovered(item, cur)) {
-      if (leaves.length && leaves.some(l => this.isDone(l, cur))) c++;
-      cur = addDays(cur, -1);
-    }
-    return c;
+    const leaves = this.activeLeafItems(item.id);
+    if (!leaves.length) return 0;
+    let m = Infinity;
+    leaves.forEach(l => { const s = this.curStreak(l); if (s < m) m = s; });
+    return m === Infinity ? 0 : m;
   },
 
   // 收集续火花项目：默认种子 + 从日志自动发现（后续新增学习科目/运动项目自动进入）+ 已存自定义
@@ -229,7 +236,7 @@ const Streak = {
 
   // 当前连续天数：休息/月经假/补签日不中断连续性，但也不计入连续天数；只有真实打卡日才计入
   curStreak(item) {
-    if (item.type === 'group') return this.groupCurStreak(item); // 上级连续天数 = 全部点亮的天数
+    if (item.type === 'group') return this.groupCurStreak(item); // 上级连续天数 = 各在用子项里最短的那个（重叠日）
     const origin = '2025-01-01';
     let cur = todayStr();
     // covered = 真实打卡 / 休息日 / 月经假 / 补签日，任意一条都算「续上」（不中断）
@@ -475,16 +482,19 @@ const Streak = {
       <button class="icon-btn" id="dtBack" title="返回">${icon('back', 18)}</button>`;
     top.appendChild(bar);
     const stat = document.createElement('div'); stat.className = 'stk-stat';
-    stat.innerHTML = `连续 <b>${this.curStreak(item)}</b> 天 · 板块内任一子项当天点亮就算（全休息的日子不断但不计数）`;
+    const _actLeaves = this.activeLeafItems(item.id);
+    let _minLeaf = null;
+    _actLeaves.forEach(l => { const s = this.curStreak(l); if (!_minLeaf || s < _minLeaf.s) _minLeaf = { name: l.name, s: s }; });
+    stat.innerHTML = `连续 <b>${this.curStreak(item)}</b> 天 · 取二级火花里最短的一项${_minLeaf ? '（' + esc(_minLeaf.name) + ' ' + _minLeaf.s + ' 天）' : ''}`;
     box.appendChild(stat);
     const grid = document.createElement('div'); grid.className = 'stk-days'; box.appendChild(grid);
-    const leavesAll = this.leafItems(item.id);
+    const leavesAll = this.activeLeafItems(item.id);
     for (let dd = 1; dd <= dim; dd++) {
       const ds = ym + '-' + String(dd).padStart(2, '0');
-      const anyDone = leavesAll.some(l => this.isDone(l, ds)); // v436：任一子项真实打卡=实心；仅休息=part
+      const allDone = leavesAll.length > 0 && leavesAll.every(l => this.isDone(l, ds)); // v437：全部在用子项都真实打卡=实心（重叠日）
       const lit = leavesAll.filter(l => this.covered(l, ds)).length;
-      const cls = anyDone ? 'done' : (lit > 0 ? 'part' : 'gap');
-      const lab = anyDone ? '' : (lit > 0 ? lit + '/' + leavesAll.length : '');
+      const cls = allDone ? 'done' : (lit > 0 ? 'part' : 'gap');
+      const lab = allDone ? '' : (lit > 0 ? lit + '/' + leavesAll.length : '');
       const cell = document.createElement('div');
       cell.className = 'stk-day ' + cls;
       cell.innerHTML = `<span class="d">${dd}</span>${lab ? '<span class="mk">' + lab + '</span>' : ''}`;
