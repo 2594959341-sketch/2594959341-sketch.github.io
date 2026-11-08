@@ -7,11 +7,21 @@
 const BBDC = {
   KEY: 'mumu_bbdc',
   get() {
-    const d = S.get(this.KEY, null);
-    if (!d || typeof d !== 'object') return { updated: '', data: {} };
+    let d = S.get(this.KEY, null);
+    if (!d || typeof d !== 'object') d = { updated: '', data: {} };
     if (!d.data || typeof d.data !== 'object') d.data = {};
+    // v438：木木从 11-02 开始背，2/3/4/5 四天当时只在续火花里种了天数、没记时长。
+    // 这里如实补进墨墨页自己的数据（标「已背·未记时长」，不编造分钟数）；_v438seed 保证只补一次，之后删改不再回灌
+    if (!d._v438seed) {
+      d._v438seed = 1;
+      ['2026-11-02', '2026-11-03', '2026-11-04', '2026-11-05'].forEach(dt => {
+        if (!d.data[dt]) d.data[dt] = { time: 0, learn: 0, review: 0, _seed: 1 };
+      });
+      this.set(d);
+    }
     return d;
   },
+  hasRec(d, dt) { const v = d[dt]; return !!(v && (v.time > 0 || v.learn > 0 || v.review > 0 || v._seed)); },
   set(obj) { S.set(this.KEY, obj); },
   render(mount) {
     if (!mount) return;
@@ -47,7 +57,7 @@ const BBDC = {
     const form = document.createElement('div');
     form.id = 'bbdcForm';
     form.className = 'bbdc-form';
-    const isEdit = !!(cur.time || cur.learn || cur.review);
+    const isEdit = !!(cur.time || cur.learn || cur.review || cur._seed);
     form.innerHTML =
       '<div class="bbdc-form-row"><label>日期<input type="date" data-fd value="' + d + '"></label></div>' +
       '<div class="bbdc-form-row bbdc-form-3">' +
@@ -90,8 +100,20 @@ const BBDC = {
     const dates = Object.keys(d).sort();
     let totalTime = 0, totalLearn = 0, totalReview = 0;
     dates.forEach(dt => { const v = d[dt]; totalTime += v.time || 0; totalLearn += v.learn || 0; totalReview += v.review || 0; });
-    let streak = 0; let cur = todayStr();
-    while (cur >= '2025-01-01') { const v = d[cur]; if (v && (v.time > 0 || v.learn > 0 || v.review > 0)) streak++; else break; cur = addDays(cur, -1); }
+    // v438：连续天数与「续火花」页同源。旧算法从今天起、遇到第一个没记录的日子就 break，
+    // 所以今天还没记一笔就显示 0；现在取续火花口径（今天没打卡不算断，往回找最近一段连续；放过日不断但不计数）
+    let streak = 0;
+    try {
+      if (window.Streak && Streak.ensureItems) {
+        const _it = Streak.ensureItems().find(x => x.id === 'growth:墨墨');
+        if (_it) streak = Streak.curStreak(_it);
+      }
+    } catch (e) { streak = 0; }
+    if (!streak) {
+      let cur = todayStr();
+      while (cur >= '2025-01-01' && !this.hasRec(d, cur)) cur = addDays(cur, -1);
+      while (cur >= '2025-01-01' && this.hasRec(d, cur)) { streak++; cur = addDays(cur, -1); }
+    }
     const stats = '<div class="bbdc-stats">' +
       this.stat(streak, '连续天数') +
       this.stat((totalTime / 60).toFixed(1), '累计时长(h)') +
@@ -103,9 +125,9 @@ const BBDC = {
     for (let i = 0; i < 30; i++) { last30.push(c); c = addDays(c, -1); }
     last30.reverse();
     const bars = '<div class="bbdc-bars">' + last30.map(dt => {
-      const v = d[dt] || {}; const t = v.time || 0;
-      const h = Math.max(2, Math.min(64, Math.round(t / 2)));
-      return '<div class="bbdc-bar" title="' + dt + (t ? (': ' + t + ' 分钟') : ': 未学习') + '"><div class="bbdc-bar-f" style="height:' + h + 'px"></div><span class="bbdc-bar-d">' + dt.slice(5) + '</span></div>';
+      const v = d[dt] || {}; const t = v.time || 0; const sd = !!v._seed && !t;
+      const h = sd ? 6 : Math.max(2, Math.min(64, Math.round(t / 2)));
+      return '<div class="bbdc-bar" title="' + dt + (t ? (': ' + t + ' 分钟') : (sd ? ': 已背（未记时长）' : ': 未学习')) + '"><div class="bbdc-bar-f" style="height:' + h + 'px"></div><span class="bbdc-bar-d">' + dt.slice(5) + '</span></div>';
     }).join('') + '</div>';
     // 热力图（近 ~140 天，按分钟着色）
     const hmDates = []; let h = todayStr();
@@ -113,8 +135,8 @@ const BBDC = {
     hmDates.reverse();
     const hm = '<div class="bbdc-hm">' + hmDates.map(dt => {
       const v = d[dt] || {}; const t = v.time || 0;
-      const lvl = t <= 0 ? 0 : t <= 15 ? 1 : t <= 30 ? 2 : t <= 60 ? 3 : 4;
-      return '<div class="bbdc-cell lvl' + lvl + '" title="' + dt + (t ? (': ' + t + ' 分钟') : '') + '"></div>';
+      const lvl = t > 0 ? (t <= 15 ? 1 : t <= 30 ? 2 : t <= 60 ? 3 : 4) : (v._seed ? 1 : 0);
+      return '<div class="bbdc-cell lvl' + lvl + '" title="' + dt + (t ? (': ' + t + ' 分钟') : (v._seed ? ': 已背（未记时长）' : '')) + '"></div>';
     }).join('') + '</div>';
     // 最近记录（最近 10 条，倒序）
     const recent = dates.slice(-10).reverse();
@@ -126,7 +148,7 @@ const BBDC = {
         if (v.review) parts.push('复习' + v.review);
         return '<div class="bbdc-rec" data-bedit="' + dt + '">' +
           '<span class="bbdc-rec-d">' + dt + '</span>' +
-          '<span class="bbdc-rec-v">' + (parts.join(' · ') || '—') + '</span>' +
+          '<span class="bbdc-rec-v">' + (parts.join(' · ') || (v._seed ? '已背 · 未记时长' : '—')) + '</span>' +
           '<button class="bbdc-rec-x" data-bdel="' + dt + '">×</button></div>';
       }).join('') + '</div></div>';
     return stats +
