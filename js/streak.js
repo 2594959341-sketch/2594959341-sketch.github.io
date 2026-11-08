@@ -189,7 +189,7 @@ const Streak = {
       bbdcItem.done = {};
       Object.keys(bbdcItem._seed).forEach(dt => { bbdcItem.done[dt] = 1; });
       const _bbd = (S.get('mumu_bbdc', null) || {}).data || {};
-      Object.keys(_bbd).forEach(dt => { const v = _bbd[dt]; if (v && (v.time > 0 || v.learn > 0 || v.review > 0)) bbdcItem.done[dt] = 1; });
+      Object.keys(_bbd).forEach(dt => { const v = _bbd[dt]; if (v && (v.time > 0 || v.learn > 0 || v.review > 0 || v._seed)) bbdcItem.done[dt] = 1; });
     }
     // v432/v434：一次性补 2026-11-04 火花——当日真做了的已有日志（isDone），放过/漏掉的补 rest，保证「过」了也不断火；
     // v434：改用 _heal1104b 重跑一次，给 11-04 的补火 rest 补打 pass 标记（放过日不占休息额度）
@@ -265,7 +265,7 @@ const Streak = {
     it.done = {};
     Object.keys(it._seed || {}).forEach(dt => { it.done[dt] = 1; }); // 保留一次性种入的历史天数
     const data = (S.get('mumu_bbdc', null) || {}).data || {};
-    Object.keys(data).forEach(dt => { const v = data[dt]; if (v && (v.time > 0 || v.learn > 0 || v.review > 0)) it.done[dt] = 1; });
+    Object.keys(data).forEach(dt => { const v = data[dt]; if (v && (v.time > 0 || v.learn > 0 || v.review > 0 || v._seed)) it.done[dt] = 1; });
     this.save(d);
   },
   // 休息日规则（按项目维度）：一周 <=1、一月 <=4
