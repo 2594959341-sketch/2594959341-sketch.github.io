@@ -1570,10 +1570,13 @@ const Work = {
     const restSet = new Set([].concat(restDatesOfType('work'), S.get('workRest', []) || []));
     const mensSet = menstrualSet();
     const madeupSet = new Set(madeupSetInRange(this.wym + '-01', this.wym + '-31'));
+    // v441：当天有字数 = 真实码字，不算休息日；与格子里显示的字数用同一口径
+    const hasWords = ds => (wLogs[ds] || []).reduce((s, l) => s + (Number(l.words) || 0), 0) > 0;
     const opts = {
       ym: this.wym,
       mod: 'work',
       restSet: restSet, menstrualSet: mensSet, madeupSet: madeupSet,
+      hasDone: hasWords, doneClass: 'wr-fill', hideDateOnDone: true,
       legendEl: '#wrHl',
       legendHTML: v => holidayLegendHTML(v),
       cellHTML: ds => {
