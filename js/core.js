@@ -1290,12 +1290,17 @@ function renderMonthCal(el, opts) {
     const isRest = opts.restSet && (typeof opts.restSet.has === 'function' ? opts.restSet.has(ds) : opts.restSet[ds]);
     const hcls = dayHolidayClass(ds, opts.mod);
     const isMadeup = opts.madeupSet && typeof opts.madeupSet.has === 'function' && opts.madeupSet.has(ds);
-    const madeCls = (!hcls && isMadeup && !marks.length) ? ' cal-madeup' : '';
+    // v441：调用方可传 hasDone(ds) 表示「这天有真实产出」（码字日历有字数）。有产出就不算休息/补签/月经假，
+    // 与创作主页日历传 marks(打卡圆点) 时的抑制逻辑一致；病假/生日/纪念日(hcls)是当天属性，仍保留。
+    const hasDone = !!(opts.hasDone && opts.hasDone(ds));
+    const madeCls = (!hcls && isMadeup && !marks.length && !hasDone) ? ' cal-madeup' : '';
     const isMens = opts.menstrualSet && (typeof opts.menstrualSet.has === 'function' ? opts.menstrualSet.has(ds) : opts.menstrualSet[ds]);
     // v368：月经假优先级高于普通休息（与「月经假优先」原则一致）；病假/生日/纪念日(hcls)与补签仍最高
-    const mensCls = (!hcls && !madeCls && isMens && !marks.length) ? ' mens' : '';
-    const restCls = (!hcls && !madeCls && !mensCls && isRest && !marks.length) ? ' rest' : '';
-    html += '<div class="cal-cell' + (ds === today ? ' today' : '') + hcls + madeCls + restCls + mensCls + '" data-date="' + ds + '"><div class="d">' + d + '</div>'
+    const mensCls = (!hcls && !madeCls && isMens && !marks.length && !hasDone) ? ' mens' : '';
+    const restCls = (!hcls && !madeCls && !mensCls && isRest && !marks.length && !hasDone) ? ' rest' : '';
+    const doneCls = (hasDone && opts.doneClass) ? ' ' + opts.doneClass : '';
+    const hideD = (hasDone && opts.hideDateOnDone) ? ' style="display:none"' : '';
+    html += '<div class="cal-cell' + (ds === today ? ' today' : '') + hcls + madeCls + restCls + mensCls + doneCls + '" data-date="' + ds + '"><div class="d"' + hideD + '>' + d + '</div>'
       + (opts.cellHTML ? (() => { try { return opts.cellHTML(ds); } catch (e) { return ''; } })() : '')
       + (marks.length ? '<div class="dots">' + marks.slice(0, 6).map(c => '<span class="dot" style="background:' + c + '"></span>').join('') + '</div>' : '')
       + '</div>';
