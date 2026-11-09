@@ -1358,18 +1358,18 @@ function renderHeatmap(el, countMap, colorFn) {
   const dataYms = Array.from(allYms).sort();
   if (!dataYms.length) { el.innerHTML = '<div class="empty">暂无数据</div>'; return; }
 
-  // 默认当前月在中间
-  const midOffset = Math.floor(SHOW / 2);
-  // 生成连续月份序列：从最早数据月到 max(最新数据月, 当前月+1)
-  // 至少回退到 currentMonth - midOffset，确保当前月能居中（如 7 月时包含 6 月）
+  // v439：默认当前月排在最右边（可见窗口 = [当前月-(SHOW-1) … 当前月]，如 11 月时显示 9月 · 10月 · 11月）
+  const leftSpan = SHOW - 1;
+  // 生成连续月份序列：从最早数据月到 max(最新数据月, 当前月)，不再多生成一个未来月
+  // 至少回退到 当前月 - leftSpan，确保当月靠右时左边能填满 SHOW 个月
   let fromYm = dataYms[0];
-  const needFrom = addMonthStr(todayYm, -midOffset);
+  const needFrom = addMonthStr(todayYm, -leftSpan);
   if (fromYm > needFrom) fromYm = needFrom;
-  const toYmDefault = addMonthStr(todayYm, 1);
+  const toYmDefault = todayYm;
   const toYm = dataYms[dataYms.length - 1] > toYmDefault ? dataYms[dataYms.length - 1] : toYmDefault;
   const sortedYms = monthSeq(fromYm, toYm);
 
-  let defStart = Math.max(0, sortedYms.indexOf(todayYm) - midOffset);
+  let defStart = Math.max(0, sortedYms.indexOf(todayYm) - leftSpan);
   defStart = Math.min(defStart, Math.max(0, sortedYms.length - SHOW));
   if (el._hm.startIdx == null) el._hm.startIdx = defStart;
 
@@ -1417,6 +1417,10 @@ function renderHeatmap(el, countMap, colorFn) {
 
     el.innerHTML = html;
 
+    // v439：默认把滚动条停在最右，保证「当月」那个月一定看得见（窄屏下三个月会略微溢出）
+    const wrap0 = el.querySelector('.hm-scroll-wrap');
+    if (wrap0) wrap0.scrollLeft = Math.max(0, wrap0.scrollWidth - wrap0.clientWidth);
+
     // 左右翻页（按 SHOW 个月翻）
     const lBtn = el.querySelector('[data-hmnav=left]');
     const rBtn = el.querySelector('[data-hmnav=right]');
@@ -1451,6 +1455,8 @@ function initHmScroll(wrap, el, totalMonths, showMonths, redraw) {
     isDown = false;
     wrap.style.cursor = 'grab';
     wrap.releasePointerCapture(e.pointerId);
+    // v439：单纯点击（未拖动）不触发边缘翻页，避免默认停在最右时一点就跳月
+    if (!moved) return;
     // 滑到边缘时自动翻页（按 SHOW 个月翻）
     if (wrap.scrollLeft <= 10 && el._hm.startIdx > 0) {
       el._hm.startIdx = Math.max(0, el._hm.startIdx - showMonths); redraw();
