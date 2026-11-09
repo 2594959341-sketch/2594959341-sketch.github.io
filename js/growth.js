@@ -1757,7 +1757,14 @@ const Growth = {
       S.set('duoStreaks', recent);
       // 记一条技能日志（同时写入 mumu_skillLogs + 成长日志 area=英语），让「技能·英语」分钟数增长
       this.addSkillLog('英语', 10, '多邻国打卡');
-      const s = (() => { let c = 0, d = todayStr(); while (recent.includes(d)) { c++; d = addDays(d, -1); } return c; })();
+      let s = (() => { let c = 0, d = todayStr(); while (recent.includes(d)) { c++; d = addDays(d, -1); } return c; })();
+      // v440：打卡完成立刻刷新续火花数据，让多邻国火花当天就 +1，并让提示里的天数与火花一致
+      if (window.Streak && Streak.ensureItems) {
+        try {
+          const dit = Streak.ensureItems().find(x => x.id === 'growth:多邻国');
+          if (dit) s = Streak.curStreak(dit);
+        } catch (e) {}
+      }
       toast('多邻国打卡成功！连续 ' + s + ' 天');
     }
     this.render(root);
