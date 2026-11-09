@@ -182,6 +182,33 @@ const Streak = {
       let cur = todayStr();
       for (let i = 0; i < 411; i++) { duo.done[cur] = 1; cur = addDays(cur, -1); }
     }
+    // v440：411 天种子窗口右端被钉死在旧日期，后面几天没记录就出现断口，一打卡又从 1 天重新起算。
+    // 改为固定锚点（2026-11-09 = 第 433 天）+ 之后每天真实打卡自动 +1：
+    // 种子窗口右端固定为锚点；锚点之后：打卡日→done（计入），没打卡→rest+pass（不断火、不计数、不占休息额度）。
+    // 已写入的 done 永久保留，duoStreaks 只留最近 60 天也不会让数字倒退。
+    const DUO_ANCHOR = '2026-11-09', DUO_BASE = 433;
+    if (!d._duo440 && duo) {
+      d._duo440 = 1;
+      duo.done = {};
+      let c0 = DUO_ANCHOR;
+      for (let i = 0; i < DUO_BASE; i++) { duo.done[c0] = 1; c0 = addDays(c0, -1); }
+    }
+    if (duo) {
+      const realDuo = S.get('duoStreaks', []) || [];
+      let c1 = addDays(DUO_ANCHOR, 1), t1 = todayStr();
+      while (c1 <= t1) {
+        if (duo.done[c1]) { /* 已计入，永久保留 */ }
+        else if (realDuo.indexOf(c1) >= 0) {
+          duo.done[c1] = 1;
+          if (duo.rest) delete duo.rest[c1];
+          if (duo.pass) delete duo.pass[c1];
+        } else {
+          duo.rest = duo.rest || {}; duo.pass = duo.pass || {};
+          if (!duo.rest[c1]) { duo.rest[c1] = 1; duo.pass[c1] = 1; }
+        }
+        c1 = addDays(c1, 1);
+      }
+    }
     // v426/v432：墨墨（原不背单词）火花由 bbdc 数据自动驱动（纯自动，无手动打卡）；重建 done = 一次性种入的历史日期 ∪ mumu_bbdc 记录
     const bbdcItem = d.items.find(x => x.id === 'growth:墨墨');
     if (bbdcItem) {
