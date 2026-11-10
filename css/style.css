@@ -1688,6 +1688,13 @@ details[open] > summary .car{transform:rotate(180deg)}
 .mood-card .mood-pc{font-size:14px;font-weight:700;color:var(--ink)}
 .mood-card .mood-name{font-size:10.5px;color:var(--sub)}
 .mood-card .mood-note{margin-top:11px;font-size:12px;color:var(--muted);text-align:center}
+/* v442：周总结按天心情条 */
+.mood-card .mood-dayrow{display:flex;gap:4px;margin-top:10px}
+.mood-card .mood-day{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 1px;border-radius:9px;background:#f7f7f7;border:1px solid transparent}
+.mood-card .mood-day.has{background:#fff;border-color:var(--line)}
+.mood-card .mood-day .md-w{font-size:10px;color:var(--sub)}
+.mood-card .mood-day .md-e{font-size:17px;line-height:1.2}
+.mood-card .mood-day .md-d{font-size:9.5px;color:var(--muted)}
 /* 环图 + 侧栏（创作 / 娱乐） */
 .viz-row{display:flex;align-items:center;gap:14px;margin-top:4px}
 .viz-side{flex:1;min-width:0;display:flex;flex-direction:column;gap:5px;font-size:12px;color:var(--muted)}
