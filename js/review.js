@@ -3,7 +3,22 @@ const CHAT_SYS = '你是「枝枝」，木木的专属智能助理与生活教�
 const Review = {
   tab: 'day', cur: todayStr(), sub: null,
   moods: ['很好', '还行', '平淡', '低落', '很糟'],
-  data() { return S.get('reviews', {}); }, // {date:{energy,mood,text}}
+  // v442：心情有两个入口——旧复盘页写 reviews、每日复盘(H3)写 h3_review（v435 后心情都在 H3 记）。
+  // 这里合并成统一视图：reviews 打底，h3_review 的心情优先，让周/月/年总结、五维雷达、心情曲线、
+  // 周总结文案都能读到同一份数据。只合并 mood，不动 text，避免日记归档出现重复。
+  data() {
+    const R = S.get('reviews', {}) || {};
+    const H = S.get('h3_review', {}) || {};
+    const out = {};
+    Object.keys(R).forEach(d => { out[d] = Object.assign({}, R[d]); });
+    Object.keys(H).forEach(d => {
+      const h = H[d] || {};
+      if (h.mood == null) return;
+      const o = out[d] || (out[d] = {});
+      o.mood = h.mood;
+    });
+    return out;
+  },
 
   // 汇总某日全工作台数据
   dayFacts(d) {
@@ -450,7 +465,15 @@ const Review = {
         </div>
       </div>
       ${pastYearsHTML}${this.genFabHTML('day')}`;
-    const saveR = patch => { const R2 = this.data(); R2[this.cur] = { ...(R2[this.cur] || {}), ...patch }; S.set('reviews', R2); };
+    const saveR = patch => {
+      const R2 = this.data(); R2[this.cur] = { ...(R2[this.cur] || {}), ...patch }; S.set('reviews', R2);
+      // v442：心情双向同步——本页改的心情也要写回 H3，否则 data() 里 h3 优先会把新值盖掉
+      if (patch.mood != null) {
+        const H2 = S.get('h3_review', {}) || {};
+        H2[this.cur] = Object.assign({}, H2[this.cur] || {}, { mood: patch.mood, moodTs: Date.now() });
+        S.set('h3_review', H2);
+      }
+    };
     // 点击日期切换
     const dateClick = box.querySelector('#rDateClick');
     const dateInput = box.querySelector('#rDate');
@@ -1228,9 +1251,18 @@ const Review = {
     const mc = [0, 0, 0, 0, 0];
     days.forEach(d => { const m = (R[d] || {}).mood; if (m != null) mc[m]++; });
     const total = mc.reduce((a, b) => a + b, 0);
-    if (!total) return '<div class="card" style="margin-top:12px"><h3>' + icon('heart', 16) + ' 心情</h3><div class="empty">这段时间还没有心情记录</div></div>';
     const colors = ['#F4A6B8', '#F6C56E', '#C4CBD3', '#8FB8E0', '#B8A4D4'];
     const emo = ['😄', '🙂', '😐', '😟', '😢'];
+    // v442：短周期（周总结）顶部加一行按天心情，直接看到这周每天记了什么
+    const dayRow = days.length <= 10 ? '<div class="mood-dayrow">' + days.map(d => {
+      const m = (R[d] || {}).mood;
+      const wd = ['日', '一', '二', '三', '四', '五', '六'][new Date(d + 'T12:00:00').getDay()];
+      return '<div class="mood-day' + (m != null ? ' has' : '') + '"><span class="md-w">周' + wd + '</span>'
+        + '<span class="md-e">' + (m != null ? emo[m] : '·') + '</span>'
+        + '<span class="md-d">' + Number(d.slice(8)) + '日</span></div>';
+    }).join('') + '</div>' : '';
+    const head = '<h3>' + icon('heart', 16) + ' 心情</h3>' + dayRow;
+    if (!total) return '<div class="card mood-card" style="margin-top:12px">' + head + '<div class="empty">这段时间还没有心情记录</div></div>';
     // v282：换成「占比条 + 表情卡片」，最多的那档高亮
     const max = Math.max.apply(null, mc);
     const dom = mc.indexOf(max);
@@ -1241,7 +1273,7 @@ const Review = {
         + '<span class="mood-pc">' + mc[i] + '</span>'
         + '<span class="mood-name">' + m + '</span></div>';
     }).join('');
-    return '<div class="card mood-card" style="margin-top:12px"><h3>' + icon('heart', 16) + ' 心情</h3>'
+    return '<div class="card mood-card" style="margin-top:12px">' + head
       + '<div class="mood-spectrum">' + seg + '</div>'
       + '<div class="mood-pills">' + pills + '</div>'
       + '<div class="mood-note">这阵子大多时候 <b style="color:' + colors[dom] + '">' + emo[dom] + ' ' + this.moods[dom] + '</b></div>'
@@ -1771,7 +1803,7 @@ const Review = {
       else mealY.off++;
     });
     const dim = this.dimScores(365);
-    const monthData = S.get('reviews', {});
+    const monthData = this.data(); // v442：年总结的开心/低落天数也要读到 H3 的心情
     const allDates = Object.keys(monthData).filter(d => d.startsWith(y));
     const wroteDays = allDates.filter(d => monthData[d] && monthData[d].text).length;
     const moodCounts = [0, 0, 0, 0, 0];
@@ -1908,7 +1940,7 @@ const Review = {
         recordDays++;
       });
     });
-    useDays = new Set(Object.keys(S.get('reviews', {})).concat(
+    useDays = new Set(Object.keys(this.data()).concat(
       Object.keys(S.get('sportLogs', {})), Object.keys(S.get('workLogs', {})),
       Object.keys(S.get('kgLogs', {})), Object.keys(S.get('growthLogs', {})),
       Object.keys(S.get('meals', {}))
