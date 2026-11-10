@@ -2,7 +2,7 @@
 /* 纯新增模块（v221）：零侵入——所有打卡数据来自现有专栏日志反查，不新增独立打卡入口。
  * 内置项目（创作/学习/运动）自动从 workLogs / kgLogs.subject / sportLogs.project 反查；
  * 用户用右上角「+」新增的项目需先选「关联板块」（运动/学习/创作/成长/阅读/出行/娱乐/三餐），
- * 关联后同样由对应专栏日志反查自动续火花；「自定义」默认点格子手动打卡，标 auto 的项（多邻国/墨墨）只能由打卡自动点亮。
+ * 关联后同样由对应专栏日志反查自动续火花；「自定义」默认点格子手动打卡，标 auto 的项（多邻国/墨墨/炭炭）只能由打卡自动点亮。
  */
 // 同义归一：学习科目 / 运动项目 名字变体合并到同一续火花项（根治「言语」与「行测言语」分裂、运动名变体导致天数对不上）
 const KG_ALIAS = { '言语理解': '言语', '言语模块': '言语', '综应': '综合应用能力', '综合应用': '综合应用能力' };
@@ -109,6 +109,7 @@ const Streak = {
     const _oldBB = byId['growth:不背单词'];
     if (_oldBB) { _oldBB.id = 'growth:墨墨'; _oldBB.name = '墨墨'; _oldBB.ref = '墨墨'; _oldBB.auto = 1; byId['growth:墨墨'] = _oldBB; delete byId['growth:不背单词']; }
     const _duoIt = byId['growth:多邻国']; if (_duoIt) _duoIt.auto = 1;
+    const _ttIt = byId['growth:炭炭']; if (_ttIt) _ttIt.auto = 1;
     const _gl = S.get('growthLogs', {}); let _glDirty = false;
     Object.keys(_gl).forEach(_d => (_gl[_d] || []).forEach(_l => { if (_l && _l.area === '不背单词') { _l.area = '墨墨'; _glDirty = true; } }));
     if (_glDirty) S.set('growthLogs', _gl);
@@ -129,6 +130,7 @@ const Streak = {
       { id: 'read:all', type: 'read', name: '阅读', parent: 'group:growth' },
       { id: 'growth:多邻国', type: 'custom', name: '多邻国', ref: '多邻国', parent: 'group:english', auto: 1 },
       { id: 'growth:墨墨', type: 'custom', name: '墨墨', ref: '墨墨', parent: 'group:english', auto: 1 },
+      { id: 'growth:炭炭', type: 'custom', name: '炭炭', ref: '炭炭', parent: 'group:english', auto: 1 },
       { id: 'work:game', type: 'work', sub: 'game', name: '游戏', ref: '' },
       { id: 'work:write', type: 'work', sub: 'write', name: '写作', ref: '' },
       { id: 'kg:言语', type: 'kg', name: '言语', ref: '言语' },
@@ -218,12 +220,19 @@ const Streak = {
       const _bbd = (S.get('mumu_bbdc', null) || {}).data || {};
       Object.keys(_bbd).forEach(dt => { const v = _bbd[dt]; if (v && (v.time > 0 || v.learn > 0 || v.review > 0 || v._seed)) bbdcItem.done[dt] = 1; });
     }
+    // v443：炭炭（练口语）火花由 mumu_tantan 数据自动驱动（纯自动，无手动打卡）
+    const tantanItem = d.items.find(x => x.id === 'growth:炭炭');
+    if (tantanItem) {
+      tantanItem.done = {};
+      const _ttd = (S.get('mumu_tantan', null) || {}).data || {};
+      Object.keys(_ttd).forEach(dt => { const v = _ttd[dt]; if (v && (v.time > 0 || v.talk > 0 || v.review > 0 || v._seed)) tantanItem.done[dt] = 1; });
+    }
     // v432/v434：一次性补 2026-11-04 火花——当日真做了的已有日志（isDone），放过/漏掉的补 rest，保证「过」了也不断火；
     // v434：改用 _heal1104b 重跑一次，给 11-04 的补火 rest 补打 pass 标记（放过日不占休息额度）
     if (!d._heal1104b) {
       d._heal1104b = 1;
       (d.items || []).forEach(it => {
-        if (it.type === 'group') return;
+        if (it.type === 'group' || it.id === 'growth:炭炭') return; // v443：炭炭是新增项，别被历史补火误标成「在用」
         if (!this.covered(it, '2026-11-04')) { it.rest = it.rest || {}; it.rest['2026-11-04'] = 1; }
         if (it.rest && it.rest['2026-11-04']) { it.pass = it.pass || {}; it.pass['2026-11-04'] = 1; }
       });
@@ -293,6 +302,16 @@ const Streak = {
     Object.keys(it._seed || {}).forEach(dt => { it.done[dt] = 1; }); // 保留一次性种入的历史天数
     const data = (S.get('mumu_bbdc', null) || {}).data || {};
     Object.keys(data).forEach(dt => { const v = data[dt]; if (v && (v.time > 0 || v.learn > 0 || v.review > 0 || v._seed)) it.done[dt] = 1; });
+    this.save(d);
+  },
+  // v443：炭炭面板「记一笔 / 删除」后重建火花（与墨墨 refreshFromBbdc 同款）
+  refreshFromTantan() {
+    const d = this.data();
+    const it = d.items.find(x => x.id === 'growth:炭炭');
+    if (!it) return;
+    it.done = {};
+    const data = (S.get('mumu_tantan', null) || {}).data || {};
+    Object.keys(data).forEach(dt => { const v = data[dt]; if (v && (v.time > 0 || v.talk > 0 || v.review > 0 || v._seed)) it.done[dt] = 1; });
     this.save(d);
   },
   // 休息日规则（按项目维度）：一周 <=1、一月 <=4
