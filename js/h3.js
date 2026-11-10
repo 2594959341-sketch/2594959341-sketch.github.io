@@ -202,6 +202,10 @@ window.H3 = (function () {
         H3._draft[cur].mood = v;
         const o = reviews()[cur] || {};
         setReview(cur, Object.assign({}, o, { mood: v, moodTs: Date.now() }));
+        // v442：同步写旧复盘数据源，周/月/年总结、心情曲线、五维雷达都能读到
+        const _rv = S.get('reviews', {}) || {};
+        _rv[cur] = Object.assign({}, _rv[cur] || {}, { mood: v });
+        S.set('reviews', _rv);
         toast('心情已记录');
         renderDaily(Review, box, root);
       });
