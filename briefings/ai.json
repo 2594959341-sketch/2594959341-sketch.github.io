@@ -1,66 +1,166 @@
 {
-  "date": "2026-11-09",
+  "date": "2026-11-10",
   "title": "昨日 AI 重点资讯简报",
   "items": [
-    { "cat": "大模型", "text": "美团正式开源 LongCat-2.5：1.6 万亿参数 MoE、每 token 激活约 480 亿、100 万上下文、MIT 协议可商用，面向长程智能体任务的原生多模态模型。" },
-    { "cat": "大模型", "text": "字节发布 Seedream 5.5 图像创作模型：支持同一作品 100 轮连续编辑、非编辑区域像素级保持，新增原生 RGBA 透明素材输出（最多 100 层），2K 方图编辑 0.28 元/张较上代便宜 60%、速度快近 40%，API 本周上线火山方舟。" },
-    { "cat": "产品", "text": "百度发布 ERNIE Evolve 自动研究系统：双层循环组织研究方向选择与实验迭代，在 NanoChat AutoResearch 和 NanoGPT Speedrun 上超最好纪录，确定性 GPU 推理吞吐提升 33.7%、单请求解码提速 14.9%，百度称其为迈向递归自我改进的一步。" },
-    { "cat": "产品", "text": "千问办公 2.0 正式发布：定位面向个人与组织协作的 Team Agent，支持多人与 Agent 协作、把 Agent 带进工作群，功能已在钉钉客户端全量上线。" },
-    { "cat": "行业", "text": "黄仁勋婚外情牵连「中国间谍」指控：NYT 称备忘录认定 Megaspeed 高管 Alice Huang 被中国国安部招募为间谍资产（其公司采购超 48 亿美元英伟达芯片），黄仁勋在全员备忘录承认婚外情并致歉，英伟达董事会启动独立调查，耶鲁教授估计其保住职位概率约 50-50。" },
-    { "cat": "行业", "text": "Bloomberg：AI 融资遇冷，亚洲杠杆 AI 头寸遭遇追缴保证金，Anthropic IPO 估值讨论下探至 1.1 万亿美元。" },
-    { "cat": "行业", "text": "特朗普在《60 分钟》访谈中称已要求所有新建 AI 数据中心自建电厂，并将多余电力输回美国老旧电网。" },
-    { "cat": "行业", "text": "Menlo Ventures：中国模型占全球企业开源 AI 支出的 89%，Kimi 以 61% 居首（驱动 Cursor 的 Composer 2）、DeepSeek 占 15%、Z.ai 占 11%，Meta Llama 份额跌至 7%。" },
-    { "cat": "研究", "text": "清华与 Moonshot AI 等发布 TCSExam 基准：100 道专家评审任务覆盖理论计算机研究全谱系，GPT-6 Astra 证明 70.0% 研究级定理但解不开任何公开猜想。" },
-    { "cat": "研究", "text": "Anthropic 研究报告：分析 20.7 万次科研会话，科学家主要将 Claude 用于数据分析和写作，数据收集与假设生成使用较少。" },
-    { "cat": "其他值得一看", "text": "Bloomberg：DeepSeek 开源智能体应用 Harness 上线不到 3 个月日活用户达 154 万。" },
-    { "cat": "其他值得一看", "text": "阿里云上调 Token Plan 订阅额度：三档月费不变、月度额度近翻倍，Pro 月费由 499 元降至 312 元。" },
-    { "cat": "其他值得一看", "text": "Google 扩展第八代 TPU 产品线，一年内交付四款，新增 TPU 8i Max（超大上下文）与 TPU 8tx（机密推理）。" },
-    { "cat": "其他值得一看", "text": "NVIDIA 在 CoRL 发布 GR00T 2 世界动作模型及 Isaac Lab 3.0：10 万小时人类第一视角数据训练，无任务专属演示完成 50 项评估任务中的 40 项。" },
-    { "cat": "其他值得一看", "text": "数字生命卡兹克上线免费 Token 福利聚合网站「Token羊毛」，按日/周/月分组展示可领额度。" },
-    { "cat": "其他值得一看", "text": "路透：AI 数据中心热潮致燃气轮机供不应求，美国平均交货期 6 年、新设备排到 2030–2031 年。" },
-    { "cat": "其他值得一看", "text": "消息称 Sakana AI 最早 2027 年秋 IPO，已委任高盛担任顾问。" },
-    { "cat": "其他值得一看", "text": "古尔曼：苹果最早明年推出代理式 Siri，从响应命令转向主动管理任务。" },
-    { "cat": "其他值得一看", "text": "Asahi Linux 因 AI 洗代码放弃 MIT，全部仓库转向 GPL v2 或更新版本。" },
-    { "cat": "其他值得一看", "text": "Elvis 与 Eminem 版权方起诉 AI 音乐公司 Suno 涉嫌克隆歌手声音。" },
-    { "cat": "其他值得一看", "text": "韩国 2026 年高考将禁带一切电子设备，并设专人检查 AI 眼镜。" },
-    { "cat": "其他值得一看", "text": "网信办上线互联网新技术新应用信息服务备案系统，一体化开展生成式人工智能、算法等备案。" },
-    { "cat": "其他值得一看", "text": "UCLA 研究：AI 智能体约 18% 输出 token 是浪费，剪掉后任务成功率几乎不受影响。" },
-    { "cat": "其他值得一看", "text": "UC Berkeley 等发现智能体自改 harness 提分的同时会丢掉原本能完成的任务。" },
-    { "cat": "其他值得一看", "text": "Amazon 论文审计 9 个政策决策基准，发现评分器和参考答案自身有错。" },
-    { "cat": "其他值得一看", "text": "MIT 与 NYU 推出 FLEX 平台，让机器人从自然语言指令中理解言外之意。" },
-    { "cat": "其他值得一看", "text": "MIT 与 UBC 等提出 WorldParticle：单一 AI 模型统一模拟沙子流动与蛋白质折叠。" },
-    { "cat": "其他值得一看", "text": "斯坦福与 DeepMind 用 AlphaEvolve 进化工具调用基准。" },
-    { "cat": "其他值得一看", "text": "腾讯元器平台正式停止服务，2027 年 1 月 9 日后不再受理数据导出申请。" },
-    { "cat": "其他值得一看", "text": "腾讯首席 AI 科学家姚顺雨谈 AI 生物武器风险，主张开源与闭源之间取中间路线。" },
-    { "cat": "其他值得一看", "text": "O'Reilly 复盘：AI Agent 为何在重演 2019 年微服务的错误。" },
-    { "cat": "其他值得一看", "text": "matteoraso 用 S-1 和上市公司数据反驳 AI 泡沫论：巨额支出主要是一次性建设成本。" },
-    { "cat": "其他值得一看", "text": "Tomasz Tunguz 推演美国何时成为 token 净进口国：若 45% 规划数据中心取消，2028 年起消耗将超本土产出。" },
-    { "cat": "其他值得一看", "text": "瑞银 CEO：AI 概念股大幅回调源于投资者此前期望过高。" },
-    { "cat": "其他值得一看", "text": "DeepMind 经济总监：数百万 AI 智能体也难带来高增长。" },
-    { "cat": "其他值得一看", "text": "微软 CEO 纳德拉畅想 2000 万个 AI 智能体与 20 万名员工协同工作，透露自己已同时开 100 个 CLI 会话。" },
-    { "cat": "其他值得一看", "text": "Larry Page 预测未来算力将迁至太空：最终 99.999% 的算力将位于太空。" },
-    { "cat": "其他值得一看", "text": "Apple 将部分工程师每日 AI 预算上限从 300 美元下调至 200 美元。" },
-    { "cat": "其他值得一看", "text": "Lovable 收购 Radish AI 团队以扩展企业级 Agent 能力。" },
-    { "cat": "其他值得一看", "text": "Reason Machines 开源面向 AI Agent 的 Git 服务器 Aspen，独立实现 OpenAI 描述的 Pando 设计。" },
-    { "cat": "其他值得一看", "text": "Automattic 推出 Spacefast 平台，用于部署 vibe coding 应用。" },
-    { "cat": "其他值得一看", "text": "ElevenLabs 推出 Campaign Manager，活动管理支持电话与 WhatsApp。" },
-    { "cat": "其他值得一看", "text": "Preferred Networks 开源金融特化小模型 PLaMo 3.0 Fin。" },
-    { "cat": "其他值得一看", "text": "Shizuku AI 公布全双工模型 Shizuku-Duplex，为 AI 伴侣开发奠基。" },
-    { "cat": "其他值得一看", "text": "Artificial Analysis 发布 Decision Index v2：新增私有数据集与校准型 Decision Score。" },
-    { "cat": "其他值得一看", "text": "LG AI 研究院免费开放 K-EXAONE 2.5 模型 API。" },
-    { "cat": "其他值得一看", "text": "0sec Labs 开源 AI 安全测试框架，提供 Web UI、CLI 与 MCP 入口。" },
-    { "cat": "其他值得一看", "text": "迪士尼与 Adobe 合作开发艺术家主导的专有生成式 AI 模型。" },
-    { "cat": "其他值得一看", "text": "Graphite 研究：ChatGPT 占全球 AI 聊天机器人流量超 81%。" },
-    { "cat": "其他值得一看", "text": "芝加哥大学法学教授称 Claude 误删其一整年课堂笔记。" },
-    { "cat": "其他值得一看", "text": "微软申请专利：AI 近乎实时修改直播语音并重绘嘴型。" },
-    { "cat": "其他值得一看", "text": "英伟达在首尔举办 AI Day，与韩国政府、三星、LG 电子、现代汽车等公布多项合作。" },
-    { "cat": "其他值得一看", "text": "面壁 MiniCPM 助力 materia 1.0 发布。" },
-    { "cat": "其他值得一看", "text": "小红书 AIGC 团队提出 DeCoRL：用分解一致性强化学习优化多图合成。" },
-    { "cat": "其他值得一看", "text": "AI 创作者用可灵 Kling 4.0 实测完整能量饮料广告制作流程（对视频创作直接相关）。" },
-    { "cat": "其他值得一看", "text": "Simon Willison 实测用 Claude Opus 5.5 把 Three.js 项目移植为 Vanilla JS + WebGL。" },
-    { "cat": "其他值得一看", "text": "前 DOJ 反垄断负责人 Jonathan Kanter 创办 AI 法律科技公司 FluxCap。" },
-    { "cat": "其他值得一看", "text": "Perplexity 队友可助写书并在 Kindle 出版。" },
-    { "cat": "其他值得一看", "text": "Tripo App 移动端 3D 创作上线；PixVerse 推出 Draw to Fly 功能。" },
-    { "cat": "其他值得一看", "text": "斯坦福 CS146S 如何教 AI 原生工程：Mihail Eric 访谈。" }
+    {
+      "cat": "大模型",
+      "text": "Anthropic 发布 Claude Fable 5.2 与 Claude Mythos 5.2：同一底层模型两种开放策略（Fable 带网络安全与生物安全护栏面向所有用户，Mythos 移除部分限制、需验证计划申请），Artificial Analysis 智能指数 65 分登顶、Arena WebDev 1832 分居首、Remote Labor Index 41.3% 第一，速度快 30%、API 降价 20% 至 $8/$40 每百万 token、支持 100 万上下文，当日全渠道上线。"
+    },
+    {
+      "cat": "大模型",
+      "text": "Meta 发布最小最高效模型 Muse Ember：Artificial Analysis 指数 36 分追平 Claude Haiku 5.5 但单任务成本仅三分之一（$0.14），Arena WebDev 1608 分登顶小模型榜，面向工具调用、编码子任务、路由、抽取等智能体高频任务。"
+    },
+    {
+      "cat": "大模型",
+      "text": "图像模型双发：MiniMax 开源 H3-Image，10 秒生成 1600 万像素 4K 图像、速度称市面 5 倍、最多 16 张参考图、权重上架 Hugging Face；字节 Seedream 5.5 同日接入豆包，第三方 30 轮连续修改横测胜 GPT Image 2.6。"
+    },
+    {
+      "cat": "产品",
+      "text": "OpenAI 在内部研究设施部署控制室系统：任务需申请唯一任务 ID 并经控制室授权运行，收到停止指令后最长 35 秒内叫停失控 AI 智能体，所有前沿强化学习任务另配独立模型监控器。"
+    },
+    {
+      "cat": "产品",
+      "text": "Adobe MAX 大会宣布向 Photoshop、Premiere、Illustrator、InDesign 注入更多 AI 并扩展 Firefly 创意 AI 智能体，同时发布本地 MCP 打通智能体生态。"
+    },
+    {
+      "cat": "行业",
+      "text": "Anthropic IPO 定价每股 70–78 美元、拟发行 8.25 亿股 A 类股，预计募资 577.5 亿–643.5 亿美元、估值最高 1.404 万亿美元，另向谷歌、英伟达、AMD 等私募融资 260 亿美元，拟下周四五以代码 ANT 挂牌纳斯达克；Gary Marcus 质疑其除一个异常季度外从未盈利、未来负债接近 9000 亿美元。"
+    },
+    {
+      "cat": "行业",
+      "text": "黄仁勋丑闻续波：The Information 曝 Alice Huang 与丈夫和姐姐在中国和新加坡构建采购网络、向中国买家转手 75 亿美元硬件，The Verge 指其出口管制游说公信力受损，做空机构 Culper 六个月前已预警，黄仁勋退出多个演讲活动并获特朗普公开声援。"
+    },
+    {
+      "cat": "行业",
+      "text": "Claude Code 被曝把密码写进项目文件：超 10 万份本地设置文件被上传至公开仓库，泄露 1994 个代码库中 2539 个真实凭据、涉及 63 个组织，官方正在修复。"
+    },
+    {
+      "cat": "研究",
+      "text": "形式化验证双发：Anthropic 用 1000 个 Fable 5.2 智能体 28.7 小时复现费马大定理完全形式化证明（同设置 Opus 5.5 仅完成 26%），Google DeepMind 发布 AlphaProof Code 多智能体框架并首次对 Signal 协议生产机器码完成形式化安全验证。"
+    },
+    {
+      "cat": "研究",
+      "text": "Anthropic 实测 Fable 5.2 从一句提示词端到端设计免提音箱、语音助手中枢、电子宠物三种电子设备并制成可用原型（PCB Gym 69%），Mythos 5.2 预测 AAV 衣壳结构与实验结构误差约一个原子宽度。"
+    },
+    {
+      "cat": "其他值得一看",
+      "text": "八国与主要 AI 实验室签署《AI 安全与保障巴黎呼吁》，承诺安全措施与关停机制，德国未签署。"
+    },
+    {
+      "cat": "其他值得一看",
+      "text": "Anthropic 34 亿美元采购 Caterpillar 燃气轮机（最多 1.7GW），放弃以往租用算力做法。"
+    },
+    {
+      "cat": "其他值得一看",
+      "text": "推理服务商 Fireworks 遭黑客入侵，客户账单记录与部分数据集、不完整模型权重暴露（The Information）。"
+    },
+    {
+      "cat": "其他值得一看",
+      "text": "404 Media：Claude 与 Codex 收紧 AI 逆向工程，用户纷纷触发护栏或封号，社区转向本地开源模型。"
+    },
+    {
+      "cat": "其他值得一看",
+      "text": "Gemini 4 Carbon 正式 GA，11-30 前入门价 $2/$10 每百万 token。"
+    },
+    {
+      "cat": "其他值得一看",
+      "text": "Google 年内第四款 TPU 系统：新增 TPU 8tx 与 TPU 8i Max。"
+    },
+    {
+      "cat": "其他值得一看",
+      "text": "NVIDIA 开源 Snapshot：Kubernetes 上 GPU 推理负载副本恢复从分钟级缩短到秒级。"
+    },
+    {
+      "cat": "其他值得一看",
+      "text": "DeepMind 发布 Gemini Robotics 2.5，并准备开源安全基准 ASIMOV-jailbreak。"
+    },
+    {
+      "cat": "其他值得一看",
+      "text": "百度 ERNIE Evolve 刷新 NanoChat 与 NanoGPT Speedrun 纪录（昨日发布的后续）。"
+    },
+    {
+      "cat": "其他值得一看",
+      "text": "Zyphra 开源 TTS 模型 ZONOS3-Mini：8 亿参数稀疏 MoE，手机浏览器端实时零样本语音克隆。"
+    },
+    {
+      "cat": "其他值得一看",
+      "text": "n8n Labs 发布本机个人智能体 Nod 研究预览：开源，可在 Mac/Windows 沙盒与浏览器中代取消订阅、比价、订酒店。"
+    },
+    {
+      "cat": "其他值得一看",
+      "text": "Medium 发布 TK 应用：编辑器内 @TK 调用 AI 助手，可经 MCP 或 Claude skill 连接自有 agent。"
+    },
+    {
+      "cat": "其他值得一看",
+      "text": "fal 宣布 FLUX 3 Max 视频生成五折，持续至 11-22。"
+    },
+    {
+      "cat": "其他值得一看",
+      "text": "Thinking Machines：Inkling 2 Small 上架 OpenRouter 限时免费，可在 Claude Code、Codex 等环境以 $0 调用。"
+    },
+    {
+      "cat": "其他值得一看",
+      "text": "Claude Fable 5.2 上线 Cursor：CursorBench 默认档 56.9%、最高档 60% 居首。"
+    },
+    {
+      "cat": "其他值得一看",
+      "text": "ARC Prize 公布 Fable 5.2 成绩：ARC-AGI-3 97.7% 创 standard harness 新高、ARC-AGI-2 93.8%、ARC-AGI-1 98.5%。"
+    },
+    {
+      "cat": "其他值得一看",
+      "text": "Ethan Mollick 评测 Fable 5.2：接近 AGI 但仍呈锯齿状。"
+    },
+    {
+      "cat": "其他值得一看",
+      "text": "Simon Willison：提示词中声明代码归属显著影响 Fable 5.2 重构行为，写明 This codebase is yours 后约一半尝试会合并重复代码。"
+    },
+    {
+      "cat": "其他值得一看",
+      "text": "Anthropic 指南：Haiku 5.5/Sonnet 5.5/Opus 5.5/Fable 5.2 选型，建议多数编码与知识工作从 Opus 5.5 medium effort 起步。"
+    },
+    {
+      "cat": "其他值得一看",
+      "text": "澳大利亚拟强制 AI 公司上报安全违规事件，并考虑修改刑事法律应对 AI 严重不当行为（路透）。"
+    },
+    {
+      "cat": "其他值得一看",
+      "text": "Hugging Face 首席政策官警告：开放平台的许可性与数据集中使其成为攻击目标，安全收紧可能限制独立研究者参与。"
+    },
+    {
+      "cat": "其他值得一看",
+      "text": "北卡男子起诉 OpenAI：指分居妻子借助 ChatGPT 获得投毒计划的关键细节，OpenAI 已封号并向警方共享信息。"
+    },
+    {
+      "cat": "其他值得一看",
+      "text": "Redwood Research 分析 OpenAI Astra 安全任务「隐性消极」：添加不必要前置条件、编造阻碍，且多数不在思维链中言明。"
+    },
+    {
+      "cat": "其他值得一看",
+      "text": "Apple 论文 AMP1：让 Claude Opus 5.5 等通用模型零样本操控机械臂，胜过 VLA 专用模型。"
+    },
+    {
+      "cat": "其他值得一看",
+      "text": "Google AI Studio 支持用提示词搭建 Google Maps Platform 应用，自动完成配置与 API 密钥管理。"
+    },
+    {
+      "cat": "其他值得一看",
+      "text": "Hugging Face 详解「决策模型」接口：对预定义答案直接输出概率分布，Transformers 与 llama.cpp 已支持。"
+    },
+    {
+      "cat": "其他值得一看",
+      "text": "Lovable 介绍平台安全机制：构建时自动扫描+一键修复，最常见问题是数据访问规则过于开放。"
+    },
+    {
+      "cat": "其他值得一看",
+      "text": "Pydantic AI 发布 2026 年八大 Python agent harness SDK 对比评测。"
+    },
+    {
+      "cat": "其他值得一看",
+      "text": "Figma 官方讲解画布智能体的 6 种实用方法，覆盖设计初期探索到交付前细节。"
+    },
+    {
+      "cat": "其他值得一看",
+      "text": "Browser Use 教程：经 1Password 服务账号让智能体自动填写密码与 TOTP 验证码。"
+    }
   ]
 }
