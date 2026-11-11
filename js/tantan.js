@@ -1,6 +1,6 @@
 /* 炭炭 · 练口语记录面板（v443 建，仿墨墨）
  * 数据存本地 localStorage（mumu_tantan），形状：
- *   { updated:'YYYY-MM-DD', data:{ 'YYYY-MM-DD':{time:分钟, talk:学会话(段), review:复习会话(段)} } }
+ *   { updated:'YYYY-MM-DD', data:{ 'YYYY-MM-DD':{time:分钟} } }（v444 起只记时长；旧记录里的 talk/review 仍兼容读取）
  * 不依赖任何远程接口：统计 / 连续天数 / 热力图都由本地真实记录驱动。
  * 续火花 'growth:炭炭' 由 streak.js 的 refreshFromTantan() 从此数据重建 done。
  */
@@ -33,11 +33,38 @@ const TANTAN = {
     const body = mount.querySelector('#tantanBody');
     body.innerHTML = has ? this.dashboard(data) : this.emptyState();
     mount.querySelector('[data-tadd]').onclick = () => this.openForm();
-    body.querySelectorAll('[data-tdel]').forEach(b => b.onclick = (e) => { e.stopPropagation(); this.del(b.dataset.tdel); });
-    body.querySelectorAll('[data-tedit]').forEach(r => r.onclick = () => this.openForm(r.dataset.tedit));
+    this.bindRecent(body, 'tdel', 'tedit');
+  },
+  // v444：最近记录的删除叉号默认隐藏，长按该行 ~500ms 才出现；单击仍是编辑，避免误触误删
+  bindRecent(body, delAttr, editAttr) {
+    const rows = body.querySelectorAll('[data-' + editAttr + ']') || [];
+    body.querySelectorAll('[data-' + delAttr + ']').forEach(b => b.onclick = (e) => { e.stopPropagation(); this.del(b.dataset[delAttr]); });
+    const clearAll = () => rows.forEach(r => { if (r.classList) r.classList.remove('rec-long'); });
+    rows.forEach(r => {
+      let timer = null, long = false;
+      const cancel = () => { if (timer) { clearTimeout(timer); timer = null; } };
+      if (r.addEventListener) {
+        r.addEventListener('pointerdown', () => {
+          long = false; cancel();
+          timer = setTimeout(() => { long = true; clearAll(); if (r.classList) r.classList.add('rec-long'); }, 500);
+        });
+        ['pointerup', 'pointercancel', 'pointerleave'].forEach(ev => r.addEventListener(ev, cancel));
+        r.addEventListener('contextmenu', e => { e.preventDefault(); });
+      }
+      r.onclick = (e) => {
+        if (long) { long = false; if (e && e.stopPropagation) e.stopPropagation(); return; } // 长按抬手这次 click 不能冒泡到 body，否则刚显示的叉号会被 clearAll 立刻收起
+        clearAll();
+        this.openForm(r.dataset[editAttr]);
+      };
+    });
+    if (body.addEventListener) body.addEventListener('click', e => {
+      const t = e.target;
+      if (t && t.closest && t.closest('.bbdc-rec-x')) return;
+      clearAll();
+    });
   },
   emptyState() {
-    return '<div class="bbdc-empty">还没有记录呀～<br>点右上角 <b>＋ 记一笔</b>，每天记下练了多久、学会话多少，枝枝帮你把连续天数、热力图都画出来。</div>';
+    return '<div class="bbdc-empty">还没有记录呀～<br>点右上角 <b>＋ 记一笔</b>，每天记下练了多久，枝枝帮你把连续天数、热力图都画出来。</div>';
   },
   openForm(date) {
     const mount = this.mount; if (!mount) return;
@@ -48,14 +75,11 @@ const TANTAN = {
     const form = document.createElement('div');
     form.id = 'tantanForm';
     form.className = 'bbdc-form';
-    const isEdit = !!(cur.time || cur.talk || cur.review || cur._seed);
+    const isEdit = !!(cur.time || cur._seed);
+    // v444：炭炭只记时长，其余不记；新增默认今天，去掉多出来的日期框
     form.innerHTML =
-      '<div class="bbdc-form-row"><label>日期<input type="date" data-fd value="' + d + '"></label></div>' +
-      '<div class="bbdc-form-row bbdc-form-3">' +
-        '<label>时长(分)<input class="bbdc-num" type="text" inputmode="numeric" style="direction:ltr" data-ft value="' + (cur.time || '') + '"></label>' +
-        '<label>学会话<input class="bbdc-num" type="text" inputmode="numeric" style="direction:ltr" data-fl value="' + (cur.talk || '') + '"></label>' +
-        '<label>复习会话<input class="bbdc-num" type="text" inputmode="numeric" style="direction:ltr" data-fr value="' + (cur.review || '') + '"></label>' +
-      '</div>' +
+      (date ? '<div class="bbdc-form-date">' + date + '</div>' : '') +
+      '<div class="bbdc-form-row"><label>练习时长（分钟）<input class="bbdc-num" type="text" inputmode="numeric" data-ft value="' + (cur.time || '') + '" placeholder="如实填，比如 20"></label></div>' +
       '<div class="bbdc-form-actions">' +
         '<button class="bbdc-btn ghost" data-fc>取消</button>' +
         '<button class="bbdc-btn" data-fs>' + (isEdit ? '更新' : '保存') + '</button>' +
@@ -63,20 +87,18 @@ const TANTAN = {
     mount.querySelector('#tantanBody').before(form);
     form.querySelector('[data-fc]').onclick = () => form.remove();
     form.querySelector('[data-fs]').onclick = () => {
-      const fd = form.querySelector('[data-fd]').value || todayStr();
       const ft = parseInt(form.querySelector('[data-ft]').value, 10) || 0;
-      const fl = parseInt(form.querySelector('[data-fl]').value, 10) || 0;
-      const fr = parseInt(form.querySelector('[data-fr]').value, 10) || 0;
       const obj = this.get();
-      if (ft || fl || fr) obj.data[fd] = { time: ft, talk: fl, review: fr };
-      else delete obj.data[fd];
+      if (ft) obj.data[d] = { time: ft };
+      else if (cur._seed) obj.data[d] = { time: 0, _seed: 1 }; // 历史「已练·未记时长」别被空更新抹掉
+      else delete obj.data[d];
       obj.updated = todayStr();
       this.set(obj);
       if (window.Streak && Streak.refreshFromTantan) Streak.refreshFromTantan();
       form.remove();
       this.draw();
     };
-    try { form.querySelector('[data-fd]').focus(); } catch (e) {}
+    try { form.querySelector('[data-ft]').focus(); } catch (e) {}
   },
   del(date) {
     const obj = this.get();
@@ -89,8 +111,8 @@ const TANTAN = {
   dashboard(data) {
     const d = data.data || {};
     const dates = Object.keys(d).sort();
-    let totalTime = 0, totalTalk = 0, totalReview = 0;
-    dates.forEach(dt => { const v = d[dt]; totalTime += v.time || 0; totalTalk += v.talk || 0; totalReview += v.review || 0; });
+    let totalTime = 0;
+    dates.forEach(dt => { totalTime += d[dt].time || 0; });
     // 连续天数与「续火花」页同源（今天还没记不算断；放过日不断但不计数）
     let streak = 0;
     try {
@@ -104,18 +126,16 @@ const TANTAN = {
       while (cur >= '2025-01-01' && !this.hasRec(d, cur)) cur = addDays(cur, -1);
       while (cur >= '2025-01-01' && this.hasRec(d, cur)) { streak++; cur = addDays(cur, -1); }
     }
-    const stats = '<div class="bbdc-stats">' +
+    const stats = '<div class="bbdc-stats tantan-stats">' +
       this.stat(streak, '连续天数') +
       this.stat((totalTime / 60).toFixed(1), '累计时长(h)') +
-      this.stat(totalTalk, '累计学会话') +
-      this.stat(totalReview, '累计复习') +
       '</div>';
     // 近 30 天柱状（按分钟）
     const last30 = []; let c = todayStr();
     for (let i = 0; i < 30; i++) { last30.push(c); c = addDays(c, -1); }
     last30.reverse();
     const bars = '<div class="bbdc-bars">' + last30.map(dt => {
-      const v = d[dt] || {}; const t = v.time || 0; const sd = !!v._seed && !t;
+      const v = d[dt] || {}; const t = v.time || 0; const sd = !t && !!(v._seed || v.talk || v.review);
       const h = sd ? 6 : Math.max(2, Math.min(64, Math.round(t / 2)));
       return '<div class="bbdc-bar" title="' + dt + (t ? (': ' + t + ' 分钟') : (sd ? ': 已练（未记时长）' : ': 未练习')) + '"><div class="bbdc-bar-f" style="height:' + h + 'px"></div><span class="bbdc-bar-d">' + dt.slice(5) + '</span></div>';
     }).join('') + '</div>';
@@ -125,20 +145,17 @@ const TANTAN = {
     hmDates.reverse();
     const hm = '<div class="bbdc-hm">' + hmDates.map(dt => {
       const v = d[dt] || {}; const t = v.time || 0;
-      const lvl = t > 0 ? (t <= 15 ? 1 : t <= 30 ? 2 : t <= 60 ? 3 : 4) : (v._seed ? 1 : 0);
+      const lvl = t > 0 ? (t <= 15 ? 1 : t <= 30 ? 2 : t <= 60 ? 3 : 4) : ((v._seed || v.talk || v.review) ? 1 : 0);
       return '<div class="bbdc-cell lvl' + lvl + '" title="' + dt + (t ? (': ' + t + ' 分钟') : (v._seed ? ': 已练（未记时长）' : '')) + '"></div>';
     }).join('') + '</div>';
     // 最近记录（最近 10 条，倒序）
     const recent = dates.slice(-10).reverse();
     const recentHTML = '<div class="bbdc-card"><h3>最近记录</h3><div class="bbdc-recent">' +
       recent.map(dt => {
-        const v = d[dt]; const parts = [];
-        if (v.time) parts.push(v.time + ' 分');
-        if (v.talk) parts.push('学会话' + v.talk);
-        if (v.review) parts.push('复习' + v.review);
+        const v = d[dt];
         return '<div class="bbdc-rec" data-tedit="' + dt + '">' +
           '<span class="bbdc-rec-d">' + dt + '</span>' +
-          '<span class="bbdc-rec-v">' + (parts.join(' · ') || (v._seed ? '已练 · 未记时长' : '—')) + '</span>' +
+          '<span class="bbdc-rec-v">' + (v.time ? v.time + ' 分' : ((v._seed || v.talk || v.review) ? '已练 · 未记时长' : '—')) + '</span>' +
           '<button class="bbdc-rec-x" data-tdel="' + dt + '">×</button></div>';
       }).join('') + '</div></div>';
     return stats +
