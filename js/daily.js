@@ -554,15 +554,13 @@ const Daily = {
           } catch (e) {}
         }
         if (area === '炭炭') {
-          // v443：同步写入炭炭本地记录，让「成长·英语·炭炭」面板与续火花一致
+          // v444：炭炭只记时长（不记会话数），同步写入炭炭本地记录，面板与续火花同源
           try {
             const T = S.get('mumu_tantan', null) || { updated: '', data: {} };
             if (!T.data) T.data = {};
             const _m = (extra && extra.minutes != null) ? Number(extra.minutes) || 0 : 0;
-            const _l = (extra && extra.talk != null) ? Number(extra.talk) || 0 : 0;
-            const _r = (extra && extra.review != null) ? Number(extra.review) || 0 : 0;
-            if (_m || _l || _r) T.data[date] = { time: _m, talk: _l, review: _r };
-            else T.data[date] = { time: 0, talk: 0, review: 0, _seed: 1 }; // 只打卡没填数字：如实标「已练·未记时长」
+            if (_m) T.data[date] = { time: _m };
+            else T.data[date] = { time: 0, _seed: 1 }; // 只打卡没填时长：如实标「已练·未记时长」
             T.updated = todayStr(); S.set('mumu_tantan', T);
             if (window.Streak && window.Streak.refreshFromTantan) window.Streak.refreshFromTantan();
           } catch (e) {}
@@ -1448,25 +1446,21 @@ const Daily = {
     document.getElementById('bbdcOk').onclick = ok;
     minp.onkeydown = e => { if (e.key === 'Enter') ok(); };
   },
-  // 炭炭任务完成前：记录 本次时长 / 学会话 / 复习会话，写入本地炭炭记录（面板与续火花同源）
+  // 炭炭任务完成前：只记练习时长（v444：木木只要时长，其余不记），写入本地炭炭记录（面板与续火花同源）
   requireTantanInfo(t, date, onConfirm) {
     if (t.tantanMin != null) { onConfirm(); return; }
     const def = (t.extra && t.extra.minutes) || t.estMin || '';
     openModal(`<button class="close-x" onclick="closeModal()">×</button><h3>${icon('globe',18)} 记录炭炭</h3>
-      <div class="muted" style="margin-bottom:10px">「${esc(t.title)}」今天练了多久？学会话了吗？</div>
+      <div class="muted" style="margin-bottom:10px">「${esc(t.title)}」今天练了多久？</div>
       <div class="form-row"><label>练习时长（分钟）</label><input id="ttMinInput" type="text" inputmode="numeric" style="direction:ltr" value="${def}" placeholder="如实填，比如 20" autofocus></div>
-      <div class="form-row"><label>学会话（段，没学填 0）</label><input id="ttTalkInput" type="text" inputmode="numeric" style="direction:ltr" value="0"></div>
-      <div class="form-row"><label>复习会话（段，没复习填 0）</label><input id="ttReviewInput" type="text" inputmode="numeric" style="direction:ltr" value="0"></div>
       <button class="btn" id="ttOk" style="width:100%">保存并继续</button>`);
     const minp = document.getElementById('ttMinInput');
     const ok = () => {
       const m = Number(minp.value);
       if (minp.value === '' || isNaN(Number(minp.value)) || Number(minp.value) < 0) return toast('填一下今天练了多少分钟吧～（没练就填 0）');
       t.tantanMin = m;
-      t.tantanTalk = Math.max(0, Number(document.getElementById('ttTalkInput').value) || 0);
-      t.tantanReview = Math.max(0, Number(document.getElementById('ttReviewInput').value) || 0);
       const arr = this.list(date); const tt = arr.find(x => x.id === t.id);
-      if (tt) { tt.tantanMin = t.tantanMin; tt.tantanTalk = t.tantanTalk; tt.tantanReview = t.tantanReview; } this.setList(date, arr);
+      if (tt) { tt.tantanMin = t.tantanMin; } this.setList(date, arr);
       closeModal(); onConfirm();
     };
     document.getElementById('ttOk').onclick = ok;
@@ -1557,7 +1551,7 @@ const Daily = {
         else if (t.cat === 'sport') extra = { minutes: t.sportMin || 10, feel: t.sportFeel || '适中' };
         else if (this.growthArea(t.link) === '英语' || this.growthArea(t.link) === '多邻国') extra = { minutes: (t.engMin != null ? t.engMin : (extra && extra.minutes) || 20), delta: (t.engDelta != null ? t.engDelta : 0) };
         else if (this.growthArea(t.link) === '墨墨') extra = { minutes: (t.bbdcMin != null ? t.bbdcMin : (extra && extra.minutes) || 20), learn: t.bbdcLearn || 0, review: t.bbdcReview || 0 };
-        else if (this.growthArea(t.link) === '炭炭') extra = { minutes: (t.tantanMin != null ? t.tantanMin : (extra && extra.minutes) || 20), talk: t.tantanTalk || 0, review: t.tantanReview || 0 };
+        else if (this.growthArea(t.link) === '炭炭') extra = { minutes: (t.tantanMin != null ? t.tantanMin : (extra && extra.minutes) || 20) };
         else if (this.growthArea(t.link) === '阅读') extra = { book: t.readBook, pages: t.readPages || '', minutes: t.readMin != null ? t.readMin : 20, cat: t.readCat || '', finished: t.readFinished };
         else if (t.link === 'work:write') extra = { book: t.writeBook, content: t.writeContent, words: t.writeWords, kind: t.writeKind };
         this.pushToColumn(date, t.link, t.title, t.linkApp, extra, t.srcId || t.id);
@@ -2529,7 +2523,7 @@ const Daily = {
         if (t.cat === 'kaogong') extra = this._kgExtra(t);
         else if (t.cat === 'sport') extra = { minutes: t.sportMin || 10, feel: t.sportFeel || '适中' };
         else if (this.growthArea(t.link) === '英语') extra = { minutes: (t.engMin != null ? t.engMin : (extra && extra.minutes) || 20), delta: (t.engDelta != null ? t.engDelta : 0) };
-        else if (this.growthArea(t.link) === '炭炭') extra = { minutes: (t.tantanMin != null ? t.tantanMin : (extra && extra.minutes) || 20), talk: t.tantanTalk || 0, review: t.tantanReview || 0 };
+        else if (this.growthArea(t.link) === '炭炭') extra = { minutes: (t.tantanMin != null ? t.tantanMin : (extra && extra.minutes) || 20) };
         t.manualDone = true; t.doneAt = Date.now(); save();
         if (t.link) this.pushToColumn(date, t.link, t.title, t.linkApp, extra, t.srcId || t.id);
         closeModal(); this.render(root);
