@@ -42,8 +42,35 @@ const BBDC = {
     const body = mount.querySelector('#bbdcBody');
     body.innerHTML = has ? this.dashboard(data) : this.emptyState();
     mount.querySelector('[data-badd]').onclick = () => this.openForm();
-    body.querySelectorAll('[data-bdel]').forEach(b => b.onclick = (e) => { e.stopPropagation(); this.del(b.dataset.bdel); });
-    body.querySelectorAll('[data-bedit]').forEach(r => r.onclick = () => this.openForm(r.dataset.bedit));
+    this.bindRecent(body, 'bdel', 'bedit');
+  },
+  // v444：最近记录的删除叉号默认隐藏，长按该行 ~500ms 才出现；单击仍是编辑，避免误触误删
+  bindRecent(body, delAttr, editAttr) {
+    const rows = body.querySelectorAll('[data-' + editAttr + ']') || [];
+    body.querySelectorAll('[data-' + delAttr + ']').forEach(b => b.onclick = (e) => { e.stopPropagation(); this.del(b.dataset[delAttr]); });
+    const clearAll = () => rows.forEach(r => { if (r.classList) r.classList.remove('rec-long'); });
+    rows.forEach(r => {
+      let timer = null, long = false;
+      const cancel = () => { if (timer) { clearTimeout(timer); timer = null; } };
+      if (r.addEventListener) {
+        r.addEventListener('pointerdown', () => {
+          long = false; cancel();
+          timer = setTimeout(() => { long = true; clearAll(); if (r.classList) r.classList.add('rec-long'); }, 500);
+        });
+        ['pointerup', 'pointercancel', 'pointerleave'].forEach(ev => r.addEventListener(ev, cancel));
+        r.addEventListener('contextmenu', e => { e.preventDefault(); });
+      }
+      r.onclick = (e) => {
+        if (long) { long = false; if (e && e.stopPropagation) e.stopPropagation(); return; } // 长按抬手这次 click 不能冒泡到 body，否则刚显示的叉号会被 clearAll 立刻收起
+        clearAll();
+        this.openForm(r.dataset[editAttr]);
+      };
+    });
+    if (body.addEventListener) body.addEventListener('click', e => {
+      const t = e.target;
+      if (t && t.closest && t.closest('.bbdc-rec-x')) return;
+      clearAll();
+    });
   },
   emptyState() {
     return '<div class="bbdc-empty">还没有记录呀～<br>点右上角 <b>＋ 记一笔</b>，每天记下学习时长，枝枝帮你把连续天数、热力图都画出来。</div>';
@@ -58,13 +85,12 @@ const BBDC = {
     form.id = 'bbdcForm';
     form.className = 'bbdc-form';
     const isEdit = !!(cur.time || cur.learn || cur.review || cur._seed);
+    // v444：跟每日计划「记录墨墨」一样，只记 时长 / 新学词数 / 复习词数；新增默认今天，去掉多出来的日期框
     form.innerHTML =
-      '<div class="bbdc-form-row"><label>日期<input type="date" data-fd value="' + d + '"></label></div>' +
-      '<div class="bbdc-form-row bbdc-form-3">' +
-        '<label>时长(分)<input class="bbdc-num" type="text" inputmode="numeric" data-ft value="' + (cur.time || '') + '"></label>' +
-        '<label>新学<input class="bbdc-num" type="text" inputmode="numeric" data-fl value="' + (cur.learn || '') + '"></label>' +
-        '<label>复习<input class="bbdc-num" type="text" inputmode="numeric" data-fr value="' + (cur.review || '') + '"></label>' +
-      '</div>' +
+      (date ? '<div class="bbdc-form-date">' + date + '</div>' : '') +
+      '<div class="bbdc-form-row"><label>学习时长（分钟）<input class="bbdc-num" type="text" inputmode="numeric" data-ft value="' + (cur.time || '') + '" placeholder="如实填，比如 20"></label></div>' +
+      '<div class="bbdc-form-row"><label>新学词数（没学填 0）<input class="bbdc-num" type="text" inputmode="numeric" data-fl value="' + (cur.learn || '') + '" placeholder="0"></label></div>' +
+      '<div class="bbdc-form-row"><label>复习词数（没复习填 0）<input class="bbdc-num" type="text" inputmode="numeric" data-fr value="' + (cur.review || '') + '" placeholder="0"></label></div>' +
       '<div class="bbdc-form-actions">' +
         '<button class="bbdc-btn ghost" data-fc>取消</button>' +
         '<button class="bbdc-btn" data-fs>' + (isEdit ? '更新' : '保存') + '</button>' +
@@ -72,20 +98,20 @@ const BBDC = {
     mount.querySelector('#bbdcBody').before(form);
     form.querySelector('[data-fc]').onclick = () => form.remove();
     form.querySelector('[data-fs]').onclick = () => {
-      const fd = form.querySelector('[data-fd]').value || todayStr();
       const ft = parseInt(form.querySelector('[data-ft]').value, 10) || 0;
       const fl = parseInt(form.querySelector('[data-fl]').value, 10) || 0;
       const fr = parseInt(form.querySelector('[data-fr]').value, 10) || 0;
       const obj = this.get();
-      if (ft || fl || fr) obj.data[fd] = { time: ft, learn: fl, review: fr };
-      else delete obj.data[fd];
+      if (ft || fl || fr) obj.data[d] = { time: ft, learn: fl, review: fr };
+      else if (cur._seed) obj.data[d] = { time: 0, learn: 0, review: 0, _seed: 1 }; // 历史「已背·未记时长」别被空更新抹掉
+      else delete obj.data[d];
       obj.updated = todayStr();
       this.set(obj);
       if (window.Streak && Streak.refreshFromBbdc) Streak.refreshFromBbdc();
       form.remove();
       this.draw();
     };
-    try { form.querySelector('[data-fd]').focus(); } catch (e) {}
+    try { form.querySelector('[data-ft]').focus(); } catch (e) {}
   },
   del(date) {
     const obj = this.get();
