@@ -1971,6 +1971,15 @@ body.modal-open .pv-dl{display:none!important}
 .bbdc-rec-d{font-size:13px;color:var(--ink);min-width:88px}
 .bbdc-rec-v{font-size:13px;color:var(--sub);flex:1}
 .bbdc-rec-x{border:none;background:transparent;color:var(--sub);font-size:18px;line-height:1;cursor:pointer;padding:0 4px}
+/* v444 墨墨/炭炭：记一笔表单与每日计划一致（竖排、无多余日期框）；最近记录叉号默认隐藏，长按该行才出现，防误触误删 */
+.bbdc-form-date{font-size:12px;color:var(--sub);margin-bottom:10px}
+.bbdc-form-row input{width:100%;box-sizing:border-box;direction:ltr}
+.bbdc-rec{overflow:hidden;touch-action:pan-y;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+.bbdc-rec-v{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bbdc-rec-x{display:none}
+.bbdc-rec.rec-long .bbdc-rec-x{display:block}
+.bbdc-rec.rec-long{border-color:var(--mac,#2e8b57)}
+.tantan-stats{grid-template-columns:repeat(2,1fr)}
 
 /* v435 心情记录 / 低谷日记 / 日记归档 */
 .h3-mood{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
