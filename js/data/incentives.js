@@ -2,7 +2,7 @@
 // 说明：已过滤各平台「长期招创作者」类常年招募计划（你已是多数平台创作者），
 // 仅保留有明确截止时间的创作活动，并按紧急度 + 覆盖平台数排序。
 window.MUMU_INCENTIVES = {
-  updated: "2026-11-10 18:33",
+  updated: "2026-11-12 10:20",
   note: "以下活动均来自公开可验证的官方渠道，投稿前请点开来源链接二次确认规则与截止时间。已自动隐藏各平台「长期招创作者」计划，只呈现有明确截止的活动；标「今日/明天截止」的请抓紧最后投稿，标「已截止」的雷达不再收录、仅留底档。",
   platforms: [
     {
@@ -50,6 +50,46 @@ window.MUMU_INCENTIVES = {
   ],
   campaigns: [
     {
+      game: "崩坏：星穹铁道",
+      title: "《崩坏：星穹铁道》4.7版本「此刻，将群星付之一笑」创作者激励计划 B站（百万奖金+超千万星琼）",
+      platforms: [ "哔哩哔哩" ],
+      reward: "高额奖金瓜分+超千万星琼道具奖励（视频/直播双赛道，含积极爆肝奖、热门话题奖、新星成长奖、播放时长奖等，具体档位见B站4.7激励计划）",
+      deadline: "2026-12-22",
+      period: "2026-11-11 11:00 ~ 12-22 23:59（4.7版本）",
+      require: "在B站选择 #崩坏:星穹铁道创作者激励计划# 话题参与投稿，或在《崩坏:星穹铁道》专区开播，达到对应条件即可参与高额奖金瓜分与星琼奖励",
+      source: "http://mp.weixin.qq.com/s?__biz=MzkwNzI2NTQ2OA==&mid=2247576274&idx=6&sn=4c403f4d8963a43232073c8c6a32cf18&chksm=c1294642164ed64bfab7010c53d9d7306c003bbf11975092aa4b3c3fffb89f7a3c9b30bbb101#rd",
+    },
+    {
+      game: "崩坏：星穹铁道",
+      title: "《崩坏：星穹铁道》4.7版本「此刻，将群星付之一笑」小红书创作者激励计划（现金+星琼+周边）",
+      platforms: [ "小红书" ],
+      reward: "现金红包+游戏星琼+精美周边（视频/图文笔记带话题瓜分奖金，剧情&彩蛋/二创/攻略/日常多赛道评选万元奖金，详见小红书激励计划）",
+      deadline: "2026-12-22",
+      period: "2026-11-11 12:00 ~ 12-22 23:59（4.7版本·分两阶段）",
+      require: "在小红书带话题 #崩坏星穹铁道 #崩坏星穹铁道创作者激励计划 发布原创图文/视频笔记参与现金瓜分与种草官评选",
+      source: "http://mp.weixin.qq.com/s?__biz=MzkwNzI2NTQ2OA==&mid=2247576274&idx=7&sn=db32c0445d53b02ebd73d920c47d3d4d&chksm=c13955156299f7b75196fe1c03b77e2ab9f08c6e0b1369f434c1ee1475253d3d069a2724c103#rd",
+    },
+    {
+      game: "崩坏：星穹铁道",
+      title: "《崩坏：星穹铁道》4.7版本「此刻，将群星付之一笑」快手创作者激励计划（40万现金+星琼）",
+      platforms: [ "快手" ],
+      reward: "40万现金奖池（视频赛道20万+直播赛道15.9万+早鸟瓜分等）+游戏星琼+精美周边（详见快手4.7激励计划）",
+      deadline: "2026-12-22",
+      period: "2026-11-11 11:00 ~ 12-22 23:59（4.7版本）",
+      require: "在快手带话题 #崩坏星穹铁道 #此刻将群星付之一笑 发布原创作品或参与直播，搜索「星穹铁道新版本」进入活动页",
+      source: "http://mp.weixin.qq.com/s?__biz=MzkwNzI2NTQ2OA==&mid=2247576274&idx=8&sn=b316ee2146d659e1c6a94582b59c8750&chksm=c1cf60f61b047c8c063b7e127c66efdb2563a9e5058df2d27a6adfa9f6aab1594f314a0d124a#rd",
+    },
+    {
+      game: "王者荣耀",
+      title: "《王者荣耀》第十三届高校联赛创作传播激励计划（抖音/小红书，5万元现金奖池）",
+      platforms: [ "抖音", "小红书" ],
+      reward: "总奖池5万元现金：L1传播奖金池（抖音/小红书各1万按点赞占比瓜分）+ L2优秀传播奖50人×300元 + L3十佳传播奖10人×1000元，学生创作者叠加可拿",
+      deadline: "2027-01-10",
+      period: "2026-09-12 ~ 2027-01-10 23:59（第十三届高校联赛）",
+      require: "全国高校在读学生，在抖音或小红书发布带 #王者荣耀高校联赛 话题的原创内容（短视频15-60s或图文3-9图，须与高校联赛强相关）",
+      source: "https://pvp.qq.com/cp/a20220315open/news_page.shtml?newsid=808638",
+    },
+    {
       game: "洛克王国：世界",
       title: "《洛克王国：世界》S5创作者激励计划 好游快爆（京东卡+精美周边）",
       platforms: [ "好游快爆" ],
@@ -58,8 +98,7 @@ window.MUMU_INCENTIVES = {
       period: "2026-11-05 ~ 12-06（S5征集）",
       require: "在好游快爆《洛克王国：世界》创作中心发布原创图文/视频投稿并通过审核（详见好游快爆创作中心）",
       source: "https://huodong3.3839.com/n/hykb/gonglue",
-    },
-    {
+    },    {
       game: "崩坏：因缘精灵",
       title: "《崩坏：因缘精灵》好游快爆创作征集（京东卡+精美周边）",
       platforms: [ "好游快爆" ],
@@ -68,8 +107,7 @@ window.MUMU_INCENTIVES = {
       period: "2026-11-06 ~ 2027-01-06（征集活动）",
       require: "在好游快爆《崩坏：因缘精灵》创作中心发布原创图文/视频投稿并通过审核（详见好游快爆创作中心）",
       source: "https://huodong3.3839.com/n/hykb/gonglue",
-    },
-    {
+    },    {
       game: "蛋仔派对",
       title: "《蛋仔派对》11月「宝藏乐园赛道」创作激励计划 B站",
       platforms: [ "哔哩哔哩" ],
@@ -78,8 +116,7 @@ window.MUMU_INCENTIVES = {
       period: "2026-11-01 ~ 11-30（11月宝藏乐园赛道）",
       require: "在B站投稿《蛋仔派对》「宝藏乐园赛道」相关原创视频，带对应活动话题参与（详见B站有奖活动页）",
       source: "https://member.bilibili.com/york/hot-activity",
-    },
-    {
+    },    {
       game: "蛋仔派对",
       title: "《蛋仔派对》11月「惊魂趣玩杯」创作激励计划 B站",
       platforms: [ "哔哩哔哩" ],
@@ -88,8 +125,7 @@ window.MUMU_INCENTIVES = {
       period: "2026-11-01 ~ 11-30（11月惊魂趣玩杯）",
       require: "在B站投稿《蛋仔派对》「惊魂趣玩杯」相关原创视频，带对应活动话题参与（详见B站有奖活动页）",
       source: "https://member.bilibili.com/york/hot-activity",
-    },
-    {
+    },    {
       game: "影之刃零",
       title: "《影之刃零》评价征集活动 好游快爆（创作额度奖励）",
       platforms: [ "好游快爆" ],
@@ -98,8 +134,7 @@ window.MUMU_INCENTIVES = {
       period: "2026-11-03 ~ 2027-01-03（评价征集）",
       require: "在好游快爆《影之刃零》创作中心发布原创图文/视频/评价投稿并通过审核（详见好游快爆创作中心）",
       source: "https://huodong3.3839.com/n/hykb/gonglue",
-    },
-    {
+    },    {
       game: "崩坏：因缘精灵",
       title: "《崩坏：因缘精灵》创作者激励计划 B站（幸福测试资格+现金瓜分）",
       platforms: [ "哔哩哔哩" ],
@@ -109,7 +144,6 @@ window.MUMU_INCENTIVES = {
       require: "在B站选择 #崩坏:因缘精灵创作者激励计划# 话题并添加 #崩坏:因缘精灵# 标签投稿幸福测试相关视频；或幸福测试开启后在 #崩坏:因缘精灵# 分区开播",
       source: "http://mp.weixin.qq.com/s?__biz=MzE5MTg1MjQyOA==&mid=2247484222&idx=2&sn=8c13e7670f2c5c86e96f4ab8354c605f&chksm=97adc2854fc41ea5ad7618dea9a9255f9b12a412978fd976b77856699746ceaf348bc032eea0#rd",
     },
-
     {
       game: "战争警戒手游",
       title: "《战争警戒手游》「混乱将至」版本创作激励计划 TapTap（金币+军需+限定奖励）",
@@ -120,7 +154,6 @@ window.MUMU_INCENTIVES = {
       require: "在 TapTap《战争警戒》官方论坛选择赛道，标题用【混乱将至·赛道名】前缀，带 #战争警戒手游创作激励# #混乱将至·赛道名# 话题发布原创图文（>=100字+>=3张截图），文末填社区ID/UID/赛道/是否AI",
       source: "https://www.taptap.cn/moment/866735152959589876",
     },
-
     {
       game: "逆战：未来",
       title: "《逆战：未来》「生存之战」创作征集 好游快爆（周边公仔+双闪吧唧）",
@@ -131,7 +164,6 @@ window.MUMU_INCENTIVES = {
       require: "在好游快爆《逆战：未来》创作中心发布原创图文/视频投稿并通过审核（详见好游快爆创作活动合集）",
       source: "https://huodong3.3839.com/n/hykb/trade_show/h5/10.html",
     },
-
     {
       game: "名将杀",
       title: "《名将杀》「名震三国」创作征集活动 好游快爆（百元京东卡）",
@@ -142,7 +174,6 @@ window.MUMU_INCENTIVES = {
       require: "在好游快爆《名将杀》创作中心发布原创图文/视频投稿并通过审核（详见好游快爆创作活动合集）",
       source: "https://huodong3.3839.com/n/hykb/trade_show/h5/10.html",
     },
-
     {
       game: "绿梦：时空之声",
       title: "《绿梦：时空之声》「时序回响」创作征集 好游快爆（百元京东卡）",
@@ -153,7 +184,6 @@ window.MUMU_INCENTIVES = {
       require: "在好游快爆《绿梦：时空之声》创作中心发布原创图文/视频投稿并通过审核（详见好游快爆创作活动合集）",
       source: "https://huodong3.3839.com/n/hykb/trade_show/h5/10.html",
     },
-
     {
       game: "崩坏：星穹铁道",
       title: "《崩坏：星穹铁道》4.6版本小红书同人绘画征集（插画/漫画/Q版/表情包）",
@@ -164,7 +194,6 @@ window.MUMU_INCENTIVES = {
       require: "在小红书平台带话题 #星穹铁道绘画# #崩坏星穹铁道# #崩坏星穹铁道创作者激励计划# 发布4.6版本同人绘画作品，主题需与4.6版本内容相关",
       source: "https://m.weibo.cn/status/5348137473934802",
     },
-
     {
       game: "影之刃零",
       title: "《影之刃零》「影刃启封」创作征集 好游快爆（豪华版cdk+百元京东卡+周边）",
@@ -175,7 +204,6 @@ window.MUMU_INCENTIVES = {
       require: "在好游快爆《影之刃零》创作中心发布原创图文/视频投稿并通过审核（详见好游快爆创作活动合集）",
       source: "https://huodong3.3839.com/n/hykb/trade_show/h5/10.html",
     },
-
     {
       game: "绝区零",
       title: "《绝区零》【3.3攻略征集】活动 好游快爆（海量菲林+周边）",
@@ -186,7 +214,6 @@ window.MUMU_INCENTIVES = {
       require: "在好游快爆《绝区零》创作中心发布原创图文/视频攻略投稿并通过审核（详见好游快爆创作活动合集）",
       source: "https://huodong3.3839.com/n/hykb/trade_show/h5/10.html",
     },
-
     {
       game: "异环",
       title: "《异环》1.5版本「致电，空想迷数」创作激励 TapTap（万元现金+环石）",
@@ -196,8 +223,7 @@ window.MUMU_INCENTIVES = {
       period: "2026-11-05 ~ 12-16（1.5版本「致电，空想迷数」）",
       require: "在 TapTap 带话题 #异环 #致电空想迷数 发布《异环》1.5版本强相关图文/视频（摄影/二创/攻略/角色方向），创作者中心绑定支付宝实名一致",
       source: "https://www.taptap.cn/moment/865199000981078103",
-    },
-    {
+    },    {
       game: "无畏契约",
       title: "《无畏契约》2026VCT转会期特别激励征稿 B站（按播放计费瓜分）",
       platforms: [ "哔哩哔哩" ],
@@ -206,8 +232,7 @@ window.MUMU_INCENTIVES = {
       period: "2026-11-07 ~ 12-27（2026VCT转会期）",
       require: "在B站投稿《无畏契约》赛事主题原创视频（≥15s），选 #无畏契约# 或 #无畏契约赛事# 标签并携带【2026VCT转会期信息一览】活动话题",
       source: "https://link.bilibili.com/p/eden/news#/newsdetail?id=5226",
-    },
-    {
+    },    {
       game: "龙族：卡塞尔之门",
       title: "《龙族：卡塞尔之门》全新创作激励计划 抖音（瓜分万元现金）",
       platforms: [ "抖音" ],
@@ -216,8 +241,7 @@ window.MUMU_INCENTIVES = {
       period: "即日起 ~ 2026-11-21（全新创作激励计划）",
       require: "在抖音搜索【龙族卡塞尔之门激励计划】点击立即参与并选取激励任务，任务期间带指定话题发布与《龙族：卡塞尔之门》相关作品并挂载手柄",
       source: "https://www.taptap.cn/moment/861678656878021845?group_id=634229",
-    },
-    {
+    },    {
       game: "世界之外",
       title: "《世界之外》「马上启动世界之外11.0」创作激励计划（抖音/小红书/快手，最高月入2万）",
       platforms: [ "抖音", "小红书", "快手" ],
@@ -226,8 +250,7 @@ window.MUMU_INCENTIVES = {
       period: "2026-11-01 ~ 11-30（马上启动世界之外11.0）",
       require: "在抖音带话题 #世界之外 #马上启动世界之外 发布主题作品，前往【网易创作匠】APP/小程序投稿并上传作品数据（小红书/快手为分发平台）",
       source: "http://www.sina.cn/news/detail/5359673487135163.html",
-    },
-    {
+    },    {
       game: "暗区端游",
       title: "《暗区端游》11月创作者激励计划 B站（新版本）",
       platforms: [ "哔哩哔哩" ],
@@ -236,8 +259,7 @@ window.MUMU_INCENTIVES = {
       period: "2026-11-01 ~ 11-30（11月创作者激励）",
       require: "在B站投稿《暗区端游》相关原创视频，带对应活动话题参与（详见B站有奖活动页）",
       source: "https://member.bilibili.com/york/hot-activity",
-    },
-    {
+    },    {
       game: "第五人格",
       title: "《第五人格》快手创作者成长计划（第二期）现金奖池 150w",
       platforms: [ "快手" ],
@@ -246,8 +268,7 @@ window.MUMU_INCENTIVES = {
       period: "2026-11-05 ~ 12-04（创作者成长计划第二期）",
       require: "在快手带话题 #第五人格 #整活就来第五人格 发布第五人格相关图文或视频，并在网易创作匠 APP/小程序完成作品登记参与",
       source: "http://www.sina.cn/news/detail/5361878013581295.html",
-    },
-    {
+    },    {
       game: "植物大战僵尸2",
       title: "《植物大战僵尸2》新版本创作者激励计划 B站",
       platforms: [ "哔哩哔哩" ],
@@ -256,8 +277,7 @@ window.MUMU_INCENTIVES = {
       period: "2026-11-01 ~ 12-31（新版本）",
       require: "在B站投稿《植物大战僵尸2》新版本相关原创视频，带对应活动话题参与（详见B站有奖活动页）",
       source: "https://member.bilibili.com/york/hot-activity",
-    },
-    {
+    },    {
       game: "蛋仔派对",
       title: "《蛋仔派对》「全民寻宝队」创作激励计划 B站",
       platforms: [ "哔哩哔哩" ],
@@ -266,8 +286,7 @@ window.MUMU_INCENTIVES = {
       period: "2026-11-01 ~ 11-30（全民寻宝队）",
       require: "在B站投稿《蛋仔派对》「全民寻宝队」相关原创视频，带对应活动话题参与（详见B站有奖活动页）",
       source: "https://member.bilibili.com/york/hot-activity",
-    },
-    {
+    },    {
       game: "追逐卡蕾多",
       title: "《追逐卡蕾多》创作征集活动 好游快爆（测试资格+京东卡+周边）",
       platforms: [ "好游快爆" ],
@@ -276,8 +295,7 @@ window.MUMU_INCENTIVES = {
       period: "2026-10-22 ~ 12-02（创作征集）",
       require: "在好游快爆《追逐卡蕾多》专区发布原创图文/视频投稿并通过审核（详见好游快爆创作中心）",
       source: "https://huodong3.3839.com/n/hykb/gonglue",
-    },
-    {
+    },    {
       game: "幽灵南瓜带你创",
       title: "「幽灵南瓜带你创」2026万圣节主题创作征集 好游快爆（耳机+京东卡+周边）",
       platforms: [ "好游快爆" ],
@@ -286,8 +304,7 @@ window.MUMU_INCENTIVES = {
       period: "2026-10-30 ~ 12-01（万圣节主题）",
       require: "在好游快爆发布万圣节主题原创图文/视频投稿并通过审核（详见好游快爆创作中心）",
       source: "https://huodong3.3839.com/n/hykb/gonglue",
-    },
-    {
+    },    {
       game: "机械启元",
       title: "《机械启元》抖音创作者激励（先锋测试资格+现金瓜分）",
       platforms: [ "抖音" ],
@@ -296,8 +313,7 @@ window.MUMU_INCENTIVES = {
       period: "2026-10-30 ~ 11-13（抖音创作者激励）",
       require: "在抖音挂载【机械启元】小手柄并带话题 #机械启元 #机械启元先锋测试 发布原创视频/直播，须在抖音活动页报名",
       source: "http://jxqy.foggame.com.cn/news/2025/1030/14467.html",
-    },
-    {
+    },    {
       game: "阴阳师",
       title: "《阴阳师》「枷岛之章」创作激励活动 B站",
       platforms: ["哔哩哔哩"],
@@ -306,8 +322,7 @@ window.MUMU_INCENTIVES = {
       period: "2026-11-04 ~ 12-01（枷岛之章版本）",
       require: "在B站投稿《阴阳师》「枷岛之章」相关原创视频，带对应活动话题参与（详见B站有奖活动页）",
       source: "https://member.bilibili.com/york/hot-activity",
-    },
-    {
+    },    {
       game: "APEX英雄",
       title: "《APEX英雄》「破译天机」创作者激励计划 B站（第31赛季）",
       platforms: ["哔哩哔哩"],
@@ -316,8 +331,7 @@ window.MUMU_INCENTIVES = {
       period: "2026-11-04 ~ 12-11（第31赛季·破译天机）",
       require: "在B站投稿《APEX英雄》第31赛季「破译天机」相关原创视频，带对应活动话题参与（详见B站有奖活动页）",
       source: "https://member.bilibili.com/york/hot-activity",
-    },
-    {
+    },    {
       game: "蛋仔派对",
       title: "《蛋仔派对》11月创作激励计划 B站（瓜分32万奖励）",
       platforms: ["哔哩哔哩"],
@@ -326,8 +340,7 @@ window.MUMU_INCENTIVES = {
       period: "2026-11-01 ~ 11-30（11月创作激励计划）",
       require: "在B站投稿《蛋仔派对》相关原创视频，带对应活动话题参与（详见B站有奖活动页）",
       source: "https://member.bilibili.com/york/hot-activity",
-    },
-    {
+    },    {
       game: "火影忍者手游",
       title: "《火影忍者手游》11月创作激励计划 B站",
       platforms: ["哔哩哔哩"],
@@ -336,8 +349,7 @@ window.MUMU_INCENTIVES = {
       period: "2026-10-30 ~ 11-29（11月创作激励）",
       require: "在B站投稿《火影忍者手游》相关原创视频，带对应活动话题参与（详见B站有奖活动页）",
       source: "https://member.bilibili.com/york/hot-activity",
-    },
-    {
+    },    {
       game: "弹丸论破",
       title: "《弹丸论破》Bonly 创作挑战 B站（超高校级同人创作）",
       platforms: ["哔哩哔哩"],
@@ -346,8 +358,7 @@ window.MUMU_INCENTIVES = {
       period: "2026-10-30 ~ 12-15（Bonly 创作挑战）",
       require: "在B站投稿《弹丸论破》相关原创同人视频，带对应活动话题参与（详见B站有奖活动页）",
       source: "https://member.bilibili.com/york/hot-activity",
-    },
-    {
+    },    {
       game: "魔兽世界",
       title: "《魔兽世界：无限》正式上线创作者激励计划 B站",
       platforms: ["哔哩哔哩"],
@@ -356,8 +367,7 @@ window.MUMU_INCENTIVES = {
       period: "2026-11-05 ~ 12-31（正式上线）",
       require: "在B站投稿《魔兽世界：无限》相关原创视频，带对应活动话题参与（详见B站有奖活动页）",
       source: "https://member.bilibili.com/york/hot-activity",
-    },
-    {
+    },    {
       game: "金铲铲之战",
       title: "《金铲铲之战》「大橘大利」创作者激励计划 B站",
       platforms: ["哔哩哔哩"],
@@ -366,8 +376,7 @@ window.MUMU_INCENTIVES = {
       period: "2026-11-04 ~ 12-03（大橘大利）",
       require: "在B站投稿《金铲铲之战》「大橘大利」相关原创视频，带对应活动话题参与（详见B站有奖活动页）",
       source: "https://member.bilibili.com/york/hot-activity",
-    },
-    {
+    },    {
       game: "遗忘之海",
       title: "《遗忘之海》创作激励计划 B站",
       platforms: ["哔哩哔哩"],
@@ -376,8 +385,7 @@ window.MUMU_INCENTIVES = {
       period: "2026-11-03 ~ 12-02",
       require: "在B站投稿《遗忘之海》相关原创视频，带对应活动话题参与（详见B站有奖活动页）",
       source: "https://member.bilibili.com/york/hot-activity",
-    },
-    {
+    },    {
       game: "暗区手游",
       title: "《暗区手游》11月创作者激励计划 B站",
       platforms: ["哔哩哔哩"],
@@ -386,8 +394,7 @@ window.MUMU_INCENTIVES = {
       period: "2026-11-01 ~ 11-30（11月创作者激励）",
       require: "在B站投稿《暗区手游》相关原创视频，带对应活动话题参与（详见B站有奖活动页）",
       source: "https://member.bilibili.com/york/hot-activity",
-    },
-    {
+    },    {
       game: "明日方舟",
       title: "《明日方舟》UP主应援计划「时间啊，向前！」B站（瓜分奖金）",
       platforms: ["哔哩哔哩"],
@@ -396,8 +403,7 @@ window.MUMU_INCENTIVES = {
       period: "2026-11-01 ~ 12-01（时间啊，向前！）",
       require: "在B站投稿《明日方舟》「时间啊，向前！」相关原创视频，带对应活动话题参与（详见B站有奖活动页）",
       source: "https://member.bilibili.com/york/hot-activity",
-    },
-    {
+    },    {
       game: "鸣潮",
       title: "《鸣潮》3.7版本「镜锁妄世·心照红尘」创作激励 好游快爆（星声+周边）",
       platforms: ["好游快爆"],
@@ -406,8 +412,7 @@ window.MUMU_INCENTIVES = {
       period: "2026-09-30 11:00 ~ 11-11 23:59（3.7版本）",
       require: "在好游快爆《鸣潮》版区内发布原创内容，添加活动话题标签 #鸣潮创作激励计划（攻略/二创双赛道，未添加话题不计有效参与）",
       source: "https://m.bbs.3839.com/thread-9191276.htm",
-    },
-    {
+    },    {
       game: "影之刃零",
       title: "《影之刃零》发售创作征集（TapTap，攻略/评测/考据现金）",
       platforms: [ "TapTap" ],
@@ -416,8 +421,7 @@ window.MUMU_INCENTIVES = {
       period: "2026-10-29 ~ 11-29（发售创作征集）",
       require: "在 TapTap 带话题 #影之刃零创作征集 投稿原创图文/长贴/视频（攻略、评测、彩蛋挖掘、剧情分析、游玩体验等），稿件须原创且创作者中心绑定支付宝实名一致",
       source: "https://www.taptap.cn/moment/864182634274623479",
-    },
-    {
+    },    {
       game: "王者万象棋",
       title: "《王者万象棋》S1 创作激励计划 B站（40万奖金池）",
       platforms: [ "哔哩哔哩" ],
@@ -426,8 +430,7 @@ window.MUMU_INCENTIVES = {
       period: "2026-10-25 ~ 11-28（S1赛季）",
       require: "在B站投稿《王者万象棋》相关原创视频，带对应活动话题参与（详见B站有奖活动页）",
       source: "https://member.bilibili.com/york/hot-activity",
-    },
-    {
+    },    {
       game: "绝区零",
       title: "《绝区零》3.3版本「重返天空的旅程」创作激励 TapTap（创作基金+周边）",
       platforms: [ "TapTap" ],
@@ -436,8 +439,7 @@ window.MUMU_INCENTIVES = {
       period: "2026-10-21 ~ 12-01（3.3「重返天空的旅程」）",
       require: "在 TapTap 带话题 #绝区零重返天空的旅程 发布打卡内容（图文≥1张或视频≥30s），或参与攻略征集传送门投稿（详见活动帖）",
       source: "https://www.taptap.cn/moment/859859862740273496",
-    },
-    {
+    },    {
       game: "原神",
       title: "《原神》7.2「坏灭肇始之时」创作者激励计划（哔哩哔哩/抖音/小红书，28万奖金+64万原石）",
       platforms: [ "哔哩哔哩", "抖音", "小红书" ],
@@ -446,8 +448,7 @@ window.MUMU_INCENTIVES = {
       period: "2026-11-04 ~ 12-15（7.2「坏灭肇始之时」）",
       require: "B站选 #原神UP主激励计划# 活动标签投稿或在 #原神# 分区直播；抖音搜索「原神」进官号专区参与；小红书搜索「原神」进活动页带7.2话题投稿；参与前须绑定游戏角色且冒险等阶≥10级",
       source: "https://mp.weixin.qq.com/s?__biz=MzU4NzY1ODY5OA==&mid=2247576530&idx=4&sn=79a5477bf7739307b98d0431ceb7a0c5&chksm=fc9d22efa9bdf6cdacb6f0a90aa1a5091255e23b63bdc7406116899fc5b966af3d4ce41d4265#rd",
-    },
-    {
+    },    {
       game: "无限暖暖",
       title: "《无限暖暖》2.11版本「时光缝合的扉页」多平台创作激励（小红书/抖音，京东卡+现金）",
       platforms: [ "小红书", "抖音" ],
@@ -456,8 +457,7 @@ window.MUMU_INCENTIVES = {
       period: "2026-10-29 ~ 11-25（2.11「时光缝合的扉页」+小王子联动）",
       require: "前往小红书搜索「无限暖暖」参与投稿激励活动并带对应话题；抖音搜索「无限暖暖」参与创作激励活动；亦可参与小王子限时联动特别主题创作激励",
       source: "https://mp.weixin.qq.com/s?__biz=Mzg5Nzg2OTkzMA==&mid=2247525924&idx=1&sn=3614ec4e5cbe7efa14401099b029bd7e&chksm=c1b1de726b1da2d6e7d5cea88706ce02ebb55733fa77734771a7924f75e4c9a168d7b991c64f#rd",
-    },
-    {
+    },    {
       game: "燕云十六声",
       title: "《燕云十六声》「长乐夜未央」好游快爆创作征集活动（创作额度+超级爆米花）",
       platforms: [ "好游快爆" ],
@@ -466,8 +466,7 @@ window.MUMU_INCENTIVES = {
       period: "2026-10-23 ~ 11-22（长乐夜未央版本）",
       require: "在好游快爆《燕云十六声》论坛投稿，标题带 #长乐夜未央# 活动关键词，视频/攻略/专栏/同人通过官方评级",
       source: "https://m.bbs.3839.com/thread-9240922.htm",
-    },
-    {
+    },    {
       game: "篮球少女：飞跃巅峰",
       title: "《篮球少女：飞跃巅峰》创作者激励计划 B站（新版本）",
       platforms: [ "哔哩哔哩" ],
@@ -476,8 +475,7 @@ window.MUMU_INCENTIVES = {
       period: "2026-10-23 ~ 11-24",
       require: "在B站投稿《篮球少女：飞跃巅峰》相关原创视频，带对应活动话题参与（详见B站有奖活动页）",
       source: "https://member.bilibili.com/york/hot-activity",
-    },
-    {
+    },    {
       game: "无限暖暖",
       title: "《无限暖暖》2.11版本「时光缝合的扉页」TapTap 创作激励计划（现金+京东卡+周边）",
       platforms: [ "TapTap" ],
@@ -486,8 +484,7 @@ window.MUMU_INCENTIVES = {
       period: "2026-10-29 ~ 11-25（2.11「时光缝合的扉页」）",
       require: "在 TapTap《无限暖暖》版区带双话题 #无限暖暖时光缝合的扉页#无限暖暖奇想家（或 #无限暖暖攻略家）发布原创图文/长贴/视频，图文≥10字且图片≥1张、视频≥6s",
       source: "https://www.taptap.cn/moment/864531831519710967",
-    },
-    {
+    },    {
       game: "阴阳师",
       title: "《阴阳师》「永恒之章·拾此一瞬」抖音达人扶持计划（现金奖励）",
       platforms: [ "抖音" ],
@@ -496,8 +493,7 @@ window.MUMU_INCENTIVES = {
       period: "2026-09-30 ~ 11-03（「永恒之章·拾此一瞬」版本）",
       require: "入驻抖音并完成网易创作匠 APP 活动授权登记，在抖音带对应活动话题投稿《阴阳师》「永恒之章·拾此一瞬」相关内容",
       source: "https://new.qq.com/rain/a/20260930A0BBTS00",
-    },
-    {
+    },    {
       game: "魔法少女小圆",
       title: "《魔法少女小圆》Bonly 同人征集 B站（游戏区创作激励）",
       platforms: [ "哔哩哔哩" ],
@@ -506,8 +502,7 @@ window.MUMU_INCENTIVES = {
       period: "2026-09-24 ~ 11-14（Bonly 同人征集）",
       require: "在B站投稿《魔法少女小圆》相关原创同人视频，带对应活动话题参与（详见B站有奖活动页）",
       source: "https://member.bilibili.com/york/hot-activity",
-    },
-    {
+    },    {
       game: "守望先锋",
       title: "《守望先锋》11月「英雄召集计划」内容创作激励（哔哩哔哩/抖音/小红书，新增万元新人奖池）",
       platforms: [ "哔哩哔哩", "抖音", "小红书" ],
@@ -516,8 +511,7 @@ window.MUMU_INCENTIVES = {
       period: "2026-11-01 ~ 11-30（11月「英雄召集计划」）",
       require: "在B站/抖音/小红书带活动话题投稿《守望先锋》相关原创视频（≥15s）或小红书图文（≥1张），游戏内容占比40%以上；禁AI洗稿/搬运/纯录屏；同一作品不可投其他活动",
       source: "https://ow.blizzard.cn/xlbjh/",
-    },
-    {
+    },    {
       game: "重返未来：1999",
       title: "《重返未来：1999》4.0「应门者」创作者激励计划（小红书/抖音）",
       platforms: [ "小红书", "抖音" ],
@@ -526,8 +520,7 @@ window.MUMU_INCENTIVES = {
       period: "2026-09-24 ~ 11-04（4.0「应门者」巡游版本）",
       require: "小红书带活动指定话题发布原创作品；抖音搜索官方账号「重返未来1999」进入专区-精选活动投稿；均须围绕4.0版本内容",
       source: "https://www.sina.cn/news/detail/5346633815952766.html",
-    },
-    {
+    },    {
       game: "王者荣耀",
       title: "《王者荣耀》十一周年 UP主激励计划 B站（瓜分奖金）",
       platforms: [ "哔哩哔哩" ],
@@ -536,8 +529,7 @@ window.MUMU_INCENTIVES = {
       period: "2026-10-19 ~ 11-30（十一周年）",
       require: "在B站投稿《王者荣耀》十一周年主题视频，选 #王者荣耀UP主激励计划 并带对应活动话题参与（详见活动规则）",
       source: "https://member.bilibili.com/york/hot-activity",
-    },
-    {
+    },    {
       game: "崩坏：星穹铁道",
       title: "《崩坏：星穹铁道》4.6版本快手创作者激励计划（万元现金+星琼）",
       platforms: [ "快手" ],
@@ -546,8 +538,7 @@ window.MUMU_INCENTIVES = {
       period: "2026-09-28 ~ 11-10（4.6「月升之前与兽共舞」）",
       require: "在快手带话题 #崩坏星穹铁道# 和 #月升之前与兽共舞# 发布《崩坏：星穹铁道》原创作品或参与直播，搜索官方账号进入活动页",
       source: "https://www.sina.cn/news/detail/5348145023425254.html",
-    },
-    {
+    },    {
       game: "饥困荒野",
       title: "《饥困荒野》创作激励活动（快手游戏合伙人/抖音/小红书，多平台现金瓜分）",
       platforms: [ "快手", "抖音", "小红书" ],
@@ -556,8 +547,7 @@ window.MUMU_INCENTIVES = {
       period: "2026-10-27 ~ 11-23（快手合伙人/定档创作激励）",
       require: "快手搜索「游戏合伙人」领取任务；抖音官号专区报名+挂载小手柄+带话题；小红书加入星选队作者团+发布有效笔记带话题（11-24上线）",
       source: "https://new.qq.com/rain/a/20261027A0DN7100",
-    },
-    {
+    },    {
       game: "燕云十六声",
       title: "《燕云十六声》「长乐夜未央」B站创作激励计划（新版本）",
       platforms: [ "哔哩哔哩" ],
@@ -566,8 +556,7 @@ window.MUMU_INCENTIVES = {
       period: "2026-10-23 ~ 11-05（长乐夜未央版本）",
       require: "在B站投稿《燕云十六声》「长乐夜未央」相关原创视频，带对应活动话题参与（详见B站有奖活动页）",
       source: "https://member.bilibili.com/york/hot-activity",
-    },
-    {
+    },    {
       game: "失落城堡2",
       title: "《失落城堡2》手游创作激励计划 B站（新版本）",
       platforms: [ "哔哩哔哩" ],
@@ -576,8 +565,7 @@ window.MUMU_INCENTIVES = {
       period: "2026-10-22 ~ 11-22",
       require: "在B站投稿《失落城堡2》手游相关原创视频，带对应活动话题参与（详见B站有奖活动页）",
       source: "https://member.bilibili.com/york/hot-activity",
-    },
-    {
+    },    {
       game: "世界之外",
       title: "《世界之外》「寻至幽墟」创作激励计划（TapTap/小红书，10W现金）",
       platforms: [ "TapTap", "小红书" ],
@@ -586,8 +574,7 @@ window.MUMU_INCENTIVES = {
       period: "2026-10-09 ~ 11-14",
       require: "在 TapTap/小红书 带话题 #世界之外 #世界之外寻至幽墟 投稿《世界之外》相关原创作品（本活动与创作匠活动互斥，不可带 #马上启动世界之外 标签）",
       source: "https://www.taptap.cn/moment/857335959203610725?group_id=592551",
-    },
-    {
+    },    {
       game: "夜幕之下",
       title: "《夜幕之下》「无罪之国」小红书创作激励（10W现金）",
       platforms: [ "小红书" ],
@@ -596,8 +583,7 @@ window.MUMU_INCENTIVES = {
       period: "2026-10-22 ~ 12-02（无罪之国版本）",
       require: "小红书带齐基础话题 #夜幕之下游戏 #代号砰砰 #夜幕之下无罪之国 + 赛道专属话题（#夜幕之下我来探个监 / #夜幕之下整点怪东西 / #夜幕之下请遵守规则）发布原创笔记",
       source: "http://mp.weixin.qq.com/s?__biz=MzYzMzE3NTYyMw==&mid=2247488170&idx=1&sn=319f22d5880eb0f2e8d1218e901f7407&chksm=f123b40a9f86e662a0a4942b98d4456454499d15c39c1ef4baee938c7529a4d395a912ab5ab6#rd",
-    },
-    {
+    },    {
       game: "金铲铲之战",
       title: "《金铲铲之战》星神赛季 好游快爆评测创作活动（京东卡）",
       platforms: [ "好游快爆" ],
@@ -606,8 +592,7 @@ window.MUMU_INCENTIVES = {
       period: "2026-11-10 ~ 11-24（星神赛季开启）",
       require: "在好游快爆《金铲铲之战》评价区撰写高质量走心评价或修改评价、或围绕新版本进行内容创作，经官方筛选获奖",
       source: "https://huodong3.3839.com/n/hykb/eval_com/index.php?comm_id=73",
-    },
-    {
+    },    {
       game: "光·遇",
       title: "《光·遇》「珍珠季」创作激励（小红书/抖音/快手，瓜分万元奖池）",
       platforms: [ "小红书", "抖音", "快手" ],
@@ -616,8 +601,7 @@ window.MUMU_INCENTIVES = {
       period: "2026-10-22 ~ 11-13（珍珠季·奇妙之旅）",
       require: "在 小红书/抖音/快手 带话题 #光遇珍珠季 #当星光遇见海 发布《光·遇》珍珠季原创作品（抖音/快手需挂载光遇手柄）",
       source: "http://gameinns.com/watch/mviwiwmo7y0z",
-    },
-    {
+    },    {
       game: "原神",
       title: "《原神》7.1「往冥府的安魂歌」小红书创作者激励计划（原石抽奖+奖金）",
       platforms: [ "小红书" ],
@@ -626,8 +610,7 @@ window.MUMU_INCENTIVES = {
       period: "2026-09-23 ~ 11-23（7.1「往冥府的安魂歌」+ 千星时尚季/里程碑抽奖至11-23）",
       require: "小红书搜索「原神」前往活动页面，带7.1版本指定话题投稿或完成每日任务；参与前须绑定游戏角色且冒险等阶≥10级",
       source: "https://ys.mihoyo.com/main/m/news/detail/166380",
-    },
-    {
+    },    {
       game: "原神",
       title: "《原神》7.1「往冥府的安魂歌」哔哩哔哩创作者激励计划（原石+现金）",
       platforms: [ "哔哩哔哩" ],
@@ -636,8 +619,7 @@ window.MUMU_INCENTIVES = {
       period: "2026-09-23 ~ 11-23（绮星游园会 11-03；UP主激励计划至 11-23）",
       require: "B站选 #原神UP主激励计划 活动标签投稿，或在 #原神# 分区直播；参与前须绑定游戏角色且冒险等阶≥10级",
       source: "https://micreator.mihoyo.com/",
-    },
-    {
+    },    {
       game: "原神",
       title: "《原神》7.1「往冥府的安魂歌」抖音创作者激励计划（现金）",
       platforms: [ "抖音" ],
@@ -646,8 +628,7 @@ window.MUMU_INCENTIVES = {
       period: "2026-09-23 ~ 11-23（祈愿池抽奖赛道）",
       require: "抖音搜索「原神」进入官方账号主页→专区→活动页面参与；带7.1版本创作征集话题投稿",
       source: "https://micreator.mihoyo.com/",
-    },
-    {
+    },    {
       game: "炉石传说",
       title: "《炉石传说》国服周年庆激励计划 B站",
       platforms: [ "哔哩哔哩" ],
@@ -656,8 +637,7 @@ window.MUMU_INCENTIVES = {
       period: "2026-10-21 ~ 11-30（国服周年庆）",
       require: "在B站投稿《炉石传说》相关原创视频，带对应活动话题参与（详见B站有奖活动页）",
       source: "https://member.bilibili.com/york/hot-activity",
-    },
-    {
+    },    {
       game: "新天龙八部",
       title: "《新天龙八部》昆仑创作激励计划 B站",
       platforms: [ "哔哩哔哩" ],
@@ -666,8 +646,7 @@ window.MUMU_INCENTIVES = {
       period: "2026-10-21 ~ 11-30",
       require: "在B站投稿《新天龙八部》相关原创视频，带对应活动话题参与（详见B站有奖活动页）",
       source: "https://member.bilibili.com/york/hot-activity",
-    },
-    {
+    },    {
       game: "绝区零",
       title: "《绝区零》3.3版本 UP主激励计划 B站（新版本）",
       platforms: [ "哔哩哔哩" ],
@@ -676,8 +655,7 @@ window.MUMU_INCENTIVES = {
       period: "2026-10-21 ~ 12-01（3.3版本）",
       require: "在B站投稿《绝区零》3.3版本相关原创视频，带对应活动话题参与（详见B站有奖活动页）",
       source: "https://member.bilibili.com/york/hot-activity",
-    },
-    {
+    },    {
       game: "二重螺旋",
       title: "《二重螺旋》「行于破晓」创作激励计划 B站（新版本）",
       platforms: [ "哔哩哔哩" ],
@@ -686,8 +664,7 @@ window.MUMU_INCENTIVES = {
       period: "2026-10-20 ~ 11-30（行于破晓版本）",
       require: "在B站投稿《二重螺旋》「行于破晓」相关原创视频，带对应活动话题参与（详见B站有奖活动页）",
       source: "https://member.bilibili.com/york/hot-activity",
-    },
-    {
+    },    {
       game: "愚者不灭",
       title: "《愚者不灭》创作激励活动 B站",
       platforms: [ "哔哩哔哩" ],
@@ -696,8 +673,7 @@ window.MUMU_INCENTIVES = {
       period: "2026-10-20 ~ 11-20",
       require: "在B站投稿《愚者不灭》相关原创视频，带对应活动话题参与（详见B站有奖活动页）",
       source: "https://member.bilibili.com/york/hot-activity",
-    },
-    {
+    },    {
       game: "真彩修仙",
       title: "《真彩修仙》小墨通天 二创激励计划 B站（凡人万元奖池）",
       platforms: [ "哔哩哔哩" ],
@@ -706,8 +682,7 @@ window.MUMU_INCENTIVES = {
       period: "2026-10-16 ~ 11-17",
       require: "在B站投稿《真彩修仙》小墨通天相关二创视频，带对应活动话题参与（详见B站有奖活动页）",
       source: "https://member.bilibili.com/york/hot-activity",
-    },
-    {
+    },    {
       game: "明日方舟：终末地",
       title: "《明日方舟：终末地》UP主应援计划「丹青渡」B站",
       platforms: [ "哔哩哔哩" ],
@@ -716,8 +691,7 @@ window.MUMU_INCENTIVES = {
       period: "2026-10-15 ~ 11-25（丹青渡版本）",
       require: "在B站投稿《明日方舟：终末地》「丹青渡」相关原创视频，带对应活动话题参与（详见B站有奖活动页）",
       source: "https://member.bilibili.com/york/hot-activity",
-    },
-    {
+    },    {
       game: "明日方舟：终末地",
       title: "《明日方舟：终末地》塔卫二 AI 创作者应援计划 B站（AI奖池瓜分）",
       platforms: [ "哔哩哔哩" ],
@@ -726,8 +700,7 @@ window.MUMU_INCENTIVES = {
       period: "2026-10-15 ~ 11-25",
       require: "在B站投稿《明日方舟：终末地》塔卫二 AI 相关原创视频，带对应活动话题参与（详见B站有奖活动页）",
       source: "https://member.bilibili.com/york/hot-activity",
-    },
-    {
+    },    {
       game: "第五人格",
       title: "《第五人格》赛事高光秀第十九期 IVL B站二创激励",
       platforms: [ "哔哩哔哩" ],
@@ -736,8 +709,7 @@ window.MUMU_INCENTIVES = {
       period: "2026-10-15 ~ 11-30（第十九期 IVL）",
       require: "投稿第五人格赛事二创视频≥30秒，带话题 #2026IVL秋季赛（或对应期数），需为首发原创",
       source: "https://member.bilibili.com/york/hot-activity",
-    },
-    {
+    },    {
       game: "战地6",
       title: "《战地6》第5赛季创作激励 B站（新赛季）",
       platforms: [ "哔哩哔哩" ],
@@ -746,8 +718,7 @@ window.MUMU_INCENTIVES = {
       period: "2026-10-14 ~ 11-14（第5赛季）",
       require: "在B站投稿《战地6》第5赛季相关原创视频，带对应活动话题参与（详见B站有奖活动页）",
       source: "https://member.bilibili.com/york/hot-activity",
-    },
-    {
+    },    {
       game: "我叫MT：崛起",
       title: "《我叫MT：崛起》公测创作者激励计划 B站",
       platforms: [ "哔哩哔哩" ],
@@ -756,8 +727,7 @@ window.MUMU_INCENTIVES = {
       period: "2026-10-13 ~ 12-13（公测）",
       require: "在B站投稿《我叫MT：崛起》相关原创视频，带对应活动话题参与（详见B站有奖活动页）",
       source: "https://member.bilibili.com/york/hot-activity",
-    },
-    {
+    },    {
       game: "战双帕弥什",
       title: "《战双帕弥什》「流光抛诸寰宇」UP主创作激励计划 B站",
       platforms: [ "哔哩哔哩" ],
@@ -766,8 +736,7 @@ window.MUMU_INCENTIVES = {
       period: "2026-10-12 ~ 11-25（流光抛诸寰宇版本）",
       require: "在B站投稿《战双帕弥什》「流光抛诸寰宇」相关原创视频，带对应活动话题参与（详见B站有奖活动页）",
       source: "https://member.bilibili.com/york/hot-activity",
-    },
-    {
+    },    {
       game: "剑网3",
       title: "《剑网3》音乐二创活动 B站",
       platforms: [ "哔哩哔哩" ],
@@ -776,8 +745,7 @@ window.MUMU_INCENTIVES = {
       period: "2026-10-23 ~ 11-29",
       require: "在B站投稿《剑网3》音乐/舞蹈二创视频，带对应活动话题参与（详见B站有奖活动页）",
       source: "https://member.bilibili.com/york/hot-activity",
-    },
-    {
+    },    {
       game: "光·遇",
       title: "《光·遇》「珍珠季&恶作剧之日」创作激励 B站",
       platforms: [ "哔哩哔哩" ],
@@ -786,8 +754,7 @@ window.MUMU_INCENTIVES = {
       period: "2026-10-22 ~ 11-13（珍珠季&恶作剧之日）",
       require: "在B站投稿《光·遇》「珍珠季&恶作剧之日」相关原创视频，带对应活动话题参与（详见B站有奖活动页）",
       source: "https://member.bilibili.com/york/hot-activity",
-    },
-    {
+    },    {
       game: "鸣潮",
       title: "《鸣潮》3.7版本「镜锁妄世·心照红尘」创作激励计划 B站",
       platforms: [ "哔哩哔哩" ],
@@ -796,8 +763,7 @@ window.MUMU_INCENTIVES = {
       period: "2026-09-30 ~ 12-31（3.7版本）",
       require: "在B站投稿《鸣潮》3.7版本相关原创视频，带对应活动话题参与（详见B站有奖活动页）",
       source: "https://member.bilibili.com/york/hot-activity",
-    },
-    {
+    },    {
       game: "三角洲行动",
       title: "《三角洲行动》10月创作者激励计划 B站（游戏区月度激励）",
       platforms: [ "哔哩哔哩" ],
@@ -806,8 +772,7 @@ window.MUMU_INCENTIVES = {
       period: "2026-10-01 ~ 11-15",
       require: "在B站投稿《三角洲行动》相关原创视频，带对应活动话题参与（详见B站有奖活动页）",
       source: "https://member.bilibili.com/york/hot-activity",
-    },
-    {
+    },    {
       game: "阴阳师",
       title: "《阴阳师》十周年音舞二创激励计划 B站",
       platforms: [ "哔哩哔哩" ],
@@ -816,8 +781,7 @@ window.MUMU_INCENTIVES = {
       period: "2026-10-09 ~ 11-09（十周年）",
       require: "在B站投稿《阴阳师》十周年音舞二创视频，带对应活动话题参与（详见B站有奖活动页）",
       source: "https://member.bilibili.com/york/hot-activity",
-    },
-    {
+    },    {
       game: "燕云十六声",
       title: "《燕云十六声》「侠聚平湖共此月」激励计划 B站",
       platforms: [ "哔哩哔哩" ],
@@ -826,8 +790,7 @@ window.MUMU_INCENTIVES = {
       period: "2026-10-09 ~ 11-05",
       require: "在B站投稿《燕云十六声》「侠聚平湖共此月」相关原创视频，带对应活动话题参与（详见B站有奖活动页）",
       source: "https://member.bilibili.com/york/hot-activity",
-    },
-    {
+    },    {
       game: "英雄联盟",
       title: "《英雄联盟》S16 创作激励 B站（高额激励）",
       platforms: [ "哔哩哔哩" ],
@@ -836,8 +799,7 @@ window.MUMU_INCENTIVES = {
       period: "2026-10-08 ~ 11-22（S16赛季）",
       require: "在B站投稿《英雄联盟》S16相关原创视频，带对应活动话题参与（详见B站有奖活动页）",
       source: "https://member.bilibili.com/york/hot-activity",
-    },
-    {
+    },    {
       game: "王者荣耀",
       title: "《王者荣耀》×「王者牢英雄」栏目创作激励 B站（瓜分奖金）",
       platforms: [ "哔哩哔哩" ],
@@ -846,8 +808,7 @@ window.MUMU_INCENTIVES = {
       period: "2026-09-23 ~ 11-30（数据截至12-07）",
       require: "在B站投稿《王者荣耀》主题视频，选 #王者荣耀UP主激励计划 并加【王者荣耀】【王者牢英雄栏目】标签（详见活动规则）",
       source: "https://link.bilibili.com/p/eden/news#/newsdetail?id=5189",
-    },
-    {
+    },    {
       game: "鸣潮",
       title: "《鸣潮》3.7版本「镜锁妄世·心照红尘」TapTap 创作激励（海量星声+周边）",
       platforms: [ "TapTap" ],
@@ -856,8 +817,7 @@ window.MUMU_INCENTIVES = {
       period: "投稿 2026-09-30 11:00 ~ 11-11 23:59（结束后60个工作日内公示）",
       require: "在 TapTap《鸣潮》版区带话题 #鸣潮创作激励 投递3.7版本攻略/二创（未添加活动话题不计有效参与）",
       source: "https://www.taptap.cn/moment/854021372584658458",
-    },
-    {
+    },    {
       game: "芙娅之魂",
       title: "《芙娅之魂》巡礼测试攻略征集（TapTap/B站/小红书 三赛道）",
       platforms: [ "TapTap", "哔哩哔哩", "小红书" ],
@@ -866,8 +826,7 @@ window.MUMU_INCENTIVES = {
       period: "即日起 ~ 2026-11-05（评选 11-06~11-19，公示 11-20）",
       require: "投递《芙娅之魂》巡礼测试攻略（TapTap图文/B站视频带 #芙娅之巡礼测试#/小红书图文），填写创作者登记表",
       source: "https://www.taptap.cn/moment/862282574611874397?group_id=888954",
-    },
-    {
+    },    {
       game: "仙山小农",
       title: "《仙山小农》「万象」创作激励计划 TapTap（京东卡+限定好礼）",
       platforms: [ "TapTap" ],
@@ -876,8 +835,7 @@ window.MUMU_INCENTIVES = {
       period: "2026-10-22 ~ 11-30",
       require: "在 TapTap《仙山小农》论坛发布原创帖文（图文/视频），带指定话题 #仙山小农万象计划",
       source: "https://m.taptap.cn/app/213502/topic?os=android",
-    },
-    {
+    },    {
       game: "使命召唤手游",
       title: "《使命召唤手游》×《崩坏3》联动创作者激励计划 B站（瓜分十万）",
       platforms: [ "哔哩哔哩" ],
@@ -886,8 +844,7 @@ window.MUMU_INCENTIVES = {
       period: "2026-09-07 ~ 10-30（CODM×崩坏3联动9月上线）",
       require: "在B站投稿《使命召唤手游》×《崩坏3》联动相关原创视频，带对应活动话题参与（详见B站有奖活动页）",
       source: "https://member.bilibili.com/york/hot-activity",
-    },
-    {
+    },    {
       game: "使命召唤手游",
       title: "《使命召唤手游 CODM》9月创作者激励计划（万元瓜分）",
       platforms: [ "哔哩哔哩" ],
@@ -896,8 +853,7 @@ window.MUMU_INCENTIVES = {
       period: "2026-09-07 ~ 10-30",
       require: "在B站投稿《使命召唤手游》相关原创视频，带对应活动话题参与（详见B站有奖活动页）",
       source: "https://member.bilibili.com/york/hot-activity",
-    },
-    {
+    },    {
       game: "通用",
       title: "SEGA & ATLUS 创作者激励计划（第1期）",
       platforms: [ "哔哩哔哩", "抖音", "小红书" ],
@@ -906,8 +862,7 @@ window.MUMU_INCENTIVES = {
       period: "第1期 2026-06 ~ 2026-09下旬（共三期至2027-03）",
       require: "在 B站/抖音/小红书 带话题 #世嘉ATLUS激励计划 发布世嘉/ATLUS 游戏原创或二创内容",
       source: "https://www.iyingdi.com/tz/post/5665167",
-    },
-    {
+    },    {
       game: "通用",
       title: "优酷「亿闪」互动影游创作激励计划",
       platforms: [ "优酷" ],
@@ -916,8 +871,7 @@ window.MUMU_INCENTIVES = {
       period: "2026-07-01 ~ 2027-06-30",
       require: "互动总时长30~300分钟，题材偏好：无限流/逆袭穿越/修仙/悬疑/权谋",
       source: "https://www.1zhengji.com/a/4r39jev.html",
-    },
-    {
+    },    {
       game: "植物大战僵尸2",
       title: "《植物大战僵尸2》月球基地激励计划 B站（游戏区创作激励）",
       platforms: [ "哔哩哔哩" ],
@@ -926,8 +880,7 @@ window.MUMU_INCENTIVES = {
       period: "2026-09-01 ~ 10-31",
       require: "在B站投稿《植物大战僵尸2》相关原创视频，带对应活动话题参与（详见B站有奖活动页）",
       source: "https://member.bilibili.com/york/hot-activity",
-    },
-    {
+    },    {
       game: "和平精英",
       title: "《和平精英》「激战金秋」创作激励活动 B站（新版本）",
       platforms: [ "哔哩哔哩" ],
@@ -936,8 +889,7 @@ window.MUMU_INCENTIVES = {
       period: "2026-09-02 ~ 11-09",
       require: "在B站投稿《和平精英》「激战金秋」相关原创视频，带对应活动话题参与（详见B站有奖活动页）",
       source: "https://member.bilibili.com/york/hot-activity",
-    },
-    {
+    },    {
       game: "我的世界",
       title: "《我的世界》方块制片局企划 第2期 B站内容征集（万元奖池）",
       platforms: [ "哔哩哔哩" ],
@@ -946,8 +898,7 @@ window.MUMU_INCENTIVES = {
       period: "2026-09-04 ~ 10-31",
       require: "在B站投稿《我的世界》相关原创视频，带对应活动话题参与（详见B站有奖活动页）",
       source: "https://member.bilibili.com/york/hot-activity",
-    },
-    {
+    },    {
       game: "王者荣耀",
       title: "《王者荣耀》风物志共创大赛·视频圈（B站同人视频赛道，万元现金奖池）",
       platforms: [ "哔哩哔哩" ],
@@ -956,8 +907,7 @@ window.MUMU_INCENTIVES = {
       period: "征稿 2026-09-08 ~ 11-22（视频圈 B站赛道 09-14 ~ 11-22）；初筛入围 09-10 ~ 11-25，结果公示 12-11",
       require: "在B站以王者荣耀三分之地相关题材制作同人视频（MMD/手书/动画/舞蹈翻跳/换头等），选【王者风物志】母标签及【王者风物志-MMD/手书/动画/舞蹈】子标签投稿即参赛；须原创首发且未投过其他比赛",
       source: "https://pvp.qq.com/m/tongren/votehtml/game.html",
-    },
-    {
+    },    {
       game: "第五人格",
       title: "《第五人格》S45创作者激励活动 B站",
       platforms: [ "哔哩哔哩" ],
@@ -966,8 +916,7 @@ window.MUMU_INCENTIVES = {
       period: "2026-09-10 ~ 10-29",
       require: "在B站投稿《第五人格》相关原创视频，带对应活动话题参与（详见B站有奖活动页）",
       source: "https://member.bilibili.com/york/hot-activity",
-    },
-    {
+    },    {
       game: "洛克王国：世界",
       title: "《洛克王国：世界》S4创作者激励计划 B站",
       platforms: [ "哔哩哔哩" ],
@@ -976,8 +925,7 @@ window.MUMU_INCENTIVES = {
       period: "2026-09-10 ~ 11-04",
       require: "在B站投稿《洛克王国：世界》相关原创视频，带对应活动话题参与（详见B站有奖活动页）",
       source: "https://member.bilibili.com/york/hot-activity",
-    },
-    {
+    },    {
       game: "地下城与勇士",
       title: "《DNF》米歇尔版本创作者激励计划 B站",
       platforms: [ "哔哩哔哩" ],
@@ -987,7 +935,6 @@ window.MUMU_INCENTIVES = {
       require: "在B站投稿《地下城与勇士》米歇尔版本相关原创视频，带对应活动话题参与（详见B站有奖活动页）",
       source: "https://member.bilibili.com/york/hot-activity",
     },
-
     {
       game: "金铲铲之战",
       title: "《金铲铲之战》「铲铲兴趣班」创作者激励计划 B站（百万奖金）",
