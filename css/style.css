@@ -1980,6 +1980,10 @@ body.modal-open .pv-dl{display:none!important}
 .bbdc-rec.rec-long .bbdc-rec-x{display:block}
 .bbdc-rec.rec-long{border-color:var(--mac,#2e8b57)}
 .tantan-stats{grid-template-columns:repeat(2,1fr)}
+/* v445 最近记录折叠：默认只露 3 条，其余点按钮展开 */
+.bbdc-rec-fold{display:none;flex-direction:column;gap:6px}
+.bbdc-rec-fold.is-open{display:flex}
+.bbdc-more-btn{width:100%;min-height:36px;margin-top:2px;border:1px dashed var(--line);border-radius:10px;background:#fff;color:var(--sub);font-size:12px;cursor:pointer}
 
 /* v435 心情记录 / 低谷日记 / 日记归档 */
 .h3-mood{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
