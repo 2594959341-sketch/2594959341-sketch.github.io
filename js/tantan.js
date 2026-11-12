@@ -5,6 +5,7 @@
  * 续火花 'growth:炭炭' 由 streak.js 的 refreshFromTantan() 从此数据重建 done。
  */
 const TANTAN = {
+  _recOpen: false,
   KEY: 'mumu_tantan',
   get() {
     let d = S.get(this.KEY, null);
@@ -57,6 +58,19 @@ const TANTAN = {
         this.openForm(r.dataset[editAttr]);
       };
     });
+    // v445：最近记录默认只露 3 条，其余折叠；点按钮展开 / 收起
+    const fold = body.querySelector('[data-bfold]');
+    const moreBtn = body.querySelector('[data-bmore]');
+    if (fold && moreBtn) {
+      moreBtn.onclick = (e) => {
+        if (e && e.stopPropagation) e.stopPropagation();
+        const open = fold.classList.contains('is-open');
+        this._recOpen = !open; // v445：记住展开态，记一笔 / 删一条重绘后不重复收起
+        if (open) { fold.classList.remove('is-open'); moreBtn.textContent = moreBtn.dataset.label || '展开'; }
+        else { fold.classList.add('is-open'); moreBtn.textContent = '收起'; }
+        clearAll();
+      };
+    }
     if (body.addEventListener) body.addEventListener('click', e => {
       const t = e.target;
       if (t && t.closest && t.closest('.bbdc-rec-x')) return;
@@ -148,16 +162,21 @@ const TANTAN = {
       const lvl = t > 0 ? (t <= 15 ? 1 : t <= 30 ? 2 : t <= 60 ? 3 : 4) : ((v._seed || v.talk || v.review) ? 1 : 0);
       return '<div class="bbdc-cell lvl' + lvl + '" title="' + dt + (t ? (': ' + t + ' 分钟') : (v._seed ? ': 已练（未记时长）' : '')) + '"></div>';
     }).join('') + '</div>';
-    // 最近记录（最近 10 条，倒序）
+    // 最近记录（最近 10 条，倒序；v445 默认只露 3 条，其余折叠，点一下展开）
     const recent = dates.slice(-10).reverse();
+    const rowHTML = dt => {
+      const v = d[dt];
+      return '<div class="bbdc-rec" data-tedit="' + dt + '">' +
+        '<span class="bbdc-rec-d">' + dt + '</span>' +
+        '<span class="bbdc-rec-v">' + (v.time ? v.time + ' 分' : ((v._seed || v.talk || v.review) ? '已练 · 未记时长' : '—')) + '</span>' +
+        '<button class="bbdc-rec-x" data-tdel="' + dt + '">×</button></div>';
+    };
+    const shown = recent.slice(0, 3), rest = recent.slice(3);
     const recentHTML = '<div class="bbdc-card"><h3>最近记录</h3><div class="bbdc-recent">' +
-      recent.map(dt => {
-        const v = d[dt];
-        return '<div class="bbdc-rec" data-tedit="' + dt + '">' +
-          '<span class="bbdc-rec-d">' + dt + '</span>' +
-          '<span class="bbdc-rec-v">' + (v.time ? v.time + ' 分' : ((v._seed || v.talk || v.review) ? '已练 · 未记时长' : '—')) + '</span>' +
-          '<button class="bbdc-rec-x" data-tdel="' + dt + '">×</button></div>';
-      }).join('') + '</div></div>';
+      shown.map(rowHTML).join('') +
+      (rest.length ? '<div class="bbdc-rec-fold' + (this._recOpen ? ' is-open' : '') + '" data-bfold>' + rest.map(rowHTML).join('') + '</div>' +
+        '<button class="bbdc-more-btn" data-bmore data-label="展开 ' + rest.length + ' 条">' + (this._recOpen ? '收起' : '展开 ' + rest.length + ' 条') + '</button>' : '') +
+      '</div></div>';
     return stats +
       '<div class="bbdc-card"><h3>练习热力图（按分钟）</h3>' + hm + '</div>' +
       '<div class="bbdc-card"><h3>近 30 天练习时长</h3>' + bars + '</div>' +
