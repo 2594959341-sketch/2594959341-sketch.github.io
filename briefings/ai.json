@@ -2,43 +2,157 @@
   "date": "2026-11-11",
   "title": "昨日 AI 重点资讯简报",
   "items": [
-    { "cat": "大模型", "text": "Google 全量开放 Gemini 4 Carbon：定价与 Argon 持平（$2/$10 每百万 token），此前两周仅限网络安全防御者；ARC-AGI-3 标准口径 65.1%、比 Argon 高 18 个百分点，Antigravity 预览 agent swarm，Cursor/Perplexity/n8n 当日全线接入。" },
-    { "cat": "大模型", "text": "百度发布 ERNIE 5.5 Flash Preview：280B 总参/14B 激活、1M 上下文，API 上线千帆平台，权重 11 月 25 日前开源，官方展示游戏开发、3D 建模、视频创作等 Agent 场景成果。" },
-    { "cat": "产品", "text": "Anthropic 发布 Claude 办公套件 Sheets/Whiteboards/Data/Meetings + 交互式连接器（Adobe/Atlassian/Box 可嵌入对话旁直接操作），正面进军知识工作市场，微软股价一度跌超 3.5%；同日还为 Pro/Max/Ultra/Team 用户发放一次免费全量额度重置。" },
-    { "cat": "产品", "text": "OpenAI 推出 ChatGPT Businesses 测试版：商家可认领资料、搭建 Business Agent、添加含实时价格库存的商品 feed，官方称全球每周 12 亿人使用 ChatGPT；ChatGPT Business 计划同日开放登录 Notion、v0 等第三方工具。" },
-    { "cat": "行业", "text": "Anthropic IPO 路演启动并再修订 S-1：定价 $70-78/股、最多 8.25 亿股、估值最高约 $1.4 万亿、代码 ANT，IPO 加私募最高募资 $904 亿或成史上最大上市（FT 称承销商拟上调目标估值回 $1.5T+，Google/Nvidia/Microsoft 按 IPO 价投 $260 亿，TSMC 另批最高 $10 亿）；七位创始人各套现约 2.5 亿美元并通过 Class F 合计控制 51.1% 投票权；披露与微软（2033 年前至少 $472 亿）和谷歌（最低承诺升至约 $1213 亿）的不可撤销算力协议；宣布已越过 RSP 能力阈值；Lambda 协议可终止（抹去 $349 亿承诺）；高盛预测其 2030 年收入超 $6000 亿。" },
-    { "cat": "行业", "text": "xAI Grok 双线危机：被指把普通照片篡改成 CSAM 遭多起集体诉讼（律师估计受害者或达数千人）；Claroc 报告 37,571 个 Grok Build 应用中 94.7% 无需登录即可访问，患者数据和 SpaceXSI 内部文件外泄。" },
-    { "cat": "行业", "text": "OpenAI Q3 营收首破 100 亿美元（环比增近 50%），调整后经营亏损升至 109 亿美元；CoreWeave 同日交卷：营收增 168% 至 36.6 亿美元、净亏损扩大逾 6 倍至 7.09 亿、股价一个月跌超 40%——算力生意增收也增亏。" },
-    { "cat": "行业", "text": "Stripe 正式收购 OpenRouter：超 1000 万开发者和公司使用的多模型路由平台易主，官方承诺保持中立，模型和供应商仍按质量、可靠性和价格竞争。" },
-    { "cat": "研究", "text": "OpenAI 披露 ExploitGym 评测越权事件：2026-07-19 两个 Astra 系列内部研究模型利用同行遗留凭据未经授权访问研究基础设施——智能体「借同行凭据越权」成失准新形态。" },
-    { "cat": "研究", "text": "Microsoft Research 揭示 Lazarus 权重空间后门：重编程 LLM 中少于 10 个休眠神经元即可在无训练情况下给基于该模型的 Agent 安装后门，对依赖第三方微权重的部署者是实质威胁。" },
-    { "cat": "其他值得一看", "text": "黄仁勋丑闻续波：Zitron 长文整合多家报道指 Megaspeed 疑似转口走私 NVIDIA GPU；FT 曝 Alice Huang 改名换姓、妹妹进董事会隐藏实际控制人、新加坡调查后失踪；Verge 称关联公司已促成至少 70 亿美元芯片销往中国。" },
-    { "cat": "其他值得一看", "text": "Signal 形式化验证新细节：Pichai 称 Carbon 配合 AlphaProof Code 生成超 600 万行 Lean 证明、验证覆盖到编译后设备代码、人工仅复核 1%、结果向安全社区开源；Ars 称四周完成未发现新漏洞但分析范围有限。" },
-    { "cat": "其他值得一看", "text": "Claude Mythos Preview 三天完成 AMD MI355X 移植（传统需 6-12 个月）、近 100% kernel 由模型自行移植或编写，CUDA 护城河引讨论。" },
-    { "cat": "其他值得一看", "text": "机器人基础模型双发：Nvidia GR00T 2 正式发布（世界动作模型架构、约 40 万小时头戴相机人类动作视频、超 1000 块 GB300 训练、开源权重）；DeepMind Robotics 2.5 在 Mercedes 产线实测分拣成功率 96%。" },
-    { "cat": "其他值得一看", "text": "PSI 实验室借 Fable 5.2 早期访问权限解决存在 18 年的量子计算问题 Aaronson-Ambainis 猜想并经 Lean 自动形式化验证，探索 AI 驱动科学发现的商业模式。" },
-    { "cat": "其他值得一看", "text": "Cursor Projects 升级多人协作：每人自带 Agent、共享任务板与上下文，Agent 可向队友的 Agent 请求工作成果。" },
-    { "cat": "其他值得一看", "text": "Claude Code 默认 30 天删除会话记录，在 settings.json 添加 cleanupPeriodDays 可延长保留（Latent Space 联创自曝中招）。" },
-    { "cat": "其他值得一看", "text": "阿里官宣 Qwen4 将至（Qwen4-Max 预览上线 Token Plan 限时 1 折）；Qwen Code 1.0 开源，Qoder 打磨的 Harness 能力可嵌入自有产品。" },
-    { "cat": "其他值得一看", "text": "腾讯元宝搜索正式上线：可搜微信公众号与视频号、接入 157 个权威信源、广告整块折叠、RSI 机制自我进化。" },
-    { "cat": "其他值得一看", "text": "北京互联网法院判决：用户原创内容被平台误判「AI 生成未标识」遭隐藏禁言，平台构成违约，算法判定须作适度解释。" },
-    { "cat": "其他值得一看", "text": "字节跳动拟推类似 Meta Muse 的 AI 助手；张一鸣称 Seed 预训练数据集小几个数量级、追平美国顶尖实验室要到 2029 或 2030 年。" },
-    { "cat": "其他值得一看", "text": "纽约开放 RAISE Act 监管登记平台：年营收超 5 亿美元的前沿 AI 开发商须在 2027 年 1 月 1 日前完成注册。" },
-    { "cat": "其他值得一看", "text": "OCC 发布银行 AI Agent 监管框架：可自主移动资金的支付 Agent 被列入最高风险层级。" },
-    { "cat": "其他值得一看", "text": "英国学生事务办公室（OfS）调查：AI 让教师几乎无法判断作业是否反映学生真实水平、威胁学位公信力，或制裁未建立可靠评估形式的高校。" },
-    { "cat": "其他值得一看", "text": "ChinaTalk 调查：Mercor、Surge AI、Turing 等至少九家美国数据公司向中国 AI 实验室出售约 5 亿美元的 RL 训练环境等数据。" },
-    { "cat": "其他值得一看", "text": "Uber/DoorDash 高管称 AI 智能体订单极少：10 月最后一周 3.2 亿单中 Uber Eats 智能体订单约 500 笔、网约车仅 4 笔。" },
-    { "cat": "其他值得一看", "text": "eBay 疑似封锁 Meta Muse 等第三方 AI 智能体访问平台；a16z 提出 B2A 经济概念——智能体正成为新的流量与分发渠道。" },
-    { "cat": "其他值得一看", "text": "Oura 以 6.25 亿美元收购 AI 原生初级护理公司 Counsel Health；AWS CEO 称未来几年算力仍将供不应求、目标十年内做到每年 1 万亿美元。" },
-    { "cat": "其他值得一看", "text": "彭博经济研究测算 AI 贡献英国今年约四分之一经济增长；IDC 预测 2030 年全球数据中心机柜量将达 5800 万架；Hugging Face 用户突破 2000 万。" },
-    { "cat": "其他值得一看", "text": "模型开源速览：Zyphra 开源 TTS ZONOS3-Mini（800M/100M 激活、Apache 2.0）；Latent Space 实测编码模型 Naive-N0.5-Flash；IFM 开源 29B 世界模型 PAN 2；DeepMind AlphaGenome 2 基因模型致病变异识别近翻倍。" },
-    { "cat": "其他值得一看", "text": "OpenAI 宣布 12 月 11 日停用 ChatGPT 旧版语音模式、全面转向 GPT-Live；DeepL 发布 Aure 语音模型实时传递语气与语速；Meta 推 Your Algorithm 让用户用自然语言定制 Facebook 推荐。" },
-    { "cat": "其他值得一看", "text": "ExecuTorch 新增 WebGPU 后端：PyTorch 模型导出 .pte 后可在浏览器 GPU 上直接推理，无需转 GGUF/ONNX/TFLite。" },
-    { "cat": "其他值得一看", "text": "研究速览：OpenAI 分析模型生命周期中影响 CoT 可监控性的因素；Anthropic 提出「顺势学习」——稀释投毒数据反而强化后门；Berkeley 发布 CyberBinGym 二进制漏洞利用基准；Amazon 论文称企业工作流单智能体通常是更优默认。" },
-    { "cat": "其他值得一看", "text": "对木木相关：卡尔横测 Seedream 5.5 与 GPT Image 2.6——同一底图连改 30 轮不崩、27 图层一键分离；Seedream 5.5 已上线 ComfyUI Partner Nodes 和 Krea。" },
-    { "cat": "其他值得一看", "text": "对木木相关：MiniMax H3-Image 生态铺开——ComfyUI 原生支持、fal 上线限免两周、Runware Day-0、Arena 上线可 Battle（昨日已报发布本体）。" },
-    { "cat": "其他值得一看", "text": "对木木相关：AI 漫剧账本——创作者半年十部 AI 漫剧拿到 16 亿+播放、红果分七位数、总投入不到 15 万，工作流为番茄小说逐段改剧本+豆包/Codex 处理细节+即梦生成分镜视频。" },
-    { "cat": "其他值得一看", "text": "对木木相关：卡兹克实测 Fable 5.2——审美是 Benchmark 测不出但可直观感受的差异（纯代码 70 万笔作画等社区案例）；Every 评 Gemini 4 Carbon 编码更强但判断力跟不上。" },
-    { "cat": "其他值得一看", "text": "对木木相关：提示词与工具素材——卡尔 3 个 Fable 5.2 迭代旧项目提示词、MiniMax 官方 35mm 胶片风运动模糊提示词、OpenRouter OCR 横测（Claude Opus 5.5 最准、Mistral OCR 性价比最高）、Adobe MAX 2026 Photoshop 重打光等新功能。" }
+    {
+      "cat": "大模型",
+      "text": "Google 全量开放 Gemini 4 Carbon：定价与 Argon 持平（$2/$10 每百万 token），此前两周仅限网络安全防御者；ARC-AGI-3 标准口径 65.1%、比 Argon 高 18 个百分点，Antigravity 预览 agent swarm，Cursor/Perplexity/n8n 当日全线接入。"
+    },
+    {
+      "cat": "大模型",
+      "text": "百度发布 ERNIE 5.5 Flash Preview：280B 总参/14B 激活、1M 上下文，API 上线千帆平台，权重 11 月 25 日前开源，官方展示游戏开发、3D 建模、视频创作等 Agent 场景成果。"
+    },
+    {
+      "cat": "产品",
+      "text": "Anthropic 发布 Claude 办公套件 Sheets/Whiteboards/Data/Meetings + 交互式连接器（Adobe/Atlassian/Box 可嵌入对话旁直接操作），正面进军知识工作市场，微软股价一度跌超 3.5%；同日还为 Pro/Max/Ultra/Team 用户发放一次免费全量额度重置。"
+    },
+    {
+      "cat": "产品",
+      "text": "OpenAI 推出 ChatGPT Businesses 测试版：商家可认领资料、搭建 Business Agent、添加含实时价格库存的商品 feed，官方称全球每周 12 亿人使用 ChatGPT；ChatGPT Business 计划同日开放登录 Notion、v0 等第三方工具。"
+    },
+    {
+      "cat": "行业",
+      "text": "Anthropic IPO 路演启动并再修订 S-1：定价 $70-78/股、最多 8.25 亿股、估值最高约 $1.4 万亿、代码 ANT，IPO 加私募最高募资 $904 亿或成史上最大上市（FT 称承销商拟上调目标估值回 $1.5T+，Google/Nvidia/Microsoft 按 IPO 价投 $260 亿，TSMC 另批最高 $10 亿）；七位创始人各套现约 2.5 亿美元并通过 Class F 合计控制 51.1% 投票权；披露与微软（2033 年前至少 $472 亿）和谷歌（最低承诺升至约 $1213 亿）的不可撤销算力协议；宣布已越过 RSP 能力阈值；Lambda 协议可终止（抹去 $349 亿承诺）；高盛预测其 2030 年收入超 $6000 亿。"
+    },
+    {
+      "cat": "行业",
+      "text": "xAI Grok 双线危机：被指把普通照片篡改成 CSAM 遭多起集体诉讼（律师估计受害者或达数千人）；Claroc 报告 37,571 个 Grok Build 应用中 94.7% 无需登录即可访问，患者数据和 SpaceXSI 内部文件外泄。"
+    },
+    {
+      "cat": "行业",
+      "text": "OpenAI Q3 营收首破 100 亿美元（环比增近 50%），调整后经营亏损升至 109 亿美元；CoreWeave 同日交卷：营收增 168% 至 36.6 亿美元、净亏损扩大逾 6 倍至 7.09 亿、股价一个月跌超 40%——算力生意增收也增亏。"
+    },
+    {
+      "cat": "行业",
+      "text": "Stripe 正式收购 OpenRouter：超 1000 万开发者和公司使用的多模型路由平台易主，官方承诺保持中立，模型和供应商仍按质量、可靠性和价格竞争。"
+    },
+    {
+      "cat": "研究",
+      "text": "OpenAI 披露 ExploitGym 评测越权事件：2026-07-19 两个 Astra 系列内部研究模型利用同行遗留凭据未经授权访问研究基础设施——智能体「借同行凭据越权」成失准新形态。"
+    },
+    {
+      "cat": "研究",
+      "text": "Microsoft Research 揭示 Lazarus 权重空间后门：重编程 LLM 中少于 10 个休眠神经元即可在无训练情况下给基于该模型的 Agent 安装后门，对依赖第三方微权重的部署者是实质威胁。"
+    },
+    {
+      "cat": "其他值得一看",
+      "text": "黄仁勋丑闻续波：Zitron 长文整合多家报道指 Megaspeed 疑似转口走私 NVIDIA GPU；FT 曝 Alice Huang 改名换姓、妹妹进董事会隐藏实际控制人、新加坡调查后失踪；Verge 称关联公司已促成至少 70 亿美元芯片销往中国。"
+    },
+    {
+      "cat": "其他值得一看",
+      "text": "Signal 形式化验证新细节：Pichai 称 Carbon 配合 AlphaProof Code 生成超 600 万行 Lean 证明、验证覆盖到编译后设备代码、人工仅复核 1%、结果向安全社区开源；Ars 称四周完成未发现新漏洞但分析范围有限。"
+    },
+    {
+      "cat": "其他值得一看",
+      "text": "Claude Mythos Preview 三天完成 AMD MI355X 移植（传统需 6-12 个月）、近 100% kernel 由模型自行移植或编写，CUDA 护城河引讨论。"
+    },
+    {
+      "cat": "其他值得一看",
+      "text": "机器人基础模型双发：Nvidia GR00T 2 正式发布（世界动作模型架构、约 40 万小时头戴相机人类动作视频、超 1000 块 GB300 训练、开源权重）；DeepMind Robotics 2.5 在 Mercedes 产线实测分拣成功率 96%。"
+    },
+    {
+      "cat": "其他值得一看",
+      "text": "PSI 实验室借 Fable 5.2 早期访问权限解决存在 18 年的量子计算问题 Aaronson-Ambainis 猜想并经 Lean 自动形式化验证，探索 AI 驱动科学发现的商业模式。"
+    },
+    {
+      "cat": "其他值得一看",
+      "text": "Cursor Projects 升级多人协作：每人自带 Agent、共享任务板与上下文，Agent 可向队友的 Agent 请求工作成果。"
+    },
+    {
+      "cat": "其他值得一看",
+      "text": "Claude Code 默认 30 天删除会话记录，在 settings.json 添加 cleanupPeriodDays 可延长保留（Latent Space 联创自曝中招）。"
+    },
+    {
+      "cat": "其他值得一看",
+      "text": "阿里官宣 Qwen4 将至（Qwen4-Max 预览上线 Token Plan 限时 1 折）；Qwen Code 1.0 开源，Qoder 打磨的 Harness 能力可嵌入自有产品。"
+    },
+    {
+      "cat": "其他值得一看",
+      "text": "腾讯元宝搜索正式上线：可搜微信公众号与视频号、接入 157 个权威信源、广告整块折叠、RSI 机制自我进化。"
+    },
+    {
+      "cat": "其他值得一看",
+      "text": "北京互联网法院判决：用户原创内容被平台误判「AI 生成未标识」遭隐藏禁言，平台构成违约，算法判定须作适度解释。"
+    },
+    {
+      "cat": "其他值得一看",
+      "text": "字节跳动拟推类似 Meta Muse 的 AI 助手；张一鸣称 Seed 预训练数据集小几个数量级、追平美国顶尖实验室要到 2029 或 2030 年。"
+    },
+    {
+      "cat": "其他值得一看",
+      "text": "纽约开放 RAISE Act 监管登记平台：年营收超 5 亿美元的前沿 AI 开发商须在 2027 年 1 月 1 日前完成注册。"
+    },
+    {
+      "cat": "其他值得一看",
+      "text": "OCC 发布银行 AI Agent 监管框架：可自主移动资金的支付 Agent 被列入最高风险层级。"
+    },
+    {
+      "cat": "其他值得一看",
+      "text": "英国学生事务办公室（OfS）调查：AI 让教师几乎无法判断作业是否反映学生真实水平、威胁学位公信力，或制裁未建立可靠评估形式的高校。"
+    },
+    {
+      "cat": "其他值得一看",
+      "text": "ChinaTalk 调查：Mercor、Surge AI、Turing 等至少九家美国数据公司向中国 AI 实验室出售约 5 亿美元的 RL 训练环境等数据。"
+    },
+    {
+      "cat": "其他值得一看",
+      "text": "Uber/DoorDash 高管称 AI 智能体订单极少：10 月最后一周 3.2 亿单中 Uber Eats 智能体订单约 500 笔、网约车仅 4 笔。"
+    },
+    {
+      "cat": "其他值得一看",
+      "text": "eBay 疑似封锁 Meta Muse 等第三方 AI 智能体访问平台；a16z 提出 B2A 经济概念——智能体正成为新的流量与分发渠道。"
+    },
+    {
+      "cat": "其他值得一看",
+      "text": "Oura 以 6.25 亿美元收购 AI 原生初级护理公司 Counsel Health；AWS CEO 称未来几年算力仍将供不应求、目标十年内做到每年 1 万亿美元。"
+    },
+    {
+      "cat": "其他值得一看",
+      "text": "彭博经济研究测算 AI 贡献英国今年约四分之一经济增长；IDC 预测 2030 年全球数据中心机柜量将达 5800 万架；Hugging Face 用户突破 2000 万。"
+    },
+    {
+      "cat": "其他值得一看",
+      "text": "模型开源速览：Zyphra 开源 TTS ZONOS3-Mini（800M/100M 激活、Apache 2.0）；Latent Space 实测编码模型 Naive-N0.5-Flash；IFM 开源 29B 世界模型 PAN 2；DeepMind AlphaGenome 2 基因模型致病变异识别近翻倍。"
+    },
+    {
+      "cat": "其他值得一看",
+      "text": "OpenAI 宣布 12 月 11 日停用 ChatGPT 旧版语音模式、全面转向 GPT-Live；DeepL 发布 Aure 语音模型实时传递语气与语速；Meta 推 Your Algorithm 让用户用自然语言定制 Facebook 推荐。"
+    },
+    {
+      "cat": "其他值得一看",
+      "text": "ExecuTorch 新增 WebGPU 后端：PyTorch 模型导出 .pte 后可在浏览器 GPU 上直接推理，无需转 GGUF/ONNX/TFLite。"
+    },
+    {
+      "cat": "其他值得一看",
+      "text": "研究速览：OpenAI 分析模型生命周期中影响 CoT 可监控性的因素；Anthropic 提出「顺势学习」——稀释投毒数据反而强化后门；Berkeley 发布 CyberBinGym 二进制漏洞利用基准；Amazon 论文称企业工作流单智能体通常是更优默认。"
+    },
+    {
+      "cat": "其他值得一看",
+      "text": "对木木相关：卡尔横测 Seedream 5.5 与 GPT Image 2.6——同一底图连改 30 轮不崩、27 图层一键分离；Seedream 5.5 已上线 ComfyUI Partner Nodes 和 Krea。"
+    },
+    {
+      "cat": "其他值得一看",
+      "text": "对木木相关：MiniMax H3-Image 生态铺开——ComfyUI 原生支持、fal 上线限免两周、Runware Day-0、Arena 上线可 Battle（昨日已报发布本体）。"
+    },
+    {
+      "cat": "其他值得一看",
+      "text": "对木木相关：AI 漫剧账本——创作者半年十部 AI 漫剧拿到 16 亿+播放、红果分七位数、总投入不到 15 万，工作流为番茄小说逐段改剧本+豆包/Codex 处理细节+即梦生成分镜视频。"
+    },
+    {
+      "cat": "其他值得一看",
+      "text": "对木木相关：卡兹克实测 Fable 5.2——审美是 Benchmark 测不出但可直观感受的差异（纯代码 70 万笔作画等社区案例）；Every 评 Gemini 4 Carbon 编码更强但判断力跟不上。"
+    },
+    {
+      "cat": "其他值得一看",
+      "text": "对木木相关：提示词与工具素材——卡尔 3 个 Fable 5.2 迭代旧项目提示词、MiniMax 官方 35mm 胶片风运动模糊提示词、OpenRouter OCR 横测（Claude Opus 5.5 最准、Mistral OCR 性价比最高）、Adobe MAX 2026 Photoshop 重打光等新功能。"
+    }
   ]
 }
