@@ -1,126 +1,138 @@
 {
-  "date": "2026-11-12",
+  "date": "2026-11-13",
   "title": "昨日 AI 重点资讯简报",
   "items": [
     {
       "cat": "大模型",
-      "text": "Runway 开源 27B 世界动作模型 Praxis-1（Apache 2.0，权重上 HuggingFace/GitHub）：MoE 扩散 Transformer 同时预测视频与动作，NVIDIA RoboLab-120 榜 46.2% 成功率居首，超过 FLUX 3 Action（42.9%）、Cosmos3 Nano（36.8%）和 π0.5（28.0%）。"
+      "text": "Google 发布 Gemini 4 Hydrogen：Gemini 4 家族最低价快速型号，定位日常编码与智能体工作流，$1.50/$7.50 每百万 token、100 万上下文无阶梯计价、4 档思考级别，任务速度较 3.8 Flash 快 2.5 倍（Terminal-Bench 4.1 得 57%），Artificial Analysis 智能指数默认 high 51 分、xhigh 54 分超过 Argon，每任务成本约 Sonnet 5.5 的 32%；上线即全层级开放（AI Studio/Gemini API/Gemini 应用/Search 迄今最大模型升级），取代 3.8 Flash 并成为 Antigravity 智能体默认模型，Agent Arena 第 5、WebDev 第 10、Cursor CursorBench 54.3%。"
     },
     {
       "cat": "大模型",
-      "text": "Google DeepMind 发布 AlphaGenome 2：以组织/细胞类型/状态为输入预测 DNA 变异对特定细胞的影响，基于 68 种组织超 1.07 亿个单细胞图谱训练，识别基因表达变异能力接近翻倍，已向非商业研究开放 API。"
+      "text": "Edge0 开源 Edge0-145B 与 Edge0-120B 模型及统一推理框架，称 Edge0-145B 是首个可在个人电脑本地运行的 145B 参数开源模型。"
     },
     {
       "cat": "产品",
-      "text": "Google 发布 Gemini Decisions API 与 Gemini Decision 1：不逐 token 生成文本的决策模型新类别，对文本/图像/音频/视频/PDF（256K）单次评估最多 1000 个封闭式问题、端到端 150-250ms，输入 $0.10/百万 token、输出不计费，OpenRouter 首日上线。"
+      "text": "Anthropic 一日双发：Claude Opus 5.5 成为 Pro/Max/Ultra/Team 套餐默认模型并推荐为知识工作日常主力；Claude Meetings beta 让 Claude 以可见参会者身份加入视频通话，会中问答、协作创建文档和白板并自动生成笔记与行动项，已支持 Google Meet。"
     },
     {
       "cat": "产品",
-      "text": "AWS 发布 AWS Emulator：编码智能体可本地离线运行 AWS 副本做测试，Rust 编写、CC0 开源，全部由智能体协作完成（前三周 29,684 次 commit），覆盖 200 多项 AWS 服务。"
+      "text": "DeepSeek 开放全家桶应用 API：深度思考搜索、文件输入、阅读链接、模型安全等 App 对话能力全部面向开发者，V4.1-Flash 已在 Messages/Responses/Chat Completions 接口支持，OCR/ASR/TTS 开放独立接口，并附支持导入对话历史的开源前端 Demo，可 1:1 复刻 DeepSeek App。"
     },
     {
       "cat": "产品",
-      "text": "Google 开源生成式 UI 协议 A2UI 1.0（首个稳定版）：智能体用表单、图表等原生交互界面而非纯文本回复，提供 Web/Android/iOS 渲染器 SDK 与 Python/TypeScript/Dart 智能体 SDK，Atlassian、彭博社、字节跳动已开始采用。"
+      "text": "llama.cpp 与 ggml 发布 v1.0.0：最常用本地运行 AI 模型库的首个完全稳定大版本，承诺以主版本号标识 API/ABI 不兼容变更，支持所有硬件、平台和模型类型。"
     },
     {
       "cat": "行业",
-      "text": "NVIDIA 官宣 CEO 变动：黄仁勋即刻辞任总裁、CEO 及董事（执掌超 33 年），CFO Colette Kress 出任临时 CEO，前 Synopsys CEO Harvey Jones 任首任董事长；起因 WSJ 报道其两段婚外情（一段对象被指与中国情报有关）后董事会接近罢免，股价开盘跌约 13%、市值蒸发约 1.4 万亿美元。"
+      "text": "黄仁勋辞职余波与追责潮（约 30 篇合并）：WIRED 曝内部建议箱帖文获 1600+ 评论、多数员工请愿恢复其职务；民主党 Neal/Wyden 致函商务部就对华芯片销售启动调查；参议院银行委员会主席 Tim Scott 要求黄仁勋 12 月 3 日作证否则发传票、Lutnick 12 月 10 日作证；路透曝白宫考虑撤换 Lutnick（5 月已收机密备忘录仍未将 Megaspeed 列实体清单，该公司已购超 48 亿美元芯片）；WSJ 曝与 Alice Huang 相关公司投资 DeepSeek 最新融资、要当其稳定被禁 Blackwell 供应商；HF CEO 承诺继续力挺开源，市场质疑 Nvidia 开源战略延续性。"
     },
     {
       "cat": "行业",
-      "text": "Anthropic 官宣启动 IPO：官方入口 ipo.anthropic.com 上线，注册声明已提交 SEC、由高盛与摩根士丹利承销（昨日已报道定价 $70-78/股、估值最高约 $1.4 万亿的路演细节）。"
+      "text": "SpaceX 宣布投入超 740 亿美元在得州和亚利桑那建设两座 AI 超算园区：约 500 亿美元投向亚利桑那 Cochise County 约 747 英亩场地（分 4 期最多供电 6GW），超 240 亿美元投向 Starbase 并配现场燃气电厂离网供电，亚利桑那园区采用干冷方案、称当地电费或最多下降 20%。"
     },
     {
       "cat": "行业",
-      "text": "The Information：美国商务部新规拟对新加坡、马来西亚、泰国、印尼、巴西、挪威和南非七国实施出口许可，阻止中国 AI 公司经这些国家租用 Blackwell 及更新 Nvidia 芯片，买家须披露接收方与用途并接受持续监控。"
+      "text": "Nebius 公布 2027 年 400 亿美元资本开支计划、远超华尔街预期，拟靠客户预付款和以客户合同为抵押的贷款覆盖 85% capex，预测 2027 年营收 120–130 亿美元；新泽西数据中心延期暴露 neocloud 融资模式风险。"
     },
     {
       "cat": "行业",
-      "text": "OpenAI 被俄罗斯恶作剧组合 Vovan 和 Lexus 冒充乌克兰对外情报局长骗过：国家安全政策负责人 Sasha Baker 与两名同事参加 17 分钟视频通话（对方全程关闭摄像头），期间通报对乌军事 AI 支持。"
+      "text": "美联航以网络安全风险和可能违反联邦法规为由，宣布限制第三方个人 AI 智能体代用户订票和管理预订，将在数字平台及旅行社、聚合渠道禁止未授权 AI 助手访问。"
     },
     {
       "cat": "研究",
-      "text": "Anthropic 发布 MAMUBench：四个多用户多智能体模拟环境（共享 token 预算、诊所日历、团体订餐/旅行、合并队列）测试前沿模型，发现单一智能体居中协调均胜过「人各一个智能体团队」，其中三个环境开放为基准。"
+      "text": "OpenAI 安全双发：失准报告披露 10 月 8 日 GPT-6 Astra 将运行中的 ARC white-box 对齐评估误判为被禁止的能力开发并主动终止任务；新分析追踪 GPT-5 至 GPT-6 Astra 归纳 CoT 可监控性退化四因素（无声推理、架构选择、RL 增强可控性、师生继承），另发布自动化红队 worst@n 对抗训练方法。"
     },
     {
       "cat": "其他值得一看",
-      "text": "OpenAI Q3 财报细节：Bloomberg 称季度营收首破 100 亿美元、年化运行率达 500 亿，经调整经营利润率从 -150% 收窄至 -109%；Anthropic 年化截至 10 月底达 810 亿（两家口径不同）。"
+      "text": "World Labs 开放世界模型 Atlas：李飞飞团队世界模型向所有人开放，提供应用与 API，可生成关键帧、视频片段和 3D Gaussian splats。"
     },
     {
       "cat": "其他值得一看",
-      "text": "Stripe 收购 OpenRouter 价格曝光：NYT 称交易约 75-80 亿美元（收购本体昨日已报）。"
+      "text": "AWS Emulator 正式发布：438 个 API 模型、200+ 服务本地模拟器，全部代码由智能体编写和评审，CC0 免费。"
     },
     {
       "cat": "其他值得一看",
-      "text": "Claude Fable 5.2 (Max) 登顶 Arena Agent 榜：净提升 +30.4%，约为第二名 Opus-5.5（+19.5%）的 1.6 倍，基于 4.7k 真实智能体会话。"
+      "text": "Google 智能眼镜开放预购：与 Samsung/Gentle Monster/Warby Parker 合作、内置 Gemini，12 月 10 日发货，Pichai 演示实时语音翻译。"
     },
     {
       "cat": "其他值得一看",
-      "text": "DeepMind AlphaProof Code 正式发布：用数学证明软件符合安全规范，Signal 加密协议验证从数年缩短到四周（首次验证成果昨日已报）。"
+      "text": "Apple HomeView 正式开售：桌面/壁挂两款均售 $299，首发 7 国，搭载 Siri AI。"
     },
     {
       "cat": "其他值得一看",
-      "text": "Fireworks AI 被攻破后续：Notion 约 1% 客户受波及，Insights 功能客户的 AI 聊天记录被窃，Notion 已于 11-03 断开连接并删除数据。"
+      "text": "Replit Agent 新增代购与 Google Ads 投放：经 Stripe Link/Visa 为企业代购物资，站内直投 Search/YouTube 广告。"
     },
     {
       "cat": "其他值得一看",
-      "text": "CoreWeave 调整融资策略：转向客户预付款与合同抵押贷款，Q3 营收 36.6 亿美元 +168%、净亏 7.09 亿、季利息支出 8.46 亿，未来三个月预计获约 90 亿美元预付款（财报本体昨日已报）。"
+      "text": "Thinking Machines 开源 Inkling 2 Small 权重（Apache 2.0）：Code Arena WebDev 1647 分居美国开源模型第一、全球开源第四；vLLM Day-0 支持。"
     },
     {
       "cat": "其他值得一看",
-      "text": "美联航禁止个人 AI 智能体代客订票：可查航班但不能下单，CEO 称不想再制造中间商；eBay 和多家银行也设类似限制。"
+      "text": "MiniMax H3-Image 登 Multi-Image Edit Arena 第 11（1365 分）：多图编辑第一开源模型，与 Nano Banana 2/Pro 打平。"
     },
     {
       "cat": "其他值得一看",
-      "text": "Google 发布 Gemini Robotics 2.5：200 项任务成功率提升 30-100%，Mercedes 产线实测，可处理柔软易变形物品。"
+      "text": "腾讯混元发布实时语音模型 Hy Realtime：新增 Agentic 工具调用与唱歌（TME 灵音合作、按歌手/曲风/年份点歌），已上元宝语音通话与腾讯客服，近期上线腾讯云 API。"
     },
     {
       "cat": "其他值得一看",
-      "text": "对木木相关：字节 Seedance 2.5 flash 发布，生成速度翻倍，720P 文生/图生视频约 0.99 元/秒、较上代降约 34%。"
+      "text": "MOSS-Live 全双工语音交互评测：六项全双工指标居参评模型首位，无关语音误接话率 2.00%，远低于 GPT-Live-1 的 68% 和豆包的 75%。"
     },
     {
       "cat": "其他值得一看",
-      "text": "对木木相关：独立游戏《Big Walk》开发商 House House 自曝开发末期用 LLM 修 Unity 阴影 bug（占代码不到 0.1%），引发独立游戏界 AI 使用争议。"
+      "text": "美国家长在芝加哥等七城抗议 Google 将 Gemini 推入校园并要求暂停校园 AI；北卡 13 岁学生起诉学校 Chromebook 上的 Gemini 曾引导其计划自杀。"
     },
     {
       "cat": "其他值得一看",
-      "text": "对木木相关：卡尔实测即梦画布 + Seedream 5.5 电商设计工作流——一张随手拍生成全套详情页物料和带货短剧，复杂排版/小字准确率 95%、图层最多拆 100 层，多轮修改稳赢 GPT Image 2.6。"
+      "text": "LangChain 完成 3 亿美元 C 轮融资，估值 30 亿美元，CapitalG 领投。"
     },
     {
       "cat": "其他值得一看",
-      "text": "百度世界大会 2026：李彦宏发布大模型交易平台「词元所」（准入测试、防换模虚标、公开信用记录），昆仑芯 M100 已投用、M300 与 1024 卡天池超节点提前至 2027。"
+      "text": "LMSYS 联合 NVIDIA/AMD/Intel/Google/Meta/Cloudflare/Modal 等成立 SGLang Consortium 推进开源推理。"
     },
     {
       "cat": "其他值得一看",
-      "text": "OpenRouter 详解自纠错本地化流水线：GPT-6.1 Sol 翻译 16,918 条字符串上 7 种语言，全站重译约 $460、约为 Smartling 机器翻译牌价 6%。"
+      "text": "Cerebras 签约微软成为继 AWS/Oracle 后第三家超大规模云客户，Q3 剩余履约义务 261 亿美元。"
     },
     {
       "cat": "其他值得一看",
-      "text": "Grok Bot 1.0 发布：定位可与团队协作的 AI 队友，支持分享 Bot、接入 Slack/Teams、受邀参加会议并持续学习。"
+      "text": "SoftBank 公布 71 亿美元季度亏损，过半来自发电设备相关损失，或给 AI 天然气扩张设定上限。"
     },
     {
       "cat": "其他值得一看",
-      "text": "Google 联合 Samsung/Gentle Monster/Warby Parker 推出首批 Gemini 智能眼镜，开放预售、$395 起，支持语音交互与实时翻译。"
+      "text": "Epoch AI 估算华为和林格尔数据中心已投运约 10.5 万颗 Ascend 910C 和 8000 颗 910B，约合 8.1 万 H100 等效算力，约为 SpaceX Colossus 2 的 7%。"
     },
     {
       "cat": "其他值得一看",
-      "text": "Tim O'Reilly 长文：ChatGPT、Claude Code 更像新平台时代的浏览器和 BASIC，真正改变普通人能力的 AI 原生杀手级应用可能尚未出现。"
+      "text": "前 OpenAI 工程师 willdepue 称通过权重初始化指纹分析（搜索六万亿组合、B300/GB200 真机复现验证）发现 DeepSeek、Moonshot、MiniMax、蚂蚁集团使用 NVIDIA Blackwell 芯片训练模型。"
     },
     {
       "cat": "其他值得一看",
-      "text": "郭明錤评黄仁勋丑闻：其独特价值在于把工程可行技术转化为全公司投入，建议英伟达阶段性降低对其个人决策依赖并布局接班。"
+      "text": "404 Media 实测 Meta 聊天机器人 Muse 可基于公开资料冒充真人进行性角色扮演和暗示性图像生成。"
     },
     {
       "cat": "其他值得一看",
-      "text": "AWS CEO Matt Garman：太空数据中心未来 10-20 年难具商业可行性，发射成本、运力、散热和维护都是硬障碍。"
+      "text": "哈佛论文提出 FraudBench：AI 模型从建议转向代理行动时欺诈率升至 21.4%（基于 159 个真实美国法院案例场景）。"
     },
     {
       "cat": "其他值得一看",
-      "text": "澳大利亚拟立法对前沿 AI 公司实施强制安全规则：开放独立审计、持续安全检查、公布安全框架并立即向政府报告安全事件。"
+      "text": "MIT 与 Meta 等提出 ReHarness：用后续任务结果修订智能体记忆笔记，平均归一化增益 0.240（基线 0.168）。"
     },
     {
       "cat": "其他值得一看",
-      "text": "ElevenLabs 发布 Scribe v3 与 Scribe v3 Live 语音转文本模型，分别面向预录音频与低延迟实时场景，已通过 ElevenAPI/ElevenAgents 开放。"
+      "text": "Perplexity 开源 Decider v1.3 与 Decider Flash v1.3 决策模型，权重上架 Hugging Face 并在 OpenRouter 免费一周。"
+    },
+    {
+      "cat": "其他值得一看",
+      "text": "蚂蚁 inclusionAI 发布 Duo 1.0 全双工交互世界模型系列权重（causal-base/四步蒸馏/FP8 量化）。"
+    },
+    {
+      "cat": "其他值得一看",
+      "text": "vLLM 在单台 NVIDIA Vera Rubin NVL72 跑 DeepSeek-V4.1-Flash：每 GPU 吞吐 1.7M tokens/s、单用户 387 tokens/s，为 GB300 NVL72 的 58 倍。"
+    },
+    {
+      "cat": "其他值得一看",
+      "text": "对木木相关：Suno 发布 Bridge beta 可在 DAW 中直接生成适配工程的乐器与人声；即梦画布两周上线 20+ 新功能；GDC 调查显示 40% 游戏开发者使用生成式 AI（去年 36%）；Kimi 发布用 Kimi Code 为陶瓷工作室搭建 3D 品牌落地页教程；SpaceXAI 裁减约 60 名 Grok Imagine 员工、资源转向 AI 编程工具与 Grok Bot。"
     }
   ]
 }
