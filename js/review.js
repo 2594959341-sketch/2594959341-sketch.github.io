@@ -1319,20 +1319,6 @@ const Review = {
       <div class="muted" style="margin-top:8px">本期共部署 ${dep} 个任务，完成 ${done} 个（放弃 / 请假计为未完成）${goalLine}</div>
     `);
   },
-  // 成长块：阅读 + 成长(技能 / idea)
-  growthBlockHTML(days) {
-    let read = 0, grow = 0;
-    days.forEach(d => {
-      read += (S.get('readLogs', {})[d] || []).filter(l => !(window.Growth && window.Growth.readCat) || window.Growth.readCat(l).key !== 'fun').length;
-      grow += (S.get('growthLogs', {})[d] || []).length;
-    });
-    if (!read && !grow) return this.block('成长', 'sprout', '<div class="empty">这段时间还没有成长记录</div>');
-    return this.block('成长', 'sprout', `
-      <div class="grid4" style="gap:8px">
-        <div class="st4"><div class="stat-num">${read}</div><div class="stat-lab">阅读</div></div>
-        <div class="st4"><div class="stat-num">${grow}</div><div class="stat-lab">成长</div></div>
-      </div>`);
-  },
   // 运动块：时长 + 打卡数 + 常练项目
   sportBlockHTML(days) {
     let min = 0, n = 0; const projs = {};
@@ -1354,39 +1340,15 @@ const Review = {
     const yearDays = []; for (let d = y + '-01-01'; d <= todayStr(); d = addDays(d, 1)) yearDays.push(d);
     const days = this.scopeDays(scope);
     const safe = (label, fn) => { try { return fn(); } catch (e) { console.error('[viz]' + label, e); return '<div class="card" style="margin-top:12px"><div class="empty">该组件暂时无法显示</div></div>'; } };
-    const workLogs = S.get('workLogs', {}), kgLogs = S.get('kgLogs', {}), travelOut = S.get('travelOut', {}), funLogsAll = S.get('funLogs', {});
+    const travelOut = S.get('travelOut', {}), funLogsAll = S.get('funLogs', {});
 
     // 精力趋势（净消耗）
     const enVals = days.map(d => (window.Daily && Daily.dayLoadInfo) ? (Daily.dayLoadInfo(d).netConsumed || 0) : 0);
     const enLabels = days.map(d => d.slice(5));
 
-    // 创作分布
-    const wTypes = { video: 0, article: 0 };
-    days.forEach(d => (workLogs[d] || []).forEach(l => { wTypes[l.type === 'video' ? 'video' : 'article']++; }));
-    const wSegs = [{ label: '视频', value: wTypes.video, color: '#F4A6B8' }, { label: '图文', value: wTypes.article, color: '#8FB8E0' }];
-
-    // 学习科目分布
-    const kg = {};
-    days.forEach(d => (kgLogs[d] || []).forEach(l => { const s = kgNorm(l.subject) || '学习'; kg[s] = (kg[s] || 0) + 1; }));
-    const kgTop = Object.entries(kg).sort((a, b) => b[1] - a[1]).slice(0, 6);
-
     // 出行时间线
     const tripDates = Object.keys(travelOut).filter(d => d >= days[0] && d <= todayStr()).sort();
     const tripRows = tripDates.length ? tripDates.slice().reverse().map(d => { const ents = travelOut[d] || []; const note = (ents.map(e => e.note || e.place || e.kind).filter(Boolean)[0] || ''); return '<div class="bd-tl-item"><span class="bd-tl-dot"></span><div><b>' + d.slice(5) + '</b> <span class="muted">' + (note ? esc(note) : ents.length + ' 条记录') + '</span></div></div>'; }).join('') : '<div class="muted">这段时间还没有出行记录</div>';
-
-    // 三餐规律
-    const MealsMod = window.Meals;
-    let mealOn = 0, mealOff = 0, mealMiss = 0;
-    days.forEach(d => {
-      if (MealsMod && MealsMod.mealState) {
-        const sts = ['breakfast', 'lunch', 'dinner'].map(k => MealsMod.mealState(d, k));
-        if (sts.every(s => s === 'ontime')) mealOn++;
-        else if (sts.every(s => s === 'miss')) mealMiss++;
-        else mealOff++;
-      } else { const mv = S.get('meals', {})[d]; if (mv && ['breakfast', 'lunch', 'dinner'].some(k => mv[k] && !mv[k].skipped)) mealOff++; else mealMiss++; }
-    });
-    const mealTotal = days.length;
-    const mealRate = mealTotal ? Math.round(mealOn / mealTotal * 100) : 0;
 
     // 娱乐概览（按作品去重）
     const funCount = { 小说: 0, 影视: 0, 漫画: 0 };
@@ -1454,29 +1416,13 @@ const Review = {
       + (opts.skipDimMood ? '' : safe('radar', () => this.dimCardHTML(days)))
       + (opts.skipDimMood ? '' : safe('mood', () => this.moodCardHTML(days)))
       + safe('hot', () => this.hotWordsHTML(days, hwN));
-    const createInner = safe('create', () => {
-        const totalC = wTypes.video + wTypes.article;
-        const vPct = totalC ? Math.round(wTypes.video / totalC * 100) : 0;
-        const aPct = totalC ? Math.round(wTypes.article / totalC * 100) : 0;
-        return '<div class="card" style="margin-top:12px"><h3>' + icon('creation', 16) + ' 创作</h3>'
-          + '<div class="prg-row"><span class="prg-lab">视频</span><div class="prg-bar"><i style="width:' + vPct + '%;background:#F4A6B8"></i></div><span class="prg-val">' + wTypes.video + ' 条 · ' + vPct + '%</span></div>'
-          + '<div class="prg-row"><span class="prg-lab">图文</span><div class="prg-bar"><i style="width:' + aPct + '%;background:#8FB8E0"></i></div><span class="prg-val">' + wTypes.article + ' 条 · ' + aPct + '%</span></div>'
-          + (totalC ? '<div class="muted" style="margin-top:6px">共 ' + totalC + ' 条创作</div>' : '<div class="empty">暂无创作记录</div>')
-          + '</div>';
-      });
-    const studyInner = safe('study', () => '<div class="card" style="margin-top:12px"><h3>' + icon('book', 16) + ' 学习</h3>' + (kgTop.length ? svgBars(kgTop.map(x => x[1]), kgTop.map(x => x[0])) : '<div class="empty">暂无学习记录</div>') + '</div>');
-    const mealsInner = safe('meals', () => '<div class="card" style="margin-top:12px"><h3>' + icon('meal', 16) + ' 三餐</h3><div class="grid4"><div class="st4"><div class="stat-num" style="color:#3f7a55">' + mealOn + '</div><div class="stat-lab">准点</div></div><div class="st4"><div class="stat-num" style="color:#9a7b22">' + mealOff + '</div><div class="stat-lab">偏时</div></div><div class="st4"><div class="stat-num">' + mealMiss + '</div><div class="stat-lab">没记</div></div><div class="st4"><div class="stat-num">' + mealRate + '%</div><div class="stat-lab">准点率</div></div></div></div>');
     const funInner = safe('fun', () => '<div class="card" style="margin-top:12px"><h3>' + icon('film', 16) + ' 娱乐</h3>' + (funTotal ? '<div class="viz-row">' + svgDonut(funSegs, 120, '部') + '<div class="viz-side">' + funSegs.map(s => '<div><span class="en-dot" style="background:' + s.color + '"></span>' + s.label + ' <b>' + s.value + '</b></div>').join('') + '</div></div>' : '<div class="empty">暂无娱乐记录</div>') + '</div>')
       + safe('funcurve', () => this.funCurveHTML(scope, days));
     const travelInner = safe('travel', () => '<div class="card" style="margin-top:12px"><h3>' + icon('map', 16) + ' 出行</h3><div class="bd-tl">' + tripRows + '</div></div>');
     return ''
       + this.block('总览', 'stats', overviewInner)
       + safe('plan', () => this.planBlockHTML(days, scope))
-      + this.block('创作', 'creation', createInner)
-      + this.block('备考', 'book', studyInner)
-      + safe('growth', () => this.growthBlockHTML(days))
       + safe('sport', () => this.sportBlockHTML(days))
-      + this.block('三餐', 'meal', mealsInner)
       + this.block('出行', 'map', travelInner)
       + this.block('娱乐', 'film', funInner)
       + (scope === 'week' ? safe('wksum', () => this.weekSummaryCardHTML(days)) : '');
