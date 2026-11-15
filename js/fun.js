@@ -62,6 +62,9 @@ function funColorHash(t) {
 }
 // 数量单位：小说用「本」、其余用「部」
 function funUnit(t) { return t === '小说' ? '本' : '部'; }
+// 弃文 / 弃剧 / 弃漫：底层统一状态 '弃'，按类型显示不同文案；历史 '想看' 仅兼容显示，不再提供入口
+function funDropWord(t) { return t === '小说' ? '弃文' : t === '影视' ? '弃剧' : t === '漫画' ? '弃漫' : '弃'; }
+function funStatusText(s, t) { return s === '弃' ? ('已' + funDropWord(t)) : (s || ''); }
 function funVerb(t) { return '读'; }
 // 环形图（时间占比）
 function svgDonut(segs, size, unit) {
@@ -203,7 +206,7 @@ const Entertainment = {
     const months = [...new Set(c.dates.map(d => d.slice(0, 7)))].sort().map(d => Number(d.slice(5)) + '月').join('·');
     const cap = [];
     if (isFinished) cap.push(isNovel ? '已读完' : '已看完');
-    else if (c.status) cap.push(esc(c.status));
+    else if (c.status) cap.push(esc(funStatusText(c.status, type)));
     if (months) cap.push('活跃 ' + months);
     if (timeTxt) cap.push(timeTxt);
     if (c.records[0] && c.records[0].progress && !isFinished) cap.push('看到 ' + esc(c.records[0].progress));
@@ -466,7 +469,7 @@ const Entertainment = {
   recentWatchingHTML(recs) {
     const cut = (() => { const d = new Date(todayStr() + 'T00:00:00'); d.setDate(d.getDate() - 7); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); })();
     // 每个作品取「最新一条」记录判定状态：最新状态为已看完/已读完的，不再出现在「近期在看/在玩」
-    const DONE = new Set(['看完', '已读完']);
+    const DONE = new Set(['看完', '已读完', '弃']);   // 弃文/弃剧/弃漫 也不再算「在追」
     const latest = {};
     recs.forEach(r => { const k = r.type + '|' + (r.title || ''); if (!latest[k] || r.date > latest[k].date) latest[k] = r; });
     const ws = Object.values(latest).filter(r => {
@@ -837,7 +840,7 @@ const Entertainment = {
     // 第二行 = 评星 + 解释词（状态 · 日期 · 时长 · 进度），解释词小且淡
     const cap = [];
     if (isFinished) cap.push(isNovel ? '已读完' : '已看完');
-    else if (l.status) cap.push(esc(l.status));
+    else if (l.status) cap.push(esc(funStatusText(l.status, l.type)));
     if (!hideDate && l.date) cap.push(l.date.slice(5));
     if (timeTxt) cap.push(timeTxt);
     if (l.progress && !isFinished) cap.push('看到 ' + esc(l.progress));
@@ -851,7 +854,9 @@ const Entertainment = {
       </div></div>`;
   },
   recordDetail(entry) {
-    const statusTxt = entry.status === '看完' ? '已看完' : (entry.status === '想看' ? '想看' : (entry.progress ? '在看 · 看到 ' + entry.progress : '在看'));
+    const statusTxt = entry.status === '看完' ? '已看完'
+      : entry.status === '弃' ? (funStatusText('弃', entry.type) + (entry.progress ? ' · 看到 ' + entry.progress : ''))
+      : (entry.status === '想看' ? '想看' : (entry.progress ? '在看 · 看到 ' + entry.progress : '在看'));
     const tags = entry.tags || [];
     const workAll = this.all().filter(r => (r.title || '') === (entry.title || '') && funNormType(r.type) === funNormType(entry.type));
     const workMin = workAll.reduce((s, r) => s + (Number(r.minutes) || 0), 0);
@@ -869,6 +874,11 @@ const Entertainment = {
         </div>
       </div>
       ${entry.review ? `<div style="margin-top:12px"><div class="muted" style="font-size:11px;margin-bottom:4px">观后感</div><div style="white-space:pre-wrap;font-size:13px">${esc(entry.review)}</div></div>` : ''}
+      ${entry.status === '弃' ? `<div class="fun-drop-arc" style="margin-top:12px">
+        <div class="fun-drop-kv"><span>看了多久</span><b>${esc(this.fmtMin(entry.dropMin) || '没记')}</b></div>
+        <div class="fun-drop-kv"><span>看到哪里</span><b>${esc(entry.progress || '没记')}</b></div>
+        <div class="fun-drop-why"><span>${esc(funDropWord(entry.type))}理由</span>${esc(entry.dropReason || '没写理由')}</div>
+      </div>` : ''}
       <div style="margin-top:14px;display:flex;gap:8px;justify-content:flex-end">
         <button class="btn ghost" onclick="window.Entertainment.editModal('${encodeURIComponent(JSON.stringify({ date: entry.date, id: entry.id }))}')">编辑</button>
         <button class="btn" onclick="window.Entertainment.del('${encodeURIComponent(JSON.stringify({ date: entry.date, id: entry.id }))}')">删除</button>
@@ -909,8 +919,9 @@ const Entertainment = {
           const finished = r.status === '看完' || r.status === '已读完';
           const cover = r.cover ? `<img class="fs-book-cover" src="${esc(r.cover)}" alt="">` : `<div class="fs-book-cover fs-book-ph">${esc((r.title || '未命名').slice(0, 1))}</div>`;
           const stars = (finished && r.rating) ? `<span class="fs-book-stars">${this.starsHTML(r.rating)}</span>` : '';
-          const badge = finished ? `<span class="fs-book-done">已看完</span>` : '';
-          const statusLab = finished ? '已看完' : (r.status || '在看');
+          const dropped = r.status === '弃';
+          const badge = finished ? `<span class="fs-book-done">已看完</span>` : (dropped ? `<span class="fs-book-done fs-book-drop">${esc(funStatusText('弃', t))}</span>` : '');
+          const statusLab = finished ? '已看完' : (dropped ? funStatusText('弃', t) : (r.status || '在看'));
           return `<div class="fs-book" data-fnshelf="${r.id}">
             ${cover}
             <div class="fs-book-info">
@@ -1162,7 +1173,7 @@ const Entertainment = {
     const rev = all.slice().reverse();
     const trailHTML = rev.slice(0, 30).map(r => {
       const pr = isBook && r.progress ? (' · 看到 ' + esc(r.progress)) : '';
-      const st = (r.status && r.status !== '在看') ? (' · ' + esc(r.status)) : '';
+      const st = (r.status && r.status !== '在看') ? (' · ' + esc(funStatusText(r.status, type)) + ((r.status === '弃' && r.dropReason) ? (' · ' + esc(r.dropReason.slice(0, 24)) + (r.dropReason.length > 24 ? '…' : '')) : '')) : '';
       const minTxt = r.seed ? `<span class="fun-trail-min">累计 ${this.fmtMin(r.minutes)} 起点</span>` : (r.minutes ? `<span class="fun-trail-min">${this.fmtMin(r.minutes)}</span>` : '');
       return `<div class="fun-trail-item" data-lp>
         <div class="fun-trail-dot" style="background:${this.typeColor(type)}"></div>
@@ -1175,8 +1186,18 @@ const Entertainment = {
       ? `<img src="${esc(entry.icon || entry.cover)}" class="fun-dt-cover" alt="">`
       : `<div class="fun-dt-cover fun-dt-cover-ph"></div>`;
 
-    const statusTxt = entry.status || (isBook ? '在看' : '在玩');
+    const statusTxt = funStatusText(entry.status, type) || (isBook ? '在看' : '在玩');
     const isFinished = entry.status === '看完' || entry.status === '已读完';
+    const dropRec = all.filter(r => r.status === '弃').slice(-1)[0] || null;
+    const dropCard = dropRec ? `<div class="card fun-dt-dropcard">
+      <div class="fun-dt-cardhead"><h3>${esc(funDropWord(type))}存档</h3></div>
+      <div class="fun-drop-arc">
+        <div class="fun-drop-kv"><span>看了多久</span><b>${esc(this.fmtMin(dropRec.dropMin) || '没记')}</b></div>
+        <div class="fun-drop-kv"><span>看到哪里</span><b>${esc(dropRec.progress || '没记')}</b></div>
+        <div class="fun-drop-kv"><span>日期</span><b>${esc(dropRec.date)}</b></div>
+        <div class="fun-drop-why"><span>${esc(funDropWord(type))}理由</span>${esc(dropRec.dropReason || '没写理由')}</div>
+      </div>
+    </div>` : '';
     const unitWord = ({ '小说': '章', '漫画': '话', '影视': '集' })[type] || '章';
     const pctLab = (type === '小说') ? '已读' : '已看';
     const progCap = isFinished
@@ -1212,6 +1233,7 @@ const Entertainment = {
         <div class="fun-dt-stat"><div class="fun-dt-val">${this.fmtMin(totalMin) || '0'}</div><div class="fun-dt-lab">累计时长</div></div>
         <div class="fun-dt-stat"><div class="fun-dt-val">${this.fmtMin(avg) || '0'}</div><div class="fun-dt-lab">单次均</div></div>
       </div>
+      ${dropCard}
       <div class="card fun-dt-trendcard">
         <div class="fun-dt-cardhead"><h3>投入趋势</h3>
           <div class="seg sm">
@@ -1386,7 +1408,7 @@ const Entertainment = {
         <div style="flex:1;min-width:0"><b>${esc(r.title || '未命名')}</b>
           <div style="display:flex;gap:6px;align-items:center;margin-top:2px;flex-wrap:wrap">
             <span class="tag" style="background:${this.typeColor(r.type)};color:#fff;border:none;font-size:10px;padding:1px 6px">${esc(r.type)}</span>
-            ${r.status ? `<span class="tag" style="background:#eee;color:#444;border:none;font-size:10px;padding:1px 6px">${esc(r.status)}</span>` : ''}
+            ${r.status ? `<span class="tag" style="background:#eee;color:#444;border:none;font-size:10px;padding:1px 6px">${esc(funStatusText(r.status, r.type))}</span>` : ''}
           </div>
           ${(r.tags && r.tags.length) ? `<div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:4px">${r.tags.map(t => `<span class="tag" style="background:#eee;color:#444;border:none;font-size:10px;padding:1px 6px">${esc(t)}</span>`).join('')}</div>` : ''}
         </div></div>`).join('');
@@ -1439,7 +1461,7 @@ const Entertainment = {
         const bits = [e.date.slice(5)];
         if (e.minutes) bits.push(this.fmtMin(e.minutes));
         if (e.progress) bits.push('看到 ' + e.progress);
-        if (e.status && e.status !== '在看') bits.push(e.status);
+        if (e.status && e.status !== '在看') bits.push(funStatusText(e.status, this.activeType));
         return `<div class="fun-search-row" data-fsw="${i}">
           ${w.cover ? `<img class="fun-search-thumb" src="${esc(w.cover)}" alt="">` : `<div class="fun-search-ph">${esc(w.title.slice(0, 1))}</div>`}
           <div class="fun-search-mid">
@@ -1500,13 +1522,27 @@ const Entertainment = {
         <div class="form-row"><label>总量（集/话/章）</label><input id="fTotal" value="${esc(r.total)}"></div>
         <div id="fProgWrap" style="${r.status === '看完' ? 'display:none' : ''}"><div class="form-row"><label>进度（看到哪）</label><input id="fProg" value="${esc(r.progress)}"></div></div>
       </div>`;
-    const mediaTimeBlock = ['小说', '影视', '漫画'].includes(r.type) ? `<div class="form-row" id="fMediaTimeWrap"><label>${r.type === '小说' ? '本次读了多久（分钟）' : '本次看了多久（分钟）'}</label><input id="fMediaMin" type="number" value="${ref ? '' : (r.minutes || '')}" placeholder="如 40"></div>` : '';
+    const mediaTimeBlock = ['小说', '影视', '漫画'].includes(r.type) ? `<div class="form-row" id="fMediaTimeWrap"${r.status === '弃' ? ' style="display:none"' : ''}><label>${r.type === '小说' ? '本次读了多久（分钟）' : '本次看了多久（分钟）'}</label><input id="fMediaMin" type="number" value="${ref ? '' : (r.minutes || '')}" placeholder="如 40"></div>` : '';
+    const statusOpts = [['在看', '在看'], ['看完', '看完'], ['弃', funDropWord(r.type)]];
+    if (r.status === '想看') statusOpts.unshift(['想看', '想看']);   // 历史「想看」仅编辑时可见，不再作为新增入口
+    const dropDefault = (() => {
+      if (!r.title) return '';
+      const key = this.normTitle(r.title), bt = funNormType(r.type), L = this.logs();
+      let sum = 0;
+      Object.keys(L).forEach(dt => (L[dt] || []).forEach(x => { if (funNormType(x.type) === bt && this.normTitle(x.title) === key) sum += Number(x.minutes) || 0; }));
+      return sum ? String(Math.round(sum)) : '';
+    })();
+    const dropBoxHTML = `<div id="fDropBox" style="${r.status === '弃' ? '' : 'display:none'}">
+        <div class="form-row"><label>${funDropWord(r.type)}前一共看了多久（分钟）</label><input id="fDropMin" type="text" inputmode="numeric" style="direction:ltr" value="${esc(r.dropMin != null ? r.dropMin : dropDefault)}" placeholder="如实填，比如 120"></div>
+        <div class="form-row"><label>${funDropWord(r.type)}理由</label><textarea id="fDropReason" rows="3" placeholder="现在看不下去的原因，留给以后的自己">${esc(r.dropReason || '')}</textarea></div>
+      </div>`;
     openModal(`<button class="close-x" onclick="closeModal()">×</button><h3>${icon('play', 18)} ${titleTxt}</h3>
       ${typeSelHTML}
       <div class="form-row"><label>标题</label><input id="fTitle" value="${esc(r.title)}" placeholder="剧名 / 书名 / 番名"></div>
       ${coverBlock}
-      <div class="form-row"><label>状态</label><select id="fStatus">${['想看', '在看', '看完'].map(s => `<option ${s === r.status ? 'selected' : ''}>${s}</option>`).join('')}</select></div>
+      <div class="form-row"><label>状态</label><select id="fStatus">${statusOpts.map(([v, lab]) => `<option value="${v}"${v === r.status ? ' selected' : ''}>${lab}</option>`).join('')}</select></div>
       ${totalWrapHTML}
+      ${dropBoxHTML}
       <div class="form-row"><label>标签（空格分隔，如 治愈 悬疑 下饭）</label><input id="fTags" value="${esc(tagsStr)}" placeholder="治愈 悬疑"></div>
       <div id="fCatWrap" style="${r.type === '影视' ? '' : 'display:none'}"><div class="form-row"><label>分类（影视）</label><select id="fCat">${['电视剧', '电影', '综艺', '短剧', 'AI漫剧', '动漫', '纪录片', '其他'].map(c => `<option ${c === (r.cat || '') ? 'selected' : ''}>${c}</option>`).join('')}</select></div></div>
       ${mediaTimeBlock}
@@ -1529,9 +1565,20 @@ const Entertainment = {
       if (needMedia && !mtb) { const tagsRow = document.getElementById('fTags').closest('.form-row'); const div = document.createElement('div'); div.className = 'form-row'; div.id = 'fMediaTimeWrap'; div.innerHTML = '<label>' + (r.type === '小说' ? '本次读了多久（分钟）' : '本次看了多久（分钟）') + '</label><input id="fMediaMin" type="number" placeholder="如 40">'; if (tagsRow) tagsRow.after(div); }
       else if (mtb) { mtb.style.display = needMedia ? '' : 'none'; }
       const tw = document.getElementById('fTotalWrap'); if (tw) tw.style.display = '';
+      const dOpt = document.querySelector('#fStatus option[value="弃"]'); if (dOpt) dOpt.textContent = funDropWord(r.type);
+      const dLabs = document.querySelectorAll('#fDropBox label');
+      if (dLabs[0]) dLabs[0].textContent = funDropWord(r.type) + '前一共看了多久（分钟）';
+      if (dLabs[1]) dLabs[1].textContent = funDropWord(r.type) + '理由';
+      const _mw = document.getElementById('fMediaTimeWrap'), _fs = document.getElementById('fStatus'); if (_mw && _fs && _fs.value === '弃') _mw.style.display = 'none';
       applyMemory();
     };
-    const fStatusEl = document.getElementById('fStatus'); if (fStatusEl) fStatusEl.onchange = (e) => { const rb = document.getElementById('fReviewBox'); if (rb) rb.style.display = e.target.value === '看完' ? '' : 'none'; const pw = document.getElementById('fProgWrap'); if (pw) pw.style.display = e.target.value === '看完' ? 'none' : ''; };
+    const fStatusEl = document.getElementById('fStatus'); if (fStatusEl) fStatusEl.onchange = (e) => {
+      const v = e.target.value;
+      const rb = document.getElementById('fReviewBox'); if (rb) rb.style.display = v === '看完' ? '' : 'none';
+      const pw = document.getElementById('fProgWrap'); if (pw) pw.style.display = v === '看完' ? 'none' : '';
+      const db = document.getElementById('fDropBox'); if (db) db.style.display = v === '弃' ? '' : 'none';
+      const mw = document.getElementById('fMediaTimeWrap'); if (mw) mw.style.display = v === '弃' ? 'none' : '';
+    };
     const fUp = document.getElementById('fUp');
     if (fUp) {
       const cover = document.getElementById('fCover'), prev = document.getElementById('fCoverPrev'), file = document.getElementById('fFile');
@@ -1613,6 +1660,8 @@ const Entertainment = {
       const fStatus = document.getElementById('fStatus') ? document.getElementById('fStatus').value : '';
       const fProgRaw = document.getElementById('fProg') ? document.getElementById('fProg').value.trim() : '';
       const fTotalRaw = document.getElementById('fTotal') ? document.getElementById('fTotal').value.trim() : '';
+      const fDropMinRaw = document.getElementById('fDropMin') ? document.getElementById('fDropMin').value.trim() : '';
+      const fDropReason = document.getElementById('fDropReason') ? document.getElementById('fDropReason').value.trim() : '';
       // 选「看完」必须填总量（章/集/话），否则详情页无法显示「全书 X 章 · 已看完」。
       // 例外：已完结的旧记录（含早期未记总量的作品）编辑时允许总量留空——只补封面/元数据，不强行倒逼用户回忆未知总量。
       const _oStatus = r.status || '';
@@ -1630,9 +1679,11 @@ const Entertainment = {
         cover: coverVal, total: document.getElementById('fTotal') ? document.getElementById('fTotal').value.trim() : '',
         progress: fStatus === '看完' ? '' : fProgRaw,         status: fStatus,
         rating: Number(document.getElementById('fRating')?.value) || 0, review: document.getElementById('fReview') ? document.getElementById('fReview').value.trim() : '',
-        minutes, imgs: [], playFor: r.type === '游戏' ? (r.playFor || '') : '', icon: r.type === '游戏' ? (r.icon || '') : '',  // 归档游戏记录：编辑时保住原「游玩目的/图标」不丢
+        minutes: (fStatus === '弃' && appendRec) ? 0 : minutes, imgs: [], playFor: r.type === '游戏' ? (r.playFor || '') : '', icon: r.type === '游戏' ? (r.icon || '') : '',  // 归档游戏记录：编辑时保住原「游玩目的/图标」不丢
         cat: r.type === '影视' ? (document.getElementById('fCat') ? document.getElementById('fCat').value : '') : '',
         tags,
+        dropMin: fStatus === '弃' ? (Number(fDropMinRaw) || 0) : (Number(r.dropMin) || 0),
+        dropReason: fStatus === '弃' ? fDropReason : (r.dropReason || ''),
         createdAt: appendRec ? Date.now() : (r.createdAt || Date.now())
       };
       // 新进度记录（续读/更新进度）默认记在「今天」，不再沿用旧记录的日期；其余（元数据编辑/补记）保留原日期
@@ -1640,7 +1691,8 @@ const Entertainment = {
       let date = (_fdEl ? _fdEl.value : '') || r.date || todayStr();
       if (appendRec && !dateTouched) date = todayStr();
       // 今天记录的小说必须填时长；以前补记的（日期<今天）允许不记时长
-      if (type === '小说' && date === todayStr() && Number(minutes) <= 0) {
+      // 弃文/弃剧/弃漫是存档动作，不是「今天又看了」，不强制填本次时长
+      if (type === '小说' && date === todayStr() && Number(minutes) <= 0 && fStatus !== '弃') {
         toast('今天看的小说要记一下时长哦~（以前的可以不记）'); return;
       }
       const L = this.logs();
