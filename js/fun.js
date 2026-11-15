@@ -7,7 +7,7 @@
    - 封面墙变成「全部」页上方的背景式半露斜放封面带，点击下拉进完整斜放封面墙。
    - 统计弱化：去掉「有没有打分」相关统计。
    - 封面日历变成「全部」里的一个日历图标，呈现所有带封面的记录（不限小说）；单独类型页也有日历（时间轴收入其中），点开看当日。
-   - 单独类型页无标题：顶部「打卡 · 类型」+ 日历图标；主体只显示当下一周；小红书检测仅小说页。
+   - 单独类型页无标题：顶部「打卡 · 类型」+ 日历图标；主体只显示当下一周；小说搜索仅小说页。
    - 时间轴/记录均带标签显示。 */
 const FUN_TYPES = ['影视', '小说', '漫画'];
 const FUN_TYPES_ARCHIVE = ['游戏'];   // v347：游戏下架，历史记录归档保留（仅供内部归一/去重）
@@ -77,14 +77,6 @@ function svgDonut(segs, size, unit) {
   const center = `<text x="${cx}" y="${cy - 1}" text-anchor="middle" font-size="20" font-weight="800" fill="#222">${total}</text><text x="${cx}" y="${cy + 15}" text-anchor="middle" font-size="10" fill="#999">${unit || '总计'}</text>`;
   return `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">${arcs}${center}</svg>`;
 }
-const XHS_LIB = [
-  { c: '色情低俗 / 性暗示（高风险）', a: '小红书对性相关描述极敏感，BL/小说观后感最易在此被判定「色情低俗」甚至「提供性幻想/性服务」。务必用剧情、人物、文笔、三观评价代替任何亲密/性相关字眼；隐晦黑话也会被识别，建议通篇避开。', w: ['性爱','做爱','上床','同床','舌吻','深吻','体位','play','开车','肉文','h文','r文','限制级','18禁','abo','双性','调情','涩','擦边','软色情','性幻想','性服务','约吗','约炮','原味','福利姬','本子','双男','男男','黄文'] },
-  { c: '违规导流 / 资源分享（高风险）', a: '小说分享常被判定「分享资源/导流侵权」。不要提供或引导获取全文、网盘、未删减版；「指路」「资源」「合集」等词都很危险，改成「个人观后感、不剧透推荐」最安全。', w: ['资源','完整版','未删减','全文','指路','网盘','度盘','夸克','后台','加微信','薇信','vx','二维码','公众号','进群','免费看','合集'] },
-  { c: '极限词 / 虚假宣传', a: '广告法禁用绝对化用语，改用「我觉得/个人体验」等客观描述。', w: ['最好','最佳','第一','顶级','绝对','唯一','100%','全网最低','销量第一','国家级','王牌','绝无仅有'] },
-  { c: '医疗 / 功效夸大', a: '护肤健康类避免疗效承诺，改用「个人体验」。', w: ['治疗','治愈','消炎','抗菌','美白','祛斑','祛痘','减肥','瘦身','燃脂','丰胸','增高','排毒','抗癌','防辐射'] },
-  { c: '诱导互动 / 营销', a: '删掉「点赞收藏关注」「私聊」「抽奖」等引导，避免被判营销号。', w: ['点赞','收藏','关注','转发','私聊','私信我','看全文','抽奖','免费送','秒杀','立即购买','抢购','点击下方','特价','福利'] },
-  { c: '违法违规 / 金钱交易', a: '涉及代购、刷单、网贷、赌博等一律别碰，会被限流甚至封号。', w: ['代购','刷单','兼职','返利','网贷','赌博','彩票','博彩'] }
-];
 const Entertainment = {
   sub: 'fun',
   activeType: '全部',
@@ -485,7 +477,7 @@ const Entertainment = {
     if (!ws.length) return '';
     return `<div class="card"><h3>近期在看 / 在玩</h3>${ws.map(l => this.entryRowHTML(l, true)).join('')}</div>`;
   },
-  /* ============ 类型页（无标题 · 打卡 · 本周数据 · 年时间轴 · 小红书仅小说） ============ */
+  /* ============ 类型页（无标题 · 打卡 · 本周数据 · 年时间轴 · 搜索仅小说） ============ */
   typeScopeRange() {
     const scope = this._typeScope || 'week';
     if (scope === 'month') { const ym = todayStr().slice(0, 7); const dim = new Date(Number(ym.slice(0, 4)), Number(ym.slice(5, 7)), 0).getDate(); return [ym + '-01', ym + '-' + String(dim).padStart(2, '0')]; }
@@ -504,7 +496,7 @@ const Entertainment = {
     // 影视/小说/漫画/游戏页只保留「周」视图：月/年聚合已收进「年时间轴」，类型页不再显示周/月/年切换段
     return '';
   },
-  /* ============ 小说主页（阅读统计风格，参考小红书阅读报告） ============ */
+  /* ============ 小说主页（阅读统计风格） ============ */
   novelCoverHTML(e, t) {
     const cover = e.cover ? `<img src="${esc(e.cover)}" alt="" class="novel-recent-thumb">` : `<div class="novel-recent-thumb novel-recent-ph"></div>`;
     return `<div class="novel-recent-cell" data-dtcover="${e.id}">${cover}<div class="novel-recent-name">${esc(e.title || '未命名')}</div></div>`;
@@ -710,7 +702,7 @@ const Entertainment = {
       </div>
     </div>`;
 
-    const xhsFab = isBook ? this.xhsFabHTML() : '';
+    const searchFab = isBook ? this.searchFabHTML() : '';
 
     root.innerHTML = `<div class="fun-archive novel-home">
       <div class="fun-subbar">
@@ -725,7 +717,7 @@ const Entertainment = {
       ${all.length ? heatmapSection : ''}
       ${insightSection}
       ${all.length ? archiveSection : ''}
-      ${xhsFab}
+      ${searchFab}
       ${this.fabHTML()}
       ${this.navHTML(t)}
     </div>`;
@@ -770,8 +762,8 @@ const Entertainment = {
       const entry = this._findEntry(el.dataset.fnentry); if (entry) this.recordDetail(entry);
     });
     root.querySelectorAll('[data-dtcover]').forEach(el => el.onclick = (e) => { e.stopPropagation(); const entry = this._findEntry(el.dataset.dtcover); if (entry) this.openDetail(entry.id); });
-    const xb = root.querySelector('[data-xhs]');
-    if (xb) xb.onclick = () => this.xhsModal();
+    const sb = root.querySelector('[data-fsearch]');
+    if (sb) sb.onclick = () => this.searchModal();
     const allLink = root.querySelector('[data-novel-all]');
     if (allLink) allLink.onclick = () => this.openMediaWall(this.activeType);
     // 足迹：连续 3 个月窗口，左右滑动按「季度」(±3 月) 切换（无药丸，纯滑动导航）
@@ -1402,42 +1394,80 @@ const Entertainment = {
     openModal(`<button class="close-x" onclick="closeModal()">×</button><h3>${date}${es.length > 1 ? ' · 共 ' + es.length + ' ' + _u : ''}</h3><div>${rows}</div>`);
     document.querySelectorAll('#ov [data-dayrec]').forEach(el => el.onclick = () => { const e = this._findEntry(el.dataset.dayrec); if (e) this.recordDetail(e); });
   },
-  /* ============ 小红书违禁词检测（仅小说页 · 右下角图标点开） ============ */
-  xhsFabHTML() {
-    return `<button class="fun-xhs-fab" data-xhs="1" title="小红书违禁词检测">${icon('search', 20)}</button>`;
+  /* ============ 小说搜索（仅小说页 · 右下角放大镜点开） ============ */
+  searchFabHTML() {
+    return `<button class="fun-search-fab" data-fsearch="1" title="搜索小说">${icon('search', 20)}</button>`;
   },
-  xhsModal() {
-    openModal(`<button class="close-x" onclick="closeModal()">×</button><h3>${icon('search', 18)} 小红书违禁词检测</h3>
-      <div class="muted" style="font-size:12px;margin-bottom:8px">发笔记前粘进来自查，命中词标红并给修改建议。重点覆盖 BL/小说分享最易误判的「色情低俗」「导流资源」两类。</div>
-      <textarea id="xhsInput" class="xhs-input" placeholder="把你要发的小红书笔记粘进来…"></textarea>
-      <button class="btn" id="xhsCheck" style="width:100%;margin-top:10px">检测一下</button>
-      <div id="xhsResult" style="margin-top:10px"></div>`);
-    const btn = document.getElementById('xhsCheck');
-    if (btn) btn.onclick = () => this.xhsCheck();
+  searchWorks(q) {
+    const key = (q || '').trim().toLowerCase();
+    const t = this.activeType || '小说';
+    const groups = Object.create(null);
+    this.all().filter(r => r.type === t).forEach(r => {
+      const name = (r.title || '').trim();
+      if (!name || (key && !name.toLowerCase().includes(key))) return;
+      (groups[name] || (groups[name] = [])).push(r);
+    });
+    return Object.keys(groups).map(name => {
+      const recs = groups[name];
+      const latest = recs.slice().sort((a, b) => b.date.localeCompare(a.date) || (b.createdAt || 0) - (a.createdAt || 0))[0];
+      return {
+        title: name,
+        cover: (recs.find(r => r.cover) || {}).cover || '',
+        count: recs.length,
+        totalMin: recs.reduce((s, r) => s + (Number(r.minutes) || 0), 0),
+        lastDate: latest.date,
+        lastEntry: latest,
+        id: latest.id
+      };
+    }).sort((a, b) => b.lastDate.localeCompare(a.lastDate));
   },
-  xhsCheck() {
-    const ta = document.getElementById('xhsInput');
-    if (!ta) return;
-    const text = ta.value;
-    const out = document.getElementById('xhsResult');
-    if (!text.trim()) { out.innerHTML = '<div class="empty">把笔记内容粘进来，点「检测一下」</div>'; return; }
-    const allWords = XHS_LIB.flatMap(g => g.w);
-    const escRe = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    const pat = allWords.slice().sort((a, b) => b.length - a.length).map(escRe).join('|');
-    const re = new RegExp('(' + pat + ')', 'gi');
-    const html = esc(text).replace(re, m => '<mark class="xhs-hit">' + m + '</mark>');
-    const hits = (text.match(new RegExp('(' + pat + ')', 'gi')) || []).length;
-    const groups = XHS_LIB.filter(g => g.w.some(w => text.toLowerCase().includes(w.toLowerCase()))).map(g => ({
-      c: g.c, a: g.a, words: g.w.filter(w => text.toLowerCase().includes(w.toLowerCase()))
-    }));
-    out.innerHTML = `<div class="banner ${hits ? 'warn' : 'info'}" style="margin-bottom:10px">${hits ? ('检测到 <b>' + hits + '</b> 处可能违规词，建议改完再发') : '未发现明显违禁词，但仍注意上下文与配图'}</div>
-      <div class="xhs-text">${html}</div>
-      ${groups.length ? groups.map(g => `<div class="xhs-group">
-        <div class="xhs-cat">${esc(g.c)}</div>
-        <div class="xhs-words">${g.words.map(w => '<span class="xhs-w">' + esc(w) + '</span>').join('')}</div>
-        <div class="xhs-advice">${esc(g.a)}</div>
-      </div>`).join('') : ''}
-      <div class="muted" style="font-size:11px;margin-top:10px">检测基于小红书常见违规词库（重点覆盖小说/BL 分享场景），仅供参考；平台用机器学习综合判定，最终以审核为准。</div>`;
+  searchModal() {
+    openModal(`<button class="close-x" onclick="closeModal()">×</button><h3>${icon('search', 18)} 搜索小说</h3>
+      <input id="funSearchInput" class="fun-search-input" type="text" placeholder="输入小说名称" autocomplete="off">
+      <div id="funSearchResult" class="fun-search-result"></div>`);
+    const inp = document.getElementById('funSearchInput');
+    if (!inp) return;
+    const draw = () => {
+      const out = document.getElementById('funSearchResult');
+      if (!out) return;
+      const q = inp.value.trim();
+      if (!q) { out.innerHTML = '<div class="empty">输入书名开始找</div>'; return; }
+      const list = this.searchWorks(q);
+      if (!list.length) { out.innerHTML = '<div class="empty">没找到这本小说</div>'; return; }
+      out.innerHTML = list.map((w, i) => {
+        const e = w.lastEntry;
+        const bits = [e.date.slice(5)];
+        if (e.minutes) bits.push(this.fmtMin(e.minutes));
+        if (e.progress) bits.push('看到 ' + e.progress);
+        if (e.status && e.status !== '在看') bits.push(e.status);
+        return `<div class="fun-search-row" data-fsw="${i}">
+          ${w.cover ? `<img class="fun-search-thumb" src="${esc(w.cover)}" alt="">` : `<div class="fun-search-ph">${esc(w.title.slice(0, 1))}</div>`}
+          <div class="fun-search-mid">
+            <div class="fun-search-name">${esc(w.title)}</div>
+            <div class="fun-search-meta">${w.count} 条记录 · ${this.fmtMin(w.totalMin) || '未记时长'} · 最近 ${esc(bits.join(' · '))}</div>
+          </div>
+          <span class="fun-search-arrow">›</span>
+        </div>`;
+      }).join('');
+      out.querySelectorAll('[data-fsw]').forEach(el => {
+        el.onclick = () => {
+          const w = list[Number(el.dataset.fsw)];
+          if (!w) return;
+          closeModal();
+          this.openDetail(w.id);
+        };
+      });
+    };
+    inp.oninput = draw;
+    inp.onkeydown = (e) => {
+      if (e.key !== 'Enter') return;
+      const list = this.searchWorks(inp.value.trim());
+      if (!list.length) return;
+      closeModal();
+      this.openDetail(list[0].id);
+    };
+    draw();
+    setTimeout(() => { try { inp.focus(); } catch (err) {} }, 50);
   },
   /* ============ 添加 / 编辑（打卡） ============ */
   editModal(ref, presetType, seed) {
