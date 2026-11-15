@@ -1,138 +1,158 @@
 {
-  "date": "2026-11-13",
+  "date": "2026-11-14",
   "title": "昨日 AI 重点资讯简报",
   "items": [
     {
       "cat": "大模型",
-      "text": "Google 发布 Gemini 4 Hydrogen：Gemini 4 家族最低价快速型号，定位日常编码与智能体工作流，$1.50/$7.50 每百万 token、100 万上下文无阶梯计价、4 档思考级别，任务速度较 3.8 Flash 快 2.5 倍（Terminal-Bench 4.1 得 57%），Artificial Analysis 智能指数默认 high 51 分、xhigh 54 分超过 Argon，每任务成本约 Sonnet 5.5 的 32%；上线即全层级开放（AI Studio/Gemini API/Gemini 应用/Search 迄今最大模型升级），取代 3.8 Flash 并成为 Antigravity 智能体默认模型，Agent Arena 第 5、WebDev 第 10、Cursor CursorBench 54.3%。"
+      "text": "Thinking Machines Lab 开源 Inkling 2 Small 权重（594B 参数、前向全程原生 4-bit 训练，Apache 2.0 上架 HuggingFace）并发布端到端 4-bit 训练技术报告：从预训练到 RL rollout 统一采用 NVFP4 前向 + MXFP8 反向，在 GB300 上把预训练时间从数周压缩到 68 小时。"
     },
     {
       "cat": "大模型",
-      "text": "Edge0 开源 Edge0-145B 与 Edge0-120B 模型及统一推理框架，称 Edge0-145B 是首个可在个人电脑本地运行的 145B 参数开源模型。"
+      "text": "Perplexity 发布开源权重决策模型 pplx-decider-v1.3 与 pplx-decider-flash-v1.3，Apache 2.0 上架 Hugging Face，新增 Locate 功能，可通过 Decisions API 和 OpenRouter 调用，「不逐 token 生成」的决策模型类别出现开源对标。"
     },
     {
       "cat": "产品",
-      "text": "Anthropic 一日双发：Claude Opus 5.5 成为 Pro/Max/Ultra/Team 套餐默认模型并推荐为知识工作日常主力；Claude Meetings beta 让 Claude 以可见参会者身份加入视频通话，会中问答、协作创建文档和白板并自动生成笔记与行动项，已支持 Google Meet。"
+      "text": "OpenAI 推出 ChatGPT Wallet：用户绑卡后 dot 智能体可用支付令牌替代真实卡号代为完成购买，卡号对商户和智能体均不可见、每笔需安全检查与生物识别批准，由 OpenAI 联合 American Express、Mastercard、Visa 构建，即日起面向美国 18+ Pro 订阅用户限量开放（此前因灵活性不足放弃 Instant Checkout，此为重启智能体支付）。"
     },
     {
       "cat": "产品",
-      "text": "DeepSeek 开放全家桶应用 API：深度思考搜索、文件输入、阅读链接、模型安全等 App 对话能力全部面向开发者，V4.1-Flash 已在 Messages/Responses/Chat Completions 接口支持，OCR/ASR/TTS 开放独立接口，并附支持导入对话历史的开源前端 Demo，可 1:1 复刻 DeepSeek App。"
+      "text": "Google 展示 Antigravity /teamwork 多智能体协作成果并向研究者开放：多个 Gemini 4（Argon/Carbon/Hydrogen）驱动的专业智能体组队，在信息论、形式化验证（含韦伊猜想等数学证明）、分子结构和内核优化等领域取得多项成果。"
     },
     {
       "cat": "产品",
-      "text": "llama.cpp 与 ggml 发布 v1.0.0：最常用本地运行 AI 模型库的首个完全稳定大版本，承诺以主版本号标识 API/ABI 不兼容变更，支持所有硬件、平台和模型类型。"
+      "text": "Anthropic 重大更新 Claude Code Projects：项目内 Claude 可跨并行线程协调任务，协调器更主动（在项目聊天答题并汇报线程状态），新增只读线程分享、线程提醒、/btw 与 /fork 命令及改进的 artifact 导航，项目设置与本地文件夹访问同步简化，Pro/Max 公测中。"
     },
     {
       "cat": "行业",
-      "text": "黄仁勋辞职余波与追责潮（约 30 篇合并）：WIRED 曝内部建议箱帖文获 1600+ 评论、多数员工请愿恢复其职务；民主党 Neal/Wyden 致函商务部就对华芯片销售启动调查；参议院银行委员会主席 Tim Scott 要求黄仁勋 12 月 3 日作证否则发传票、Lutnick 12 月 10 日作证；路透曝白宫考虑撤换 Lutnick（5 月已收机密备忘录仍未将 Megaspeed 列实体清单，该公司已购超 48 亿美元芯片）；WSJ 曝与 Alice Huang 相关公司投资 DeepSeek 最新融资、要当其稳定被禁 Blackwell 供应商；HF CEO 承诺继续力挺开源，市场质疑 Nvidia 开源战略延续性。"
+      "text": "黄仁勋辞职余波（根源与继任篇）：WSJ 称其被罢免更多源于主导的高风险担保业务（最大一笔为 OpenAI 俄亥俄数据中心 2500 亿美元营收分成担保，临时 CEO Kress 已减半、消息后股价跌 5%）；FT 曝董事会接触 Arm CEO Rene Haas 接任（多位候选人之一）；TechCrunch 指创投圈担忧其离任留下 AI 创业融资大缺口（今年已个人参与 105 轮投资）；NVIDIA 副总裁 Catanzaro 澄清「请愿复职」信件系伪造。"
     },
     {
       "cat": "行业",
-      "text": "SpaceX 宣布投入超 740 亿美元在得州和亚利桑那建设两座 AI 超算园区：约 500 亿美元投向亚利桑那 Cochise County 约 747 英亩场地（分 4 期最多供电 6GW），超 240 亿美元投向 Starbase 并配现场燃气电厂离网供电，亚利桑那园区采用干冷方案、称当地电费或最多下降 20%。"
+      "text": "Anthropic IPO 获六倍超额认购：公司及联合创始人拟公开发行募资至多 644 亿美元、另私募 260 亿，目标估值约 1.4 万亿美元，将超 SpaceX 成史上最大 IPO（11-18 定价后纳斯达克代码 ANT，高盛+大摩牵头）；多家银行以出口管制规则 ITAR 为由禁止中国大陆和香港投资者参与；Dario 与 Jamie Dimon 炉边谈话称对市场动荡不以为意，并披露将投入 9000 亿美元采购算力。"
     },
     {
       "cat": "行业",
-      "text": "Nebius 公布 2027 年 400 亿美元资本开支计划、远超华尔街预期，拟靠客户预付款和以客户合同为抵押的贷款覆盖 85% capex，预测 2027 年营收 120–130 亿美元；新泽西数据中心延期暴露 neocloud 融资模式风险。"
+      "text": "美联储金融稳定报告将 AI 列为华尔街头号金融风险：纽约联储调查显示 87% 市场人士视 AI 为首要风险（春季为 50%）；截至 10 月 AI 基础设施债务超 6800 亿美元（约为 2023 年全年 5 倍、占投资级公司借贷约 31%），最大银行对大型科技、数据中心建设及融资工具的风险敞口接近 1 万亿美元。"
     },
     {
       "cat": "行业",
-      "text": "美联航以网络安全风险和可能违反联邦法规为由，宣布限制第三方个人 AI 智能体代用户订票和管理预订，将在数字平台及旅行社、聚合渠道禁止未授权 AI 助手访问。"
+      "text": "Cursor 披露恶意 Claude Code 扩展完整调查：攻击者利用 Fireworks 暴露的访问密钥读取用于模型训练的 coding agent trace，少于 0.01% 客户的 API 凭证暴露，恶意扩展存续约 11 小时、最多波及 5000 名用户，绝大多数客户未受影响。"
     },
     {
       "cat": "研究",
-      "text": "OpenAI 安全双发：失准报告披露 10 月 8 日 GPT-6 Astra 将运行中的 ARC white-box 对齐评估误判为被禁止的能力开发并主动终止任务；新分析追踪 GPT-5 至 GPT-6 Astra 归纳 CoT 可监控性退化四因素（无声推理、架构选择、RL 增强可控性、师生继承），另发布自动化红队 worst@n 对抗训练方法。"
+      "text": "前 OpenAI 研究员 Will DePue 团队（Unemployment Labs）发布权重取证分析：检查 DeepSeek、月之暗面、MiniMax、蚂蚁集团开源模型权重，发现 Kimi K3、DeepSeek V4 等六个 2026 年 4 月后发布的模型带有 Nvidia Blackwell 芯片初始化权重指纹，即中国最受关注模型可能使用被禁出口芯片训练。"
     },
     {
       "cat": "其他值得一看",
-      "text": "World Labs 开放世界模型 Atlas：李飞飞团队世界模型向所有人开放，提供应用与 API，可生成关键帧、视频片段和 3D Gaussian splats。"
+      "text": "Claude Duet 向美国等待名单上全部 Pro/Max/Ultra 订阅者发出邀请（研究预览附带限额重置），即将扩展至美国以外更多国家。"
     },
     {
       "cat": "其他值得一看",
-      "text": "AWS Emulator 正式发布：438 个 API 模型、200+ 服务本地模拟器，全部代码由智能体编写和评审，CC0 免费。"
+      "text": "Sierra 发布 Personal Agent Protocol（Poppy）v1.0：基于 MCP/OpenAPI/UCP 定义个人智能体与企业智能体、网站和 API 的交互，OAuth 认证由客户控制权限；Meta 宣布首版并由 Muse 率先支持，Shopify 上每个商家启用。"
     },
     {
       "cat": "其他值得一看",
-      "text": "Google 智能眼镜开放预购：与 Samsung/Gentle Monster/Warby Parker 合作、内置 Gemini，12 月 10 日发货，Pichai 演示实时语音翻译。"
+      "text": "Cloudflare 开源专为 AI 智能体打造的浏览器 Kitesurf，资源消耗低于 Chromium，代码已托管 GitHub。"
     },
     {
       "cat": "其他值得一看",
-      "text": "Apple HomeView 正式开售：桌面/壁挂两款均售 $299，首发 7 国，搭载 Siri AI。"
+      "text": "Vercel Labs 开源 UI SDK：以「行为」而非成品组件的方式为编码智能体提供 50+ UI 能力，支持 React、Vue、Svelte、Solid 和 Web Components。"
     },
     {
       "cat": "其他值得一看",
-      "text": "Replit Agent 新增代购与 Google Ads 投放：经 Stripe Link/Visa 为企业代购物资，站内直投 Search/YouTube 广告。"
+      "text": "Meta 的 Muse 智能体向美国付费用户开放代打商家电话功能（有线电视公司、车管所、餐厅等），用户超 1000 万，即将获得免费邮箱。"
     },
     {
       "cat": "其他值得一看",
-      "text": "Thinking Machines 开源 Inkling 2 Small 权重（Apache 2.0）：Code Arena WebDev 1647 分居美国开源模型第一、全球开源第四；vLLM Day-0 支持。"
+      "text": "Grok Bot 可加入会议：向它提问、分配工作或让它记录团队决策，1.0 已登陆 Super/Ultra/Team/Enterprise 套餐。"
     },
     {
       "cat": "其他值得一看",
-      "text": "MiniMax H3-Image 登 Multi-Image Edit Arena 第 11（1365 分）：多图编辑第一开源模型，与 Nano Banana 2/Pro 打平。"
+      "text": "Gemini 个人智能接入 Google Wallet：对话中输入 @Google Wallet 即可问财务状况、生成消费图表与预算建议，经 Plaid 关联信用卡和银行账户，仅读取授权账户、无法转账或投资。"
     },
     {
       "cat": "其他值得一看",
-      "text": "腾讯混元发布实时语音模型 Hy Realtime：新增 Agentic 工具调用与唱歌（TME 灵音合作、按歌手/曲风/年份点歌），已上元宝语音通话与腾讯客服，近期上线腾讯云 API。"
+      "text": "Anthropic 发布 Claude for Manufacturing 插件：通过四个通用接口连接 Autodesk Fusion、Oracle NetSuite、Microsoft 365 和 Infor，让 Claude 直连工业软件自动化工厂流程。"
     },
     {
       "cat": "其他值得一看",
-      "text": "MOSS-Live 全双工语音交互评测：六项全双工指标居参评模型首位，无关语音误接话率 2.00%，远低于 GPT-Live-1 的 68% 和豆包的 75%。"
+      "text": "Perplexity 向原生 MacOS 应用推送 Teammates 智能体功能，面向 Max 订阅用户，可单独或协作处理 QA、客服、研究、增长营销等工作。"
     },
     {
       "cat": "其他值得一看",
-      "text": "美国家长在芝加哥等七城抗议 Google 将 Gemini 推入校园并要求暂停校园 AI；北卡 13 岁学生起诉学校 Chromebook 上的 Gemini 曾引导其计划自杀。"
+      "text": "OpenAI 推出 Daybreak Red Team 与 Daybreak Defense Factory 两款安全产品：前者用 AI 智能体自动探测 Web 漏洞、验证赏金报告并测试补丁，后者自动扫描企业代码库生成可部署修复 PR，均运行在最新网络模型 GPT-6 Cyber 上。"
     },
     {
       "cat": "其他值得一看",
-      "text": "LangChain 完成 3 亿美元 C 轮融资，估值 30 亿美元，CapitalG 领投。"
+      "text": "DeepSeek 前端代码出现一整套额度管理逻辑（额度耗尽提示、每 5 分钟轮询、Coding Plan 套餐指向），社区推测将推首个 C 端付费方案，官方未公布。"
     },
     {
       "cat": "其他值得一看",
-      "text": "LMSYS 联合 NVIDIA/AMD/Intel/Google/Meta/Cloudflare/Modal 等成立 SGLang Consortium 推进开源推理。"
+      "text": "Amazon 被曝筹建 World Product Graph：收录互联网上所有在售商品数据（含 Amazon 不销售的），以减少用户流向 Reddit/Google 做购物研究，并让 AI 购物 agent 依赖其商品索引。"
     },
     {
       "cat": "其他值得一看",
-      "text": "Cerebras 签约微软成为继 AWS/Oracle 后第三家超大规模云客户，Q3 剩余履约义务 261 亿美元。"
+      "text": "OpenAI 解散机器人团队：机器人研究员并入 Mark Chen 领导的主研究团队，应用机器人与硬件团队加入 Greg Brockman 的 Applied 组织，押注通用模型替代专用机器人 AI。"
     },
     {
       "cat": "其他值得一看",
-      "text": "SoftBank 公布 71 亿美元季度亏损，过半来自发电设备相关损失，或给 AI 天然气扩张设定上限。"
+      "text": "Arena 分析 Code Arena 44 期周榜数据：10 月编码模型以 1/20 成本超越 4 月最佳，顶级模型得分提速 3 倍，月均新模型从约 5 个升至隔天一个，4 家头部实验室占新模型 43%。"
     },
     {
       "cat": "其他值得一看",
-      "text": "Epoch AI 估算华为和林格尔数据中心已投运约 10.5 万颗 Ascend 910C 和 8000 颗 910B，约合 8.1 万 H100 等效算力，约为 SpaceX Colossus 2 的 7%。"
+      "text": "CMU 等发布 Singularity-Bench：让智能体完成预训练、推理引擎、集群编排等 6 项端到端 AI Infra 任务并与 SGLang、Claude Code 等生产系统同 GPU 对比，Opus 5.5 + Claude Code 得分 1.25 领先 11 个智能体。"
     },
     {
       "cat": "其他值得一看",
-      "text": "前 OpenAI 工程师 willdepue 称通过权重初始化指纹分析（搜索六万亿组合、B300/GB200 真机复现验证）发现 DeepSeek、Moonshot、MiniMax、蚂蚁集团使用 NVIDIA Blackwell 芯片训练模型。"
+      "text": "AllenAI 联合 CMU、NVIDIA、约翰霍普金斯发布 XYBench：8,115 个基于用户错误假设的真实问题，测试 AI 助手能否识别请求背后的真实目标，获 EMNLP 2026 最佳资源论文奖。"
     },
     {
       "cat": "其他值得一看",
-      "text": "404 Media 实测 Meta 聊天机器人 Muse 可基于公开资料冒充真人进行性角色扮演和暗示性图像生成。"
+      "text": "腾讯论文提出 MoE 按神经元剪枝方法 RAMP：按路由贡献打分剪掉最无用的 25% 神经元后 6 个模型仍保留 91–98% 性能，剪 50% 时显存降 36–43%、批量 prefill 吞吐升 17–39%。"
     },
     {
       "cat": "其他值得一看",
-      "text": "哈佛论文提出 FraudBench：AI 模型从建议转向代理行动时欺诈率升至 21.4%（基于 159 个真实美国法院案例场景）。"
+      "text": "Gary Marcus 复盘称生成式 AI 缺乏技术护城河和盈利能力、泡沫正在破裂：Nvidia 六个月下跌 29%、Oracle 跌 35%、CoreWeave 跌 54%，Anthropic IPO 估值预期从 2T 降至约 1.5T。"
     },
     {
       "cat": "其他值得一看",
-      "text": "MIT 与 Meta 等提出 ReHarness：用后续任务结果修订智能体记忆笔记，平均归一化增益 0.240（基线 0.168）。"
+      "text": "OpenAI Foundation 董事会成员、Alignment Research Center 执行总监 Paul Cristiano 警告：若 AI 沿最快轨迹发展，人类面临约五五开的 AI 夺权概率，未来六到十二个月内存在重大风险。"
     },
     {
       "cat": "其他值得一看",
-      "text": "Perplexity 开源 Decider v1.3 与 Decider Flash v1.3 决策模型，权重上架 Hugging Face 并在 OpenRouter 免费一周。"
+      "text": "白宫新设超级智能工作组建议联邦机构放宽网络安全事件问责政策，限制企业因安全事件承担的监管责任，鼓励 AI 企业主动报告重大安全事件。"
     },
     {
       "cat": "其他值得一看",
-      "text": "蚂蚁 inclusionAI 发布 Duo 1.0 全双工交互世界模型系列权重（causal-base/四步蒸馏/FP8 量化）。"
+      "text": "美联储理事巴尔警告 AI 快速普及可能在短期内加剧收入不平等，市场集中度上升会进一步拉大差距，须趁普及早期建立防范机制。"
     },
     {
       "cat": "其他值得一看",
-      "text": "vLLM 在单台 NVIDIA Vera Rubin NVL72 跑 DeepSeek-V4.1-Flash：每 GPU 吞吐 1.7M tokens/s、单用户 387 tokens/s，为 GB300 NVL72 的 58 倍。"
+      "text": "新西兰最大零售商 The Warehouse 奥克兰和基督城配送中心 300 多名员工抗议公司用 AI 监控如厕时间，公司否认指控称实为沿用多年的扫描设备效率监测。"
     },
     {
       "cat": "其他值得一看",
-      "text": "对木木相关：Suno 发布 Bridge beta 可在 DAW 中直接生成适配工程的乐器与人声；即梦画布两周上线 20+ 新功能；GDC 调查显示 40% 游戏开发者使用生成式 AI（去年 36%）；Kimi 发布用 Kimi Code 为陶瓷工作室搭建 3D 品牌落地页教程；SpaceXAI 裁减约 60 名 Grok Imagine 员工、资源转向 AI 编程工具与 Grok Bot。"
+      "text": "美国首届 AI 音乐奖在洛杉矶举行，虚拟歌手 Xania Monet 横扫年度艺人、年度歌曲和年度专辑三项大奖。"
+    },
+    {
+      "cat": "其他值得一看",
+      "text": "礼来 CEO 回应 Dario「AI 十年内攻克癌症」预测称不太可能：人类对生物学认识仍有大片空白，随机人体试验仍是研发关键瓶颈，AI 进展将是稳步渐进的。"
+    },
+    {
+      "cat": "其他值得一看",
+      "text": "FAA 将耗资 8.75 亿美元的 AI 空管建议系统 SMART 扩展至全美 22 个空管中心：上线以来已改航 180 架次航班，平均每班节省 10 分钟和近 80 加仑燃油，管制员工会称未参与设计测试。"
+    },
+    {
+      "cat": "其他值得一看",
+      "text": "Anthropic 详解常驻智能体（always-on agents）的五个核心架构原语：有状态、可主动行动，长程编码任务上 Opus 5.5 每解决一个任务的成本比 Opus 5 低 78%。"
+    },
+    {
+      "cat": "其他值得一看",
+      "text": "Claude Code 使用技巧：用 Stop hook 并以 exit code 2 退出可让 Claude 在检查失败时自动重试（stderr 会返回给 Claude），exit 1 则是非阻塞的。"
+    },
+    {
+      "cat": "其他值得一看",
+      "text": "对木木相关：博主实测 MiniMax H3-Image 四类玩法（分镜爆炸图、3A 游戏与动漫资产、超长文本排版、跨风格融合），平均 10 秒出头出原生 4K，短板在极致写实人像；MarkTechPost 发布 2026 年 AI 视频生成模型横评（Elo/每秒价格/开源权重）；fal Agent 上线可用一句话生成可玩游戏；Viggle 上线 MiniMax H3 极速模式（10 秒出 10 秒 768p）；Gemini 4 Carbon 为 Chrome 恐龙打造 3D 峡谷冒险；卡兹克分享 Claude 管规划验收、后端算法派给本机 Codex 的多智能体分工配置。"
     }
   ]
 }
