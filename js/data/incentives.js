@@ -1,8 +1,5 @@
-// 游戏创作激励数据 —— 由枝枝每日自动搜索更新，禁止编造
-// 说明：已过滤各平台「长期招创作者」类常年招募计划（你已是多数平台创作者），
-// 仅保留有明确截止时间的创作活动，并按紧急度 + 覆盖平台数排序。
 window.MUMU_INCENTIVES = {
-  "updated": "2026-11-14 14:04",
+  "updated": "2026-11-15 14:05",
   "note": "以下活动均来自公开可验证的官方渠道，投稿前请点开来源链接二次确认规则与截止时间。已自动隐藏各平台「长期招创作者」计划，只呈现有明确截止的活动；标「今日/明天截止」的请抓紧最后投稿，标「已截止」的雷达不再收录、仅留底档。",
   "platforms": [
     {
@@ -49,6 +46,18 @@ window.MUMU_INCENTIVES = {
     }
   ],
   "campaigns": [
+    {
+      "game": "三角洲行动",
+      "title": "《三角洲行动》「微光成炬」创作征集活动 好游快爆（京东卡+精美周边）",
+      "platforms": [
+        "好游快爆"
+      ],
+      "reward": "投稿《三角洲行动》微光赛季相关内容赢取京东卡好礼及精美周边好礼（按投稿评级获得创作额度等奖励，详见好游快爆创作中心）",
+      "deadline": "2026-12-06",
+      "period": "2026-11-05 10:00 ~ 12-06 23:59（微光赛季「微光成炬」创作征集）",
+      "require": "在好游快爆《三角洲行动》论坛发布原创图文/视频/专栏/同人投稿，标题前加 #微光成炬# 活动关键词并通过审核（详见好游快爆创作中心）",
+      "source": "https://bbs.3839.com/forum-38263-all.htm"
+    },
     {
       "game": "和平精英",
       "title": "《和平精英》「雪战冬日」创作激励计划 B站（瓜分55万奖金）",
@@ -1332,18 +1341,6 @@ window.MUMU_INCENTIVES = {
       "source": "https://www.1zhengji.com/a/4r39jev.html"
     },
     {
-      "game": "植物大战僵尸2",
-      "title": "《植物大战僵尸2》月球基地激励计划 B站（游戏区创作激励）",
-      "platforms": [
-        "哔哩哔哩"
-      ],
-      "reward": "游戏区创作激励（具体档位见B站有奖活动页，月球基地版本新启）",
-      "deadline": "2026-10-31",
-      "period": "2026-09-01 ~ 10-31",
-      "require": "在B站投稿《植物大战僵尸2》相关原创视频，带对应活动话题参与（详见B站有奖活动页）",
-      "source": "https://member.bilibili.com/york/hot-activity"
-    },
-    {
       "game": "和平精英",
       "title": "《和平精英》「激战金秋」创作激励活动 B站（新版本）",
       "platforms": [
@@ -1353,18 +1350,6 @@ window.MUMU_INCENTIVES = {
       "deadline": "2026-11-09",
       "period": "2026-09-02 ~ 11-09",
       "require": "在B站投稿《和平精英》「激战金秋」相关原创视频，带对应活动话题参与（详见B站有奖活动页）",
-      "source": "https://member.bilibili.com/york/hot-activity"
-    },
-    {
-      "game": "我的世界",
-      "title": "《我的世界》方块制片局企划 第2期 B站内容征集（万元奖池）",
-      "platforms": [
-        "哔哩哔哩"
-      ],
-      "reward": "万元奖池（B站游戏区创作激励，具体档位见活动页）；围绕《我的世界》的原创视频投稿",
-      "deadline": "2026-10-31",
-      "period": "2026-09-04 ~ 10-31",
-      "require": "在B站投稿《我的世界》相关原创视频，带对应活动话题参与（详见B站有奖活动页）",
       "source": "https://member.bilibili.com/york/hot-activity"
     },
     {
@@ -1389,30 +1374,6 @@ window.MUMU_INCENTIVES = {
       "deadline": "2026-11-04",
       "period": "2026-09-10 ~ 11-04",
       "require": "在B站投稿《洛克王国：世界》相关原创视频，带对应活动话题参与（详见B站有奖活动页）",
-      "source": "https://member.bilibili.com/york/hot-activity"
-    },
-    {
-      "game": "地下城与勇士",
-      "title": "《DNF》米歇尔版本创作者激励计划 B站",
-      "platforms": [
-        "哔哩哔哩"
-      ],
-      "reward": "创作者激励（具体档位见B站有奖活动页；米歇尔版本新启）",
-      "deadline": "2026-10-31",
-      "period": "2026-09-10 ~ 10-31",
-      "require": "在B站投稿《地下城与勇士》米歇尔版本相关原创视频，带对应活动话题参与（详见B站有奖活动页）",
-      "source": "https://member.bilibili.com/york/hot-activity"
-    },
-    {
-      "game": "金铲铲之战",
-      "title": "《金铲铲之战》「铲铲兴趣班」创作者激励计划 B站（百万奖金）",
-      "platforms": [
-        "哔哩哔哩"
-      ],
-      "reward": "百万奖金奖池（金铲铲小小英雄等，B站游戏区创作激励，具体档位见活动页）",
-      "deadline": "2026-10-31",
-      "period": "2026-09-10 ~ 10-31",
-      "require": "在B站投稿《金铲铲之战》相关原创视频，带对应活动话题参与（详见B站有奖活动页）",
       "source": "https://member.bilibili.com/york/hot-activity"
     }
   ]
