@@ -1,5 +1,5 @@
 /* ============ 首页 + 导航 ============ */
-window.APP_VER = 'mumu-v449'; // 当前前端版本（设置页可见，用于确认是否加载到最新代码）
+window.APP_VER = 'mumu-v450'; // 当前前端版本（设置页可见，用于确认是否加载到最新代码）
 const SR_LINKS = [
   { v: 'sport', n: '运动（任意跟练）' },
   { v: 'sport:', n: '运动（具体项目，选后填名）' },
@@ -29,33 +29,124 @@ const SR_DEFA = [
   { name: '创作产出', mode: 'output', link: 'work', goal: 365, start: '2026-07-13' }
 ];
 window.SR_DEFA = SR_DEFA;
+/* 每日金句库（v450 扩容至 75 条，按风格分类；温柔不鸡血，贴合木木） */
 const DAILY_QUOTES = [
+  // —— 行动 · 先动起来 ——
   '行动是治愈焦虑的良药。',
-  '每天进步一点点，坚持带来大改变。',
   '先完成，再完美。',
-  '今天的努力，是明天的实力。',
-  '不积跬步，无以至千里。',
-  '专注当下，未来自来。',
-  '自律即自由。',
-  '你比自己想象的更强大。',
   '开始吧，最好的时机就是现在。',
-  '慢一点没关系，别停下。',
   '把想做的事，变成在做的事。',
-  '每一个平凡的日子，都在闪闪发光。',
-  '坚持下去，时间会给你答案。',
+  '慢一点没关系，别停下。',
   '不怕慢，就怕站。',
-  '你的未来藏在现在的努力里。',
   '少一点比较，多一点行动。',
-  '生活明朗，万物可爱。',
-  '心怀希望，步履不停。',
   '做三四月的事，八九月自有答案。',
-  '愿每一天都值得被记录。'
+  '今天的努力，是明天的实力。',
+  '每一步都算数，哪怕很小。',
+  '先走一小步，路会自己展开。',
+  '做一点，就比空想多一点。',
+  '别等准备好，边做边准备。',
+  '把大日子，拆成今天能做的事。',
+  '去做，答案会在路上出现。',
+  // —— 成长 · 慢慢来 ——
+  '每天进步一点点，坚持带来大改变。',
+  '不积跬步，无以至千里。',
+  '你比自己想象的更强大。',
+  '坚持下去，时间会给你答案。',
+  '你的未来藏在现在的努力里。',
+  '成长是悄悄发生的，别急。',
+  '今天的自己，比昨天多懂一点就好。',
+  '每一次练习，都在悄悄铺路。',
+  '不必耀眼，只要一直在长。',
+  '和昨天的自己比，就很好。',
+  '允许自己慢慢变好。',
+  '积累的日子，终会连成线。',
+  '你正在成为你想成为的人。',
+  '进步不一定轰轰烈烈。',
+  '回头看时，你会发现走了很远。',
+  // —— 温柔日常 · 好好生活 ——
+  '专注当下，未来自来。',
+  '生活明朗，万物可爱。',
+  '每一个平凡的日子，都在闪闪发光。',
+  '愿每一天都值得被记录。',
+  '心怀希望，步履不停。',
+  '好好吃饭，好好睡觉，好好过今天。',
+  '今天也要好好照顾自己。',
+  '把日子过成自己喜欢的样子。',
+  '平凡的一天，也值得被温柔对待。',
+  '窗外的天气，和心情都慢慢放晴。',
+  '给自己留一点发呆的时间。',
+  '累的时候就歇一歇，不耽误赶路。',
+  '认真生活的人，运气都不会太差。',
+  '今天的小确幸，值得记一笔。',
+  '世界有点吵，按自己的节奏就好。',
+  // —— 创作 · 把想法写出来 ——
+  '写下来，想法才真正属于你。',
+  '灵感偏爱一直在写的人。',
+  '作品是时间的礼物，慢慢打磨。',
+  '先写粗糙的初稿，再谈完美。',
+  '每一个字，都在搭建你的世界。',
+  '允许自己写得不好，然后继续写。',
+  '故事藏在坚持记录的日常里。',
+  '完成比完美更接近答案。',
+  '今天的碎碎念，也许是明天的故事。',
+  '把脑子里的光，写进文字里。',
+  '创作是和自己对话的方式。',
+  '不必急着发表，先忠实于表达。',
+  '写下去，脉络会自己浮现。',
+  '你写下的，都是独一无二的世界。',
+  '保持好奇，保持表达。',
+  // —— 自律 · 温和地坚持 ——
+  '自律即自由。',
+  '把习惯交给日常，别交给意志力。',
+  '规律不是束缚，是给自己托底。',
+  '今天的坚持，是明天的从容。',
+  '按计划走一点，心就安一点。',
+  '小小的一致性，胜过偶尔的用力。',
+  '打卡不是任务，是给自己的见证。',
+  '对自己温柔，也对自己守信。',
+  '把重要的事，放在固定的时间。',
+  '坚持不是咬牙，是重复到自然。',
+  '你不需要每天满格，只要不断线。',
+  '慢慢来，比较快。',
+  '把节奏握在自己手里。',
+  '今天做到六十分，也很好。',
+  '日复一日，自有力量。'
 ];
-function getDailyQuote() {
-  const d = todayStr();
+/* v450 金句状态：localStorage 存 {d:YYYY-MM-DD, i:索引, recent:最近10个索引}；同日固定、跨天不重样 */
+const QUOTE_KEY = 'mumu_quoteState';
+let _quoteMem = null; // localStorage 不可用时的内存兜底，保证同日仍固定
+function readQuoteState() {
+  try {
+    const o = JSON.parse(localStorage.getItem(QUOTE_KEY) || 'null');
+    if (o && typeof o.i === 'number' && o.i >= 0 && o.i < DAILY_QUOTES.length && Array.isArray(o.recent)) {
+      return {
+        d: o.d || '',
+        i: o.i,
+        recent: o.recent.filter(x => typeof x === 'number' && x >= 0 && x < DAILY_QUOTES.length).slice(-10)
+      };
+    }
+  } catch (e) {}
+  return _quoteMem || { d: '', i: 0, recent: [] };
+}
+function writeQuoteState(st) {
+  _quoteMem = st;
+  try { localStorage.setItem(QUOTE_KEY, JSON.stringify(st)); } catch (e) {}
+}
+function quoteDaySeed(d) {
   let h = 0;
   for (let i = 0; i < d.length; i++) h = ((h * 31) + d.charCodeAt(i)) >>> 0;
-  return DAILY_QUOTES[h % DAILY_QUOTES.length];
+  return h;
+}
+function getDailyQuote() {
+  const d = todayStr();
+  const st = readQuoteState();
+  if (st.d === d && st.i >= 0 && st.i < DAILY_QUOTES.length) return DAILY_QUOTES[st.i];
+  const all = DAILY_QUOTES.map((_, i) => i);
+  const cand = all.filter(i => st.recent.indexOf(i) < 0);
+  const pool = cand.length ? cand : all;
+  const i = pool[quoteDaySeed(d) % pool.length];
+  writeQuoteState({ d: d, i: i, recent: st.recent.concat(i).slice(-10) });
+  return DAILY_QUOTES[i];
 }
 function greetingWord() {
   const h = new Date().getHours();
@@ -163,7 +254,7 @@ const Home = {
           </div>
         `).join('')}
       </div>
-      <div class="card"><h3 id="cdHead" style="cursor:pointer;display:flex;justify-content:space-between;align-items:center;-webkit-tap-highlight-color:transparent">${icon('clock',18)} 倒计时看板 <span class="muted" style="font-weight:400" id="cdChev">▾</span></h3>
+      <div class="card cd-panel"><h3 id="cdHead" style="cursor:pointer;display:flex;justify-content:space-between;align-items:center;-webkit-tap-highlight-color:transparent">${icon('clock',18)} 倒计时看板 <span class="muted" style="font-weight:400" id="cdChev">▾</span></h3>
         <div id="cdBody">
         ${visible.slice(0, 6).map(c => `<div class="list-row"><span style="flex:1">${esc(c.n)}</span><span class="tag ${c.l <= 7 ? 'red' : c.l <= 30 ? 'amber' : 'green'}">${c.l === 0 ? '就是今天!' : '剩 ' + c.l + ' 天'}</span><button class="del" data-cdel="${esc(c.key)}" title="从看板隐藏">✕</button></div>`).join('') || '<div class="empty">暂无临近事项。去工作/考编板块建立计划后，这里会自动汇总。</div>'}
         ${hidden.length ? `<div class="muted" style="margin-top:8px;cursor:pointer" id="cdRestore">已隐藏 ${hidden.length} 项 · 点击恢复 ↺</div>` : ''}
@@ -343,9 +434,39 @@ const App = {
     'briefing': '每日简报',
   },
   cur: 'home',
+  // v450 全局底部 Tab：仅这 5 个主板块显示底栏，其余页面由 body.bottomnav-on 控制隐藏
+  tabKeys: ['home','daily','work','kaogong','growth'],
+  tabMeta: [
+    { key:'home', icon:'home', label:'首页' },
+    { key:'daily', icon:'calendar', label:'计划' },
+    { key:'work', icon:'creation', label:'创作' },
+    { key:'kaogong', icon:'book', label:'备考' },
+    { key:'growth', icon:'sprout', label:'成长' }
+  ],
+  renderBottomNav() {
+    const nav = document.getElementById('bottomNav');
+    if (!nav) return;
+    nav.innerHTML = this.tabMeta.map(t =>
+      `<button class="bn-item" data-key="${t.key}"><span class="ic">${icon(t.icon,20)}</span><span class="txt">${t.label}</span></button>`
+    ).join('');
+    nav.querySelectorAll('.bn-item').forEach(b => { b.onclick = () => App.go(b.dataset.key); });
+  },
+  nextQuote() {
+    const d = todayStr();
+    const st = readQuoteState();
+    let cand = DAILY_QUOTES.map((_, i) => i).filter(i => st.recent.indexOf(i) < 0 && i !== st.i);
+    if (!cand.length) cand = DAILY_QUOTES.map((_, i) => i).filter(i => i !== st.i);
+    if (!cand.length) return;
+    const i = cand[Math.floor(Math.random() * cand.length)];
+    writeQuoteState({ d: d, i: i, recent: st.recent.concat(i).slice(-10) });
+    this.updateQuote();
+  },
   updateQuote() {
     const el = document.getElementById('topbarQuote');
-    if (el) el.textContent = getDailyQuote();
+    if (el) {
+      el.textContent = getDailyQuote();
+      el.onclick = () => this.nextQuote();
+    }
   },
   toggleSidebar(open) {
     const sb = document.getElementById('sidebar');
@@ -366,6 +487,11 @@ const App = {
     document.querySelectorAll('#nav .nav-branch-item').forEach(n => n.classList.remove('active'));
     const mainNav = document.querySelector('#nav .nav-item[data-key="' + base + '"]');
     if (mainNav) mainNav.classList.add('active');
+    // v450 全局底栏高亮 + 可见性（仅 5 个主 tab 页显示，避免与娱乐 .fun-nav / 复盘 .rv-nav 冲突）
+    document.querySelectorAll('#bottomNav .bn-item').forEach(b => b.classList.remove('on'));
+    const bn = document.querySelector('#bottomNav .bn-item[data-key="' + base + '"]');
+    if (bn) bn.classList.add('on');
+    document.body.classList.toggle('bottomnav-on', this.tabKeys.indexOf(base) >= 0);
     if (base !== key) {
       const br = document.querySelector('#nav .nav-branch-item[data-key="' + key + '"]');
       if (br) br.classList.add('active');
@@ -724,6 +850,7 @@ const App = {
     // 每日金句
     this.updateQuote();
     this._bindEdgeBack();
+    this.renderBottomNav();
     this.go('home');
     if (window.__mumuAppReady) window.__mumuAppReady();
     } catch (e) {
