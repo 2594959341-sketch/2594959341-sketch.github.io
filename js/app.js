@@ -1,5 +1,5 @@
 /* ============ 首页 + 导航 ============ */
-window.APP_VER = 'mumu-v448'; // 当前前端版本（设置页可见，用于确认是否加载到最新代码）
+window.APP_VER = 'mumu-v449'; // 当前前端版本（设置页可见，用于确认是否加载到最新代码）
 const SR_LINKS = [
   { v: 'sport', n: '运动（任意跟练）' },
   { v: 'sport:', n: '运动（具体项目，选后填名）' },
@@ -509,6 +509,16 @@ const App = {
           </div>
         </div>
         <div class="setting-row">
+          <div><div class="setting-label">🎨 配色</div><div class="setting-desc" style="font-size:11px">四套治愈配色随时切换，黑白灰是专注模式；一键换一换随机换</div></div>
+          <div class="setting-actions" id="paletteOpts" style="display:flex;gap:8px;flex-wrap:wrap">
+            <button class="btn sm ghost palette-opt" data-p="mono"><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#111111;margin-right:5px"></span>黑白灰</button>
+            <button class="btn sm ghost palette-opt" data-p="cream"><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#C97B5A;margin-right:5px"></span>奶油手账</button>
+            <button class="btn sm ghost palette-opt" data-p="mist"><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#6E8FA8;margin-right:5px"></span>雾霾蓝</button>
+            <button class="btn sm ghost palette-opt" data-p="sage"><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#7C9B6B;margin-right:5px"></span>鼠尾草绿</button>
+            <button class="btn sm" id="btnPaletteShuffle">🎲 换一换</button>
+          </div>
+        </div>
+        <div class="setting-row">
           <div><div class="setting-label">版本 / 检查更新</div><div class="setting-desc" style="font-size:11px">当前前端版本：<b id="appVer">检测中…</b>。若导入仍异常，点「检查更新」强制拉取最新代码后重试</div></div>
           <div class="setting-actions"><button class="btn sm" id="btnCheckUpdate">检查更新</button></div>
         </div>
@@ -614,6 +624,35 @@ const App = {
         setTimeout(() => location.reload(), 450);
       };
     });
+    // v449 配色主题：即时换肤不刷新（与 cat/zhiya 形象切换的 reload 不同）
+    const drawPaletteOpts = () => {
+      const curP = window.MUMU_PALETTE || 'mono';
+      root.querySelectorAll('#paletteOpts .palette-opt').forEach(b => {
+        const on = b.dataset.p === curP;
+        b.style.borderColor = on ? '#111' : '';
+        b.style.color = on ? '#111' : '';
+        b.style.fontWeight = on ? '600' : '';
+      });
+    };
+    drawPaletteOpts();
+    root.querySelectorAll('#paletteOpts .palette-opt').forEach(b => {
+      b.onclick = () => {
+        if (window.applyPalette) window.applyPalette(b.dataset.p);
+        drawPaletteOpts();
+        const hit = (window.MUMU_PALETTE_LIST || []).find(x => x.id === b.dataset.p);
+        toast('已换上「' + (hit ? hit.label : b.dataset.p) + '」配色');
+      };
+    });
+    const btnPaletteShuffle = root.querySelector('#btnPaletteShuffle');
+    if (btnPaletteShuffle) btnPaletteShuffle.onclick = () => {
+      const ids = (window.MUMU_PALETTE_LIST || []).map(x => x.id);
+      const curP = window.MUMU_PALETTE || 'mono';
+      const others = ids.filter(x => x !== curP);   // 从「另三套」里随机，不会停在原价
+      const pick = others[Math.floor(Math.random() * others.length)] || 'mono';
+      if (window.applyPalette) window.applyPalette(pick);
+      drawPaletteOpts();
+      toast('换了套颜色，看看喜不喜欢～');
+    };
     const btnSickLeave = root.querySelector('#btnSickLeave');
     if (btnSickLeave) btnSickLeave.onclick = () => { if (window.openSickLeaveDialog) openSickLeaveDialog(root); };
     const btnMensLeave = root.querySelector('#btnMensLeave');
@@ -629,6 +668,7 @@ const App = {
     if (window.Daily && Daily.fixWorkVideoType) Daily.fixWorkVideoType();
     if (window.Daily && Daily.reconcileReadingPlans) Daily.reconcileReadingPlans();
     if (window.Daily && Daily.reconcileAllOrphans) Daily.reconcileAllOrphans(); // 清理各专栏已删但每日计划残留的孤儿任务
+    if (window.Daily && Daily.healRestDaySparks) Daily.healRestDaySparks(); // v449：历史「今日休息」漏写 rest 的补火（幂等）
     if (window.menstrualReconcile) menstrualReconcile(); // 月经假对账：给历史月经假日补休息标、清理与其他休息的重叠
     migrateNovelsV188(); // 一次性把阅读里的娱乐小说迁到娱乐专栏（阅读今后只放知识/严肃阅读）
     if (typeof migrateKgSubjects === 'function') { try { migrateKgSubjects(); } catch (e) {} } // 备考科目归一：行测言语→言语（一次性，幂等）

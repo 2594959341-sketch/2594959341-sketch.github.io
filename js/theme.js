@@ -7,8 +7,8 @@
  */
 (function () {
   var THEMES = {
-    cat:   { dir: 'png',   ver: 'mumu-v448' },
-    zhiya: { dir: 'zhiya', ver: 'mumu-v448' }
+    cat:   { dir: 'png',   ver: 'mumu-v449' },
+    zhiya: { dir: 'zhiya', ver: 'mumu-v449' }
   };
   var KEY = 'mumu_theme';
   var raw = localStorage.getItem(KEY);
@@ -52,4 +52,35 @@
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', applyChrome);
   else applyChrome();
+  // ===== v449 配色主题：四套治愈配色 + 黑白灰专注模式 =====
+  // 与 cat/zhiya 形象主题并存；palette 只切 body.theme-*，即时生效不刷新。
+  var PK = 'mumu_palette';
+  var PAL = [
+    { id: 'mono',   label: '黑白灰·专注' },
+    { id: 'cream',  label: '奶油手账' },
+    { id: 'mist',   label: '雾霾蓝' },
+    { id: 'sage',   label: '鼠尾草绿' }
+  ];
+  var VALID_P = PAL.map(function (x) { return x.id; });
+  function readPalette() {
+    var v = null;
+    try { v = localStorage.getItem(PK); } catch (e) {}
+    return VALID_P.indexOf(v) >= 0 ? v : 'mono';
+  }
+  window.MUMU_PALETTE_LIST = PAL;
+  window.MUMU_PALETTE = readPalette();
+  window.applyPalette = function (p) {
+    if (p === undefined || p === null || p === '') p = window.MUMU_PALETTE;
+    if (VALID_P.indexOf(p) < 0) p = 'mono';   // 非法值回退 mono（黑白灰·专注）
+    var b = document.body;
+    if (b && b.classList) {
+      VALID_P.forEach(function (id) { b.classList.remove('theme-' + id); });
+      b.classList.add('theme-' + p);
+    }
+    window.MUMU_PALETTE = p;
+    try { localStorage.setItem(PK, p); } catch (e) {}
+  };
+  function applyPaletteBoot() { window.applyPalette(readPalette()); }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', applyPaletteBoot);
+  else applyPaletteBoot();
 })();

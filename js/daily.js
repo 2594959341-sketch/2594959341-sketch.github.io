@@ -1641,22 +1641,10 @@ const Daily = {
   _restTargetItems(t) {
     const St = window.Streak; if (!St || !St.data) return [];
     const items = St.data().items || [];
-    if (t.cat === 'sport') {
-      const ref = (t.link && t.link.split(':')[1]) || (t.extra && t.extra.project) || (t.title || '');
-      const it = items.find(x => x.type === 'sport' && sportNorm(x.ref) === sportNorm(ref));
-      return it ? [it] : [];
-    }
-    if (t.cat === 'kaogong') {
-      // 备考每日计划只有通用「学习打卡」，休息=所有学习科目都休（每个科目独立额度）
-      return items.filter(x => x.type === 'kg');
-    }
-    if (t.cat === 'work') {
-      const link = t.link || '';
-      if (link === 'work:video') { const it = items.find(x => x.id === 'work:game'); return it ? [it] : []; }
-      if (link === 'work:write') { const it = items.find(x => x.id === 'work:write'); return it ? [it] : []; }
-      return items.filter(x => x.type === 'work'); // 通用创作（今日产出/活动）→ 所有创作项
-    }
-    return [];
+    // v449：备考「今日休息」沿用原语义=全部科目都休；放过路径带 subject 只休单科，不能照搬
+    if (t.cat === 'kaogong') return items.filter(x => x.type === 'kg');
+    // v449：其余类别统一委托放过映射（含 growth→read:all、meals），消除两套映射漂移
+    return this._passTargetItems(t);
   },
   // 今日休息：按「条目」记录（v363 改 per-item）。运动/备考/创作任务映射到对应续火花条目，
   // 各自独立额度（一周最多 1 天、一月最多 4 天），互不干扰；通用备考/创作任务休息=该板块所有条目都休。
@@ -1678,7 +1666,7 @@ const Daily = {
       // 无关联续火花条目（如纯自定义任务）：仅本地标记
       t.restDay = true;
       this.setList(date, arr); this.render(this._root);
-      toast('已设为今日休息');
+      toast('已标记休息（这个任务没有关联火花）');
       return;
     }
     // 额度检查：特定条目(单条)超额直接拦截；通用条目(多条)只休允许的部分（Streak.restCanAdd 返回布尔）
@@ -1690,11 +1678,14 @@ const Daily = {
       if (blocked.find(b => b.it === it)) return;
       it.rest = it.rest || {}; it.rest[date] = 1; rested++;
     });
+    if (rested === 0) {
+      toast('该条目本周/本月休息已用完（一周最多 1 天、一月最多 4 天）');
+      return;   // 和单条目分支对齐：不写 restDay、不落盘徽章
+    }
     St.save(d);
     t.restDay = true;
     this.setList(date, arr); this.render(this._root);
-    if (rested === 0) toast('该条目本周/本月休息已用完（一周最多 1 天、一月最多 4 天）');
-    else toast('已设为休息日 · 连续打卡不受影响');
+    toast('已设为休息日 · 连续打卡不受影响');
   },
 
   // 任务改为完成 / 无法完成 / 挪到明天 时，清除该任务对应续火花条目的休息标记（per-item，v363）
@@ -1710,6 +1701,33 @@ const Daily = {
     if (changed) St.save(d);
   },
 
+  // v449 历史补火：修复「今日休息」漏写 rest[date] 导致的历史断火（如 11-13 阅读休息）。
+  // 幂等标记存在 streak data 里；只补 rest（休息占额度），不打 pass 标记——木木点的是「休息」，按既定口径休息占额度、放过才不占。
+  healRestDaySparks() {
+    var St = window.Streak;
+    if (!St || !St.data || !this._restTargetItems) return 0;
+    var d = St.data();
+    if (d._healRestDay449) return 0;
+    d._healRestDay449 = 1;
+    var healed = 0;
+    var plans = S.get('plans', {}) || {};
+    Object.keys(plans).forEach(function (dt) {
+      var arr = plans[dt];
+      if (!Array.isArray(arr)) return;
+      arr.forEach(function (t) {
+        if (!t || t.restDay !== true || t.passToday) return;
+        (this._restTargetItems(t) || []).forEach(function (it) {
+          if (St.covered(it, dt) || (it.rest && it.rest[dt])) return;
+          it.rest = it.rest || {};
+          it.rest[dt] = 1;
+          healed++;
+        });
+      }, this);
+    }, this);
+    St.save(d);
+    if (healed) console.info('[v449] healRestDaySparks 补写历史休息火花 ' + healed + ' 条');
+    return healed;
+  },
   // v435：低谷日记门槛——「今日放过」与「今日低谷」共用：当日已写 ≥500 字则直接放行
   _valleyOk() {
     const v = (S.get('mumu_valley', {}) || {})[todayStr()];

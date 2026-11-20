@@ -3,6 +3,12 @@
   --muted:#999999; --light:#f7f7f7; --accent:#111111;
   --radius:14px; --shadow:0 1px 6px rgba(0,0,0,.06);
 }
+/* v449 四套配色：body 类覆盖色变量（--bg/--card/--ink/--sub/--line/--muted/--light/--accent），--radius/--shadow 保持 :root 不动 */
+body.theme-mono{--bg:#ffffff;--card:#ffffff;--ink:#111111;--sub:#666666;--line:#eeeeee;--muted:#999999;--light:#f7f7f7;--accent:#111111}
+body.theme-cream{--bg:#FAF3E8;--card:#FFFBF4;--ink:#4A3B32;--sub:#8A7565;--line:#EFE3D0;--muted:#B6A596;--light:#F5EADB;--accent:#C97B5A}
+body.theme-mist{--bg:#EAF0F5;--card:#F5F8FB;--ink:#2C4256;--sub:#6E8FA8;--line:#D6E2EC;--muted:#9BB4C9;--light:#E1EBF3;--accent:#6E8FA8}
+body.theme-sage{--bg:#F0F3EA;--card:#F8FAF4;--ink:#3A4A33;--sub:#7C9B6B;--line:#E0E8D6;--muted:#A9BCA0;--light:#E9EFE0;--accent:#7C9B6B}
+
 *{margin:0;padding:0;box-sizing:border-box}
 /* 全局：所有文字强制横向排列（v156），防止任何竖排错位 */
 *{writing-mode:horizontal-tb}
@@ -12,18 +18,18 @@ body{font-family:"PingFang SC","Microsoft YaHei",system-ui,sans-serif;background
 a{color:var(--ink);text-decoration:underline}
 a:hover{color:var(--sub)}
 button{font-family:inherit;cursor:pointer;border:none;background:none;font-size:14px}
-input,textarea,select{font-family:inherit;font-size:14px;border:1px solid var(--line);border-radius:8px;padding:8px 10px;background:#fff;color:var(--ink);outline:none;-webkit-user-select:text;user-select:text;-webkit-touch-callout:default}
+input,textarea,select{font-family:inherit;font-size:14px;border:1px solid var(--line);border-radius:8px;padding:8px 10px;background:var(--card);color:var(--ink);outline:none;-webkit-user-select:text;user-select:text;-webkit-touch-callout:default}
 input:focus,textarea:focus,select:focus{border-color:#111}
 textarea{resize:vertical}
 
 .layout{position:relative;min-height:100vh}
 /* 侧边栏（默认隐藏，滑出式） */
-.sidebar{width:260px;background:#fff;position:fixed;top:0;left:0;bottom:0;z-index:100;transform:translateX(-100%);transition:transform .3s ease;overflow-y:auto;padding:16px 0;-webkit-overflow-scrolling:touch;box-shadow:none}
+.sidebar{width:260px;background:var(--bg);position:fixed;top:0;left:0;bottom:0;z-index:100;transform:translateX(-100%);transition:transform .3s ease;overflow-y:auto;padding:16px 0;-webkit-overflow-scrolling:touch;box-shadow:none}
 .sidebar.open{transform:translateX(0);box-shadow:2px 0 20px rgba(0,0,0,.10)}
 .sidebar-overlay{position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:99;opacity:0;pointer-events:none;transition:opacity .3s}
 .sidebar-overlay.show{opacity:1;pointer-events:auto}
 /* 顶部栏 */
-.topbar{position:fixed;top:0;left:0;right:0;display:flex;align-items:center;justify-content:flex-start;padding:10px 14px;background:#fff;border-bottom:1px solid var(--line);z-index:50;height:48px}
+.topbar{position:fixed;top:0;left:0;right:0;display:flex;align-items:center;justify-content:flex-start;padding:10px 14px;background:var(--bg);border-bottom:1px solid var(--line);z-index:50;height:48px}
 .hamburger{width:40px;height:36px;display:flex;align-items:center;justify-content:flex-start;font-size:20px;color:var(--ink);background:transparent;border:none;cursor:pointer;flex-shrink:0;-webkit-tap-highlight-color:transparent}
 .hamburger:active{opacity:.7}
 .topbar-title{position:absolute;left:50%;transform:translateX(-50%);font-size:16px;font-weight:700;color:var(--ink);white-space:nowrap}
@@ -499,13 +505,13 @@ textarea{resize:vertical}
 .rp-copy{flex:0 0 auto;color:var(--sub);font-size:12px;align-self:center;font-weight:600}
 
 /* 启动闪屏 · 枝枝喵上线（黑底+白圆盘+kitty+文字） */
-.splash{position:fixed;inset:0;z-index:9999;background:#111;display:flex;flex-direction:column;align-items:center;justify-content:center;transition:opacity .6s ease}
+.splash{position:fixed;inset:0;z-index:9999;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;transition:opacity .6s ease}
 .splash.hide{opacity:0}
 .splash.hide{opacity:0;pointer-events:none}
 .splash-disc{width:200px;height:200px;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 8px 32px rgba(0,0,0,.4);animation:splashPop .8s cubic-bezier(.34,1.56,.64,1) both}
 .splash-img{width:170px;height:170px;object-fit:contain;display:block}
-.splash-text{margin-top:22px;font-size:24px;font-weight:700;color:#fff;opacity:0;animation:hiIn .7s ease .4s forwards;letter-spacing:2px}
-.splash-time{margin-top:6px;font-size:13px;color:rgba(255,255,255,.55);font-variant-numeric:tabular-nums;opacity:0;animation:hiIn .7s ease .8s forwards}
+.splash-text{margin-top:22px;font-size:24px;font-weight:700;color:var(--ink);opacity:0;animation:hiIn .7s ease .4s forwards;letter-spacing:2px}
+.splash-time{margin-top:6px;font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums;opacity:0;animation:hiIn .7s ease .8s forwards}
 @keyframes splashPop{0%{transform:scale(.4);opacity:0}100%{transform:scale(1);opacity:1}}
 @keyframes hiIn{to{opacity:1}}
 
