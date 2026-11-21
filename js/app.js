@@ -1,5 +1,5 @@
 /* ============ 首页 + 导航 ============ */
-window.APP_VER = 'mumu-v450'; // 当前前端版本（设置页可见，用于确认是否加载到最新代码）
+window.APP_VER = 'mumu-v451'; // 当前前端版本（设置页可见，用于确认是否加载到最新代码）
 const SR_LINKS = [
   { v: 'sport', n: '运动（任意跟练）' },
   { v: 'sport:', n: '运动（具体项目，选后填名）' },
@@ -434,23 +434,6 @@ const App = {
     'briefing': '每日简报',
   },
   cur: 'home',
-  // v450 全局底部 Tab：仅这 5 个主板块显示底栏，其余页面由 body.bottomnav-on 控制隐藏
-  tabKeys: ['home','daily','work','kaogong','growth'],
-  tabMeta: [
-    { key:'home', icon:'home', label:'首页' },
-    { key:'daily', icon:'calendar', label:'计划' },
-    { key:'work', icon:'creation', label:'创作' },
-    { key:'kaogong', icon:'book', label:'备考' },
-    { key:'growth', icon:'sprout', label:'成长' }
-  ],
-  renderBottomNav() {
-    const nav = document.getElementById('bottomNav');
-    if (!nav) return;
-    nav.innerHTML = this.tabMeta.map(t =>
-      `<button class="bn-item" data-key="${t.key}"><span class="ic">${icon(t.icon,20)}</span><span class="txt">${t.label}</span></button>`
-    ).join('');
-    nav.querySelectorAll('.bn-item').forEach(b => { b.onclick = () => App.go(b.dataset.key); });
-  },
   nextQuote() {
     const d = todayStr();
     const st = readQuoteState();
@@ -487,11 +470,6 @@ const App = {
     document.querySelectorAll('#nav .nav-branch-item').forEach(n => n.classList.remove('active'));
     const mainNav = document.querySelector('#nav .nav-item[data-key="' + base + '"]');
     if (mainNav) mainNav.classList.add('active');
-    // v450 全局底栏高亮 + 可见性（仅 5 个主 tab 页显示，避免与娱乐 .fun-nav / 复盘 .rv-nav 冲突）
-    document.querySelectorAll('#bottomNav .bn-item').forEach(b => b.classList.remove('on'));
-    const bn = document.querySelector('#bottomNav .bn-item[data-key="' + base + '"]');
-    if (bn) bn.classList.add('on');
-    document.body.classList.toggle('bottomnav-on', this.tabKeys.indexOf(base) >= 0);
     if (base !== key) {
       const br = document.querySelector('#nav .nav-branch-item[data-key="' + key + '"]');
       if (br) br.classList.add('active');
@@ -850,7 +828,6 @@ const App = {
     // 每日金句
     this.updateQuote();
     this._bindEdgeBack();
-    this.renderBottomNav();
     this.go('home');
     if (window.__mumuAppReady) window.__mumuAppReady();
     } catch (e) {
