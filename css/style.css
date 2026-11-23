@@ -2040,3 +2040,7 @@ body.modal-open .pv-dl{display:none!important}
 .arc-sec{margin-top:10px}
 .arc-sec-t{font-size:12px;color:#3a7d5d;font-weight:600;margin-bottom:4px}
 .arc-full{font-size:13px;line-height:1.8;white-space:pre-wrap;word-break:break-word;max-height:50vh;overflow-y:auto;background:#fafafa;border-radius:8px;padding:10px}
+
+/* v453: 目标卡片工具按钮组 */
+.gt-head .gt-tools{display:inline-flex;gap:6px;align-items:center;flex-wrap:wrap}
+.gt-head .gt-tools .gt-add{font-size:12px;padding:3px 9px}

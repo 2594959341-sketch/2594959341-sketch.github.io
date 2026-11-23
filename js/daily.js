@@ -2801,7 +2801,10 @@ const Daily = {
       ? '<div class="goal-tree">' + tops.map(g => this.goalRowHTML(g, 0)).join('') + '</div>'
       : '<div class="gt-empty">还没有目标，先写一个年目标</div>';
     return '<div class="card goal-card">'
-      + '<div class="gt-head"><h3>目标拆解</h3><button class="gt-add" id="goalAdd">＋ 添加</button></div>'
+      + '<div class="gt-head"><h3>目标拆解</h3><span class="gt-tools">'
+      + '<button class="gt-add" id="goalImport" title="粘贴时安给的目标块，一次导入">导入</button>'
+      + '<button class="gt-add" id="goalProgress" title="生成进度文本，复制给时安">进度</button>'
+      + '<button class="gt-add" id="goalAdd">＋ 添加</button></span></div>'
       + this.goalStatsHTML()
       + list
       + (orphanDay ? '<div class="gt-note">独立日目标 ' + orphanDay + ' 个 · 在日历查看</div>' : '')
@@ -2811,6 +2814,10 @@ const Daily = {
   bindGoalCard(box) {
     const add = box.querySelector('#goalAdd');
     if (add) add.onclick = () => this.openGoalAdd();
+    const imp = box.querySelector('#goalImport');
+    if (imp) imp.onclick = () => this.openGoalImport();
+    const prg = box.querySelector('#goalProgress');
+    if (prg) prg.onclick = () => this.openGoalProgress();
     box.querySelectorAll('[data-gchev]').forEach(b => b.onclick = e => {
       e.stopPropagation();
       const id = b.dataset.gchev;
@@ -2903,6 +2910,89 @@ const Daily = {
     if (cur && !byId[cur.id]) opts = '<option value="' + cur.id + '" selected>🎯 ' + esc(cur.title) + (cur.done ? '（已完成）' : '') + '</option>' + opts;
     opts += '<option value="__new__">＋ 新建今日目标</option>';
     return opts;
+  },
+  // ===== v453：目标块导入 / 进度复制（与时安专家闭环）=====
+  openGoalImport() {
+    openModal('<button class="close-x" onclick="closeModal()">×</button><h3>🎯 导入目标块</h3>'
+      + '<div class="muted" style="font-size:12px;line-height:1.7;margin-bottom:10px">把「时安」给你的目标块整段粘贴进来。每行：<br><b>层级|周期|标题|板块|父序号</b><br>层级 Y=年 M=月 W=周 D=日；板块可留空；父序号填上一层前面的数字（顶层留空）。<br>例：<code>Y|2027|读20本书|read</code><br><code>M|2027-01|读完2本|read|1</code></div>'
+      + '<textarea id="giText" rows="9" placeholder="Y|2027|读20本书|read\nM|2027-01|读完2本|read|1" style="width:100%;box-sizing:border-box;font-size:13px"></textarea>'
+      + '<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:10px"><button class="btn ghost" onclick="closeModal()">取消</button><button class="btn" id="giOk">导入</button></div>');
+    setTimeout(() => {
+      const ok = document.getElementById('giOk');
+      if (ok) ok.onclick = () => {
+        const txt = (document.getElementById('giText').value || '').trim();
+        if (!txt) return toast('先粘贴目标内容');
+        const r = this.importGoalBlock(txt);
+        if (r.added) { closeModal(); toast('已导入 ' + r.added + ' 个目标' + (r.skip ? '，跳过 ' + r.skip + ' 个重复' : '')); this.goalRerender(); }
+        else toast('没识别出有效目标，检查格式');
+      };
+    }, 0);
+  },
+  importGoalBlock(txt) {
+    const scopeMap = { Y: 'year', M: 'month', W: 'week', D: 'day' };
+    const lines = txt.split(/\r?\n/).map(x => x.trim()).filter(x => x && x.indexOf('#') !== 0);
+    const parsed = [];
+    lines.forEach(line => {
+      const p = line.split('|').map(x => x.trim());
+      const scope = scopeMap[(p[0] || '').toUpperCase()];
+      if (!scope || !p[1] || !p[2]) return;
+      let period = String(p[1]);
+      if (scope === 'year') period = period.slice(0, 4);
+      else if (scope === 'month') { const m = period.replace(/[^0-9-]/g, '').slice(0, 7); period = /^\d{4}-\d{2}$/.test(m) ? m : ''; }
+      else { const ds = period.replace(/[^0-9-]/g, '').slice(0, 10); if (!/^\d{4}-\d{2}-\d{2}$/.test(ds)) return; period = scope === 'week' ? weekDates(ds)[0] : ds; }
+      if (!period) return;
+      const link = /^(sport|kaogong|work|growth|read|travel|fun|meals|custom)$/.test(p[3] || '') ? p[3] : null;
+      const parentIdx = /^\d+$/.test(p[4] || '') ? Number(p[4]) : null;
+      parsed.push({ scope, period, title: p[2].slice(0, 120), link, parentIdx });
+    });
+    let gs = S.get('mumu_goals', []);
+    const numToId = {}; let added = 0, skip = 0;
+    parsed.forEach((it, i) => {
+      const num = i + 1;
+      if (gs.some(g => g.scope === it.scope && g.period === it.period && g.title === it.title)) { skip++; return; }
+      const id = uid();
+      numToId[num] = id;
+      const parent = it.parentIdx && numToId[it.parentIdx] ? numToId[it.parentIdx] : null;
+      gs.push({ id, scope: it.scope, period: it.period, title: it.title, done: false, doneDate: null, roll: true, link: it.link, cadence: null, created: todayStr(), parent });
+      added++;
+    });
+    if (added) S.set('mumu_goals', gs);
+    return { added, skip };
+  },
+  openGoalProgress() {
+    const gs = S.get('mumu_goals', []);
+    const tag = { year: '年', month: '月', week: '周', day: '日' };
+    const lines = ['【我的目标进度 ' + todayStr() + '】'];
+    ['year', 'month', 'week', 'day'].forEach(scope => {
+      const cur = this.goalKey(scope);
+      const list = gs.filter(g => g.scope === scope && g.period === cur && !g.parent);
+      list.forEach(g => {
+        const kids = gs.filter(x => x.parent === g.id);
+        let stat;
+        if (kids.length) stat = '子目标 ' + kids.filter(k => this.goalDone(k)).length + '/' + kids.length + ' 完成';
+        else stat = this.goalDone(g) ? '已完成' : '未完成';
+        lines.push(tag[scope] + '｜' + this.goalPeriodLabel(g) + '｜' + g.title + '｜' + stat + (g.link ? '｜' + this.goalLinkName(g.link) : ''));
+      });
+    });
+    if (lines.length === 1) lines.push('（还没有目标，先让时安拆一份导进来）');
+    const text = lines.join('\n');
+    openModal('<button class="close-x" onclick="closeModal()">×</button><h3>🎯 复制进度给时安</h3>'
+      + '<div class="muted" style="font-size:12px;margin-bottom:10px">复制下面这段，发给「时安」专家，它就知道你做到哪、要不要调整计划。</div>'
+      + '<textarea id="gpText" rows="10" style="width:100%;box-sizing:border-box;font-size:13px">' + esc(text) + '</textarea>'
+      + '<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:10px"><button class="btn ghost" onclick="closeModal()">关闭</button><button class="btn" id="gpCopy">复制</button></div>');
+    setTimeout(() => {
+      const ta = document.getElementById('gpText');
+      if (ta) { ta.focus(); ta.select(); }
+      const cp = document.getElementById('gpCopy');
+      if (cp) cp.onclick = () => {
+        let done = false;
+        try { if (ta) { ta.select(); done = document.execCommand('copy'); } } catch (e) {}
+        if (done) return toast('已复制，发给时安吧');
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(text).then(() => toast('已复制，发给时安吧')).catch(() => toast('请长按文本手动复制'));
+        } else toast('请长按文本手动复制');
+      };
+    }, 0);
   },
   openGoalAdd(parent, preset) {
     const defScope = preset ? preset.scope : (parent ? this.goalChildScope(parent.scope) : 'year');
