@@ -580,6 +580,145 @@ const IDB = {
 
 /* ---- 数据导出 / 导入（防丢手机保险） ---- */
 // 收集所有 mumu_* localStorage 键 + 照片库
+/* ===== v455 纯文字数据导出（供日程助理读取）=====
+   结构固定：① 使用说明 ② 每日计划任务（标题/日期/任务时间/分类/完成状态）
+   ③ 全量文字数据（所有 mumu_ 键 + IndexedDB，按固定顺序，值转人读文本）。
+   不含照片二进制；照片的文字信息仍在各 *Photos 记录键里。 */
+var TXT_KEY_NAMES = {
+  plans:'每日计划任务', plansDaily:'固定每日任务模板', taskCats:'任务分类设置',
+  meals:'三餐记录', growthLogs:'成长打卡', kgLogs:'备考学习记录', kgPlans:'备考计划',
+  readLogs:'阅读记录', readNotes:'读书笔记/好词好句', readCovers:'阅读封面',
+  reviews:'复盘日记与总结', sportLogs:'运动打卡', sportPhotos:'运动照片记录',
+  travelOut:'日常外出记录', travelTrips:'旅行计划', travelJournals:'游记',
+  travelPhotos:'出行照片记录', travelMap:'出行地图', travelCover:'出行封面',
+  workLogs:'创作打卡', writeLogs:'写作码字记录', novel:'小说创作',
+  srItems:'自救计划专项', selfRescue:'自救计划', mumu_chat:'枝枝对话记录',
+  transcribe:'转写记录', ideas:'灵感/idea', recharge:'充电记录', funLogs:'娱乐记录',
+  mumu_goals:'目标（年/月/周/日）', mumu_streak:'火花数据', taskLoad:'任务精力设置',
+  loadCap:'每日精力上限', name:'用户名', mumu_bbdc:'不背单词记录', mumu_tantan:'炭炭记录',
+  menstrualRest:'月经假日期', sickLeave:'病假日期', examDates:'考试日',
+  workRest:'创作休息日', sportRest:'运动休息日', kgRest:'备考休息日',
+  mumu_skillLogs:'技能打卡', growthAreas:'成长领域', mumu_skillLevels:'技能等级',
+  countdownHidden:'隐藏的倒计时', migratedNovelsV188:'小说迁移标记',
+  mumu_quoteState:'金句状态', mumu_theme:'形象主题', mumu_palette:'配色', mumu_layout:'布局档位'
+};
+function _txtReadable(v, indent, depth) {
+  if (depth > 12) return '…';
+  var pad = '  '.repeat(indent);
+  if (v === null || v === undefined) return '（空）';
+  if (typeof v === 'string') return v;
+  if (typeof v === 'number' || typeof v === 'boolean') return String(v);
+  if (Array.isArray(v)) {
+    if (!v.length) return '（无记录）';
+    return '\n' + v.map(function (x, i) {
+      if (x && typeof x === 'object' && !Array.isArray(x)) return pad + '· ' + _txtObjInline(x, indent + 1, depth + 1);
+      return pad + '· ' + _txtReadable(x, indent + 1, depth + 1);
+    }).join('\n');
+  }
+  if (typeof v === 'object') {
+    var keys = Object.keys(v);
+    if (!keys.length) return '（空）';
+    var isDateMap = keys.length && keys.every(function (k) { return /^\d{4}-\d{2}-\d{2}$/.test(k); });
+    var ordered = isDateMap ? keys.slice().sort() : keys;
+    return '\n' + ordered.map(function (k) {
+      return pad + k + '：' + _txtReadable(v[k], indent + 1, depth + 1);
+    }).join('\n');
+  }
+  return String(v);
+}
+function _txtObjInline(o, indent, depth) {
+  var parts = [];
+  Object.keys(o).forEach(function (k) {
+    var val = o[k];
+    parts.push(k + '：' + _txtReadable(val, indent, depth));
+  });
+  return parts.join('；');
+}
+function _txtLabel(k) {
+  var base = k.replace(/^mumu_/, '');
+  return TXT_KEY_NAMES[base] || TXT_KEY_NAMES[k] || base;
+}
+function _txtTaskDone(t, date) {
+  var D = (typeof window !== 'undefined' && window.Daily) ? window.Daily : null;
+  try {
+    if (t.abandoned) return '已放弃';
+    if (typeof isSickLeave === 'function' && isSickLeave(date)) return '病假';
+    if (typeof isMenstrualRest === 'function' && isMenstrualRest(date)) return '月经假';
+    if (t.rest && t.rest[date]) return '今日休息';
+    if (t.madeup && t.madeup.indexOf && t.madeup.indexOf(date) >= 0) return '已补签';
+    if (D && typeof D.isDone === 'function') return D.isDone(t) ? '已完成' : '未完成';
+    var steps = t.steps || [];
+    if (steps.length) return steps.every(function (s) { return s && s.done; }) ? '已完成' : '未完成';
+    return t.manualDone ? '已完成' : '未完成';
+  } catch (e) { return t.manualDone ? '已完成' : '未完成'; }
+}
+async function exportTextData() {
+  var full = await exportData();
+  var L = full.localStorage || {};
+  var lines = [];
+  lines.push('═══════════════════════════════════════');
+  lines.push('木木的工作台 · 全量文字数据');
+  lines.push('导出时间：' + (todayStr()) + ' ' + new Date().toTimeString().slice(0, 5));
+  lines.push('说明：本文件包含工作台全部文字数据，结构固定。');
+  lines.push('任务字段顺序固定为：标题 / 日期 / 任务时间 / 分类 / 完成状态。');
+  lines.push('═══════════════════════════════════════');
+  lines.push('');
+  lines.push('【一、每日计划任务】');
+  var plans = {};
+  try { plans = JSON.parse(L['mumu_plans'] || '{}') || {}; } catch (e) {}
+  var dates = Object.keys(plans).sort();
+  var taskCount = 0;
+  dates.forEach(function (d) {
+    var list = plans[d] || [];
+    list.forEach(function (t) {
+      taskCount++;
+      var cats = [];
+      try { cats = JSON.parse(L['mumu_taskCats'] || '[]') || []; } catch (e) {}
+      var catName = (t.cat && String(t.cat).indexOf('g:') === 0) ? String(t.cat).slice(2)
+        : ((t.link && String(t.link).indexOf('growth:') === 0 && window.Daily && window.Daily.growthArea) ? window.Daily.growthArea(t.link)
+        : ((cats.find(function (c) { return c.id === t.cat; }) || {}).name || t.cat || '未分类'));
+      var min = t.estMin || 0;
+      lines.push('标题：' + (t.title || ''));
+      lines.push('日期：' + d);
+      lines.push('任务时间：' + (min ? min + ' 分钟' : '未设'));
+      lines.push('分类：' + catName);
+      lines.push('完成状态：' + _txtTaskDone(t, d));
+      if (t.steps && t.steps.length) lines.push('步骤：' + t.steps.map(function (s) { return (s.done ? '[✓]' : '[ ]') + (s.text || ''); }).join(' '));
+      if (t.extra && t.extra.subject) lines.push('科目：' + t.extra.subject);
+      lines.push('────────');
+    });
+  });
+  if (!taskCount) lines.push('（暂无计划任务）');
+  lines.push('');
+  lines.push('【二、固定每日任务模板】');
+  var tmpl = [];
+  try { tmpl = JSON.parse(L['mumu_plansDaily'] || '[]') || []; } catch (e) {}
+  if (tmpl.length) tmpl.forEach(function (t) {
+    lines.push('· ' + (t.title || '') + '｜分类：' + (t.cat || '未分类') + '｜任务时间：' + (t.estMin ? t.estMin + ' 分钟' : '未设'));
+  }); else lines.push('（无）');
+  lines.push('');
+  lines.push('【三、全量文字数据（全部板块，不做取舍）】');
+  var PRIORITY = ['mumu_goals','mumu_streak','mumu_bbdc','mumu_tantan','mumu_chat','reviews',
+    'sportLogs','kgLogs','kgPlans','growthLogs','readLogs','readNotes','workLogs','writeLogs','novel',
+    'funLogs','meals','travelOut','travelTrips','travelJournals','recharge','ideas','srItems','selfRescue',
+    'menstrualRest','sickLeave','examDates','taskCats','loadCap'];
+  var allKeys = Object.keys(L).filter(function (k) { return k !== 'mumu_photos' && k.indexOf('mumu_import_ckpt') < 0; });
+  var seen = {}; var ordered = [];
+  PRIORITY.forEach(function (p) { var fkey = L['mumu_' + p] !== undefined ? 'mumu_' + p : (L[p] !== undefined ? p : null); if (fkey && !seen[fkey] && allKeys.indexOf(fkey) >= 0) { ordered.push(fkey); seen[fkey] = 1; } });
+  allKeys.slice().sort().forEach(function (k) { if (!seen[k]) { ordered.push(k); seen[k] = 1; } });
+  ordered.forEach(function (k) {
+    var raw = L[k]; if (raw == null || raw === '' || raw === '{}' || raw === '[]') return;
+    var val = raw; try { val = JSON.parse(raw); } catch (e) {}
+    lines.push('');
+    lines.push('─── ' + _txtLabel(k) + '（' + k + '）───');
+    lines.push(_txtReadable(val, 0, 0));
+  });
+  lines.push('');
+  lines.push('═══════════════════════════════════════');
+  lines.push('（导出结束，共 ' + taskCount + ' 条计划任务）');
+  return lines.join('\n');
+}
+
 async function exportData() {
   const ls = {};
   for (let i = 0; i < localStorage.length; i++) {

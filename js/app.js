@@ -1,5 +1,5 @@
 /* ============ 首页 + 导航 ============ */
-window.APP_VER = 'mumu-v454'; // 当前前端版本（设置页可见，用于确认是否加载到最新代码）
+window.APP_VER = 'mumu-v455'; // 当前前端版本（设置页可见，用于确认是否加载到最新代码）
 const SR_LINKS = [
   { v: 'sport', n: '运动（任意跟练）' },
   { v: 'sport:', n: '运动（具体项目，选后填名）' },
@@ -592,6 +592,10 @@ const App = {
           <div class="setting-actions"><button class="btn sm" id="btnExport">导出</button></div>
         </div>
         <div class="setting-row">
+          <div><div class="setting-label">${icon('download',16)} 导出纯文字数据</div><div class="setting-desc" style="font-size:11px">生成全部文字数据（所有板块，不含照片），结构固定、任务带齐标题/日期/时间/分类/完成状态，可直接复制发给日程助理</div></div>
+          <div class="setting-actions"><button class="btn sm" id="btnExportText">生成</button></div>
+        </div>
+        <div class="setting-row">
           <div><div class="setting-label">${icon('upload',16)} 导入恢复数据</div><div class="setting-desc" style="font-size:11px">选择之前导出的 JSON 文件，一键还原</div></div>
           <div class="setting-actions"><button class="btn sm ghost" id="btnImport">导入</button></div>
         </div>
@@ -658,6 +662,8 @@ const App = {
       } catch (e) { toast('导出失败：' + e.message); }
       btnExport.disabled = false; btnExport.textContent = '导出';
     };
+    const btnExportText = root.querySelector('#btnExportText');
+    if (btnExportText) btnExportText.onclick = () => this.openTextExport();
     const appVerEl = root.querySelector('#appVer');
     if (appVerEl) appVerEl.textContent = window.APP_VER || '未知';
     const btnCheckUpdate = root.querySelector('#btnCheckUpdate');
@@ -770,6 +776,32 @@ const App = {
     if (btnExamDay) btnExamDay.onclick = () => { if (window.openExamDayDialog) openExamDayDialog(root); };
     const btnValley = root.querySelector('#btnValley');
     if (btnValley) btnValley.onclick = () => { if (window.Daily && Daily.lowValleyToday) Daily.lowValleyToday(); };
+  },
+  async openTextExport() {
+    try {
+      toast('正在整理全量文字数据…');
+      const text = await exportTextData();
+      openModal(`<button class="close-x" onclick="closeModal()">×</button><h3>${icon('download',18)} 纯文字数据导出</h3>` +
+        `<div class="setting-desc" style="font-size:12px;margin:8px 0">已生成全部文字数据（不含照片）。可直接全选复制发给日程助理，或下载为 txt 文件。</div>` +
+        `<textarea id="txtExportBox" readonly style="width:100%;height:44vh;font-size:12px;line-height:1.5;resize:vertical">${esc(text)}</textarea>` +
+        `<div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">` +
+        `<button class="btn sm" id="txtCopy">复制全部</button>` +
+        `<button class="btn sm ghost" id="txtDownload">下载 txt</button></div>`);
+      const box = document.getElementById('txtExportBox');
+      const cp = document.getElementById('txtCopy');
+      if (cp) cp.onclick = async () => {
+        try { await navigator.clipboard.writeText(text); toast('已复制全部文字数据'); }
+        catch (e) { box.focus(); box.select(); try { document.execCommand('copy'); toast('已复制'); } catch (e2) { toast('复制失败，请手动全选'); } }
+      };
+      const dl = document.getElementById('txtDownload');
+      if (dl) dl.onclick = () => {
+        const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a'); a.href = url;
+        a.download = '木木工作台_文字数据_' + todayStr() + '.txt'; a.click();
+        URL.revokeObjectURL(url); toast('已下载 txt 文件');
+      };
+    } catch (e) { toast('生成失败：' + e.message); }
   },
   async init() {
     try {
