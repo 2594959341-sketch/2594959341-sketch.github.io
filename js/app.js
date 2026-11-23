@@ -1,5 +1,5 @@
 /* ============ 首页 + 导航 ============ */
-window.APP_VER = 'mumu-v451'; // 当前前端版本（设置页可见，用于确认是否加载到最新代码）
+window.APP_VER = 'mumu-v452'; // 当前前端版本（设置页可见，用于确认是否加载到最新代码）
 const SR_LINKS = [
   { v: 'sport', n: '运动（任意跟练）' },
   { v: 'sport:', n: '运动（具体项目，选后填名）' },
@@ -460,6 +460,8 @@ const App = {
   },
   go(key, opts) {
     opts = opts || {};
+    // v452 保险：档位 home:false 时禁止进入首页，重定向到 daily（本轮 cards 档不触发）
+    if (key === 'home' && window.MUMU_PROFILE && window.MUMU_PROFILE().home === false) key = 'daily';
     if (this._history === undefined) this._history = [];
     if (!opts.fromBack && key !== this.cur) this._history.push(this.cur);
     this.cur = key;
@@ -606,7 +608,7 @@ const App = {
           <div class="setting-actions"><button class="btn sm" id="btnAssess">评估</button></div>
         </div>
         <div class="setting-row">
-          <div><div class="setting-label">🌱 枝枝喵主题</div><div class="setting-desc" style="font-size:11px">新版=当前枝枝喵形象；旧版=枝丫（绿芽）。切换后页面会刷新生效，可一键换回</div></div>
+          <div><div class="setting-label">🌱 枝枝喵主题</div><div class="setting-desc" style="font-size:11px">主题=形象+布局+功能的完整套装，切换后整体还原。新版=枝枝喵，旧版=枝枝（绿芽），两者均为卡片式布局（含首页与全部功能）；切换后页面会刷新生效，可一键换回</div></div>
           <div class="setting-actions" id="themeOpts" style="display:flex;gap:8px">
             <button class="btn sm ghost theme-opt" data-t="cat">新版</button>
             <button class="btn sm ghost theme-opt" data-t="zhiya">旧版</button>
@@ -724,7 +726,10 @@ const App = {
       b.onclick = () => {
         if (b.dataset.t === curT) return;
         try { localStorage.setItem('mumu_theme', b.dataset.t); } catch (e) {}
-        toast(b.dataset.t === 'cat' ? '已切到枝枝喵新版 🌱' : '已切到枝丫旧版 🌱');
+        // v452：切主题 = 切整套档（形象+布局+功能），两个形象主题都绑定 cards 档
+        const prof = window.MUMU_THEME_PROFILE && window.MUMU_THEME_PROFILE[b.dataset.t];
+        if (prof && window.applyLayout) window.applyLayout(prof);
+        toast(b.dataset.t === 'cat' ? '已切到枝枝喵新版 🌱' : '已切到枝枝旧版 🌱');
         setTimeout(() => location.reload(), 450);
       };
     });
@@ -780,7 +785,10 @@ const App = {
     if (window.Meals && Meals.backfillJunkTags) Meals.backfillJunkTags();
     if (window.Work && Work.fixMislabeledPlanWords) Work.fixMislabeledPlanWords(); // 一次性：把误记为正文的 601 字大纲记录改回构思
     const sb = document.getElementById('nav');
-    sb.innerHTML = this.navs.map(n => {
+    // v452：档位 home:false 时隐藏首页入口（本轮 cards 档 home:true，navs 不变）
+    const navs = (window.MUMU_PROFILE && window.MUMU_PROFILE() && window.MUMU_PROFILE().home === false)
+      ? this.navs.filter(n => n.id !== 'home') : this.navs;
+    sb.innerHTML = navs.map(n => {
       const hasBranches = n.branches && n.branches.length > 0;
       const item = `<button class="nav-item${(hasBranches && !n.noSideBranch) ? ' has-branch' : ''}" data-key="${n.id}"><span class="ic">${icon(n.icon)}</span><span class="txt">${n.label}</span></button>`;
       if (hasBranches && !n.noSideBranch) {

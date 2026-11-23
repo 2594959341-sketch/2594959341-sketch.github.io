@@ -704,6 +704,27 @@ textarea{resize:vertical}
 .home-card .hc-progress{height:4px;margin-top:8px}
 @media(max-width:380px){.home-grid{grid-template-columns:repeat(2,1fr)}.home-hello{font-size:25px}.home-greeting{margin:6px 2px 10px}}
 
+/* ===== v452 layout profile：布局档位（与形象 cat/zhiya、配色 palette 正交）=====
+ * body.layout-cards = 卡片式（v449 原样）；body.layout-flow = 流式（v450 现状）
+ * 两套规则并存，切档只换 body class → 即时生效、切回完全还原；全部用 var 保留四套配色。
+ */
+/* —— cards 档：卡片式（v449 原样） —— */
+body.layout-cards .stat-combined{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow)}
+body.layout-cards .todo-card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);margin-bottom:16px}
+body.layout-cards .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px 18px;margin-bottom:16px;overflow:hidden}
+body.layout-cards .home-grid{grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:20px}
+body.layout-cards .home-card{padding:16px 14px;border-bottom:none}
+/* —— flow 档：流式（第三个主题预留，本轮不启用） —— */
+body.layout-flow .stat-combined{background:var(--light);border:none;border-radius:12px;box-shadow:none}
+body.layout-flow .todo-card{background:transparent;border:none;border-radius:0;box-shadow:none;margin-bottom:8px}
+body.layout-flow .card{background:transparent;border:none;border-radius:0;box-shadow:none;padding:16px 2px;margin-bottom:8px;overflow:visible}
+body.layout-flow .home-grid{grid-template-columns:1fr;gap:0;margin-bottom:16px}
+body.layout-flow .home-card{background:transparent;border:none;border-radius:0;box-shadow:none;padding:14px 4px;border-bottom:1px solid var(--line)}
+/* 娱乐页封面墙统计条：功能性白底，档位规则不得覆盖 */
+body.layout-cards .fun-main-scroll .card,body.layout-flow .fun-main-scroll .card{background:#fff}
+/* 首页入口隐藏：档位 home:false 时生效（第三个主题预留，本轮 cards 档不触发） */
+body.hide-home .nav-item[data-key="home"]{display:none}
+
 /* ===== v67 周总结圆圈马卡龙色（按分类） ===== */
 .wk-dot.cat-meals{background:#EFC15A;border-color:#EFC15A;color:#fff}
 .wk-dot.cat-sport{background:#8FD9B6;border-color:#8FD9B6;color:#fff}

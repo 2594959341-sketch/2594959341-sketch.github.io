@@ -7,8 +7,8 @@
  */
 (function () {
   var THEMES = {
-    cat:   { dir: 'png',   ver: 'mumu-v451' },
-    zhiya: { dir: 'zhiya', ver: 'mumu-v451' }
+    cat:   { dir: 'png',   ver: 'mumu-v452' },
+    zhiya: { dir: 'zhiya', ver: 'mumu-v452' }
   };
   var KEY = 'mumu_theme';
   var raw = localStorage.getItem(KEY);
@@ -83,4 +83,40 @@
   function applyPaletteBoot() { window.applyPalette(readPalette()); }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', applyPaletteBoot);
   else applyPaletteBoot();
+
+  // ===== v452 layout profile：布局档（与 cat/zhiya 形象、palette 配色正交）=====
+  // cards = 卡片式 + 首页 + 全功能（v449 原样，两个现有主题都用）
+  // flow  = 流式 + 无首页（第三个主题预留，本轮不启用为任何主题）
+  var LK = 'mumu_layout';
+  var PROFILES = {
+    cards: { layout: 'cards', home: true, label: '卡片式·完整' },
+    flow:  { layout: 'flow',  home: false, label: '流式·极简' }
+  };
+  function readLayout() {
+    var v = null;
+    try { v = localStorage.getItem(LK); } catch (e) {}
+    return PROFILES[v] ? v : 'cards';   // 非法值回退 cards
+  }
+  var curLayout = readLayout();
+  window.MUMU_LAYOUT = curLayout;
+  window.MUMU_PROFILES = PROFILES;
+  // 主题 → 档位映射：以后第三个主题（如 id='zen'）只要映射到 'flow' 即换整套呈现与功能
+  window.MUMU_THEME_PROFILE = { cat: 'cards', zhiya: 'cards' };
+  window.MUMU_PROFILE = function () { return PROFILES[window.MUMU_LAYOUT] || PROFILES.cards; };
+  window.applyLayout = function (id) {
+    if (!id || !PROFILES[id]) id = 'cards';
+    var b = document.body;
+    if (b && b.classList) {
+      b.classList.remove('layout-cards', 'layout-flow');
+      b.classList.add('layout-' + id);
+      if (PROFILES[id].home === false) b.classList.add('hide-home');
+      else b.classList.remove('hide-home');
+    }
+    curLayout = id;
+    window.MUMU_LAYOUT = curLayout;
+    try { localStorage.setItem(LK, id); } catch (e) {}
+  };
+  function applyLayoutBoot() { window.applyLayout(readLayout()); }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', applyLayoutBoot);
+  else applyLayoutBoot();
 })();
