@@ -1,5 +1,5 @@
 /* ============ 首页 + 导航 ============ */
-window.APP_VER = 'mumu-v455'; // 当前前端版本（设置页可见，用于确认是否加载到最新代码）
+window.APP_VER = 'mumu-v456'; // 当前前端版本（设置页可见，用于确认是否加载到最新代码）
 const SR_LINKS = [
   { v: 'sport', n: '运动（任意跟练）' },
   { v: 'sport:', n: '运动（具体项目，选后填名）' },
@@ -777,17 +777,24 @@ const App = {
     const btnValley = root.querySelector('#btnValley');
     if (btnValley) btnValley.onclick = () => { if (window.Daily && Daily.lowValleyToday) Daily.lowValleyToday(); };
   },
-  async openTextExport() {
+  async openTextExport(rangeDays) {
+    const days = rangeDays || 0;
     try {
-      toast('正在整理全量文字数据…');
-      const text = await exportTextData();
+      toast('正在整理文字数据…');
+      const text = await exportTextData(days);
+      const kb = Math.round(text.length / 1024);
       openModal(`<button class="close-x" onclick="closeModal()">×</button><h3>${icon('download',18)} 纯文字数据导出</h3>` +
-        `<div class="setting-desc" style="font-size:12px;margin:8px 0">已生成全部文字数据（不含照片）。可直接全选复制发给日程助理，或下载为 txt 文件。</div>` +
+        `<div class="setting-desc" style="font-size:12px;margin:8px 0">${days ? '最近 ' + days + ' 天' : '全部历史'}文字数据，约 ${kb} KB；图片已省略，文字一条不删。可直接发给日程助理。</div>` +
+        `<div style="display:flex;gap:6px;margin:6px 0;align-items:center"><span style="font-size:12px;opacity:.7">范围：</span><button class="btn sm ${days === 0 ? '' : 'ghost'}" id="txtRangeAll">全部</button><button class="btn sm ${days === 30 ? '' : 'ghost'}" id="txtRange30">最近30天</button></div>` +
         `<textarea id="txtExportBox" readonly style="width:100%;height:44vh;font-size:12px;line-height:1.5;resize:vertical">${esc(text)}</textarea>` +
         `<div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">` +
         `<button class="btn sm" id="txtCopy">复制全部</button>` +
         `<button class="btn sm ghost" id="txtDownload">下载 txt</button></div>`);
       const box = document.getElementById('txtExportBox');
+      const ra = document.getElementById('txtRangeAll');
+      if (ra) ra.onclick = () => { closeModal(); this.openTextExport(0); };
+      const r30 = document.getElementById('txtRange30');
+      if (r30) r30.onclick = () => { closeModal(); this.openTextExport(30); };
       const cp = document.getElementById('txtCopy');
       if (cp) cp.onclick = async () => {
         try { await navigator.clipboard.writeText(text); toast('已复制全部文字数据'); }
@@ -798,7 +805,7 @@ const App = {
         const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a'); a.href = url;
-        a.download = '木木工作台_文字数据_' + todayStr() + '.txt'; a.click();
+        a.download = '木木工作台_文字数据_' + (days ? '近' + days + '天_' : '') + todayStr() + '.txt'; a.click();
         URL.revokeObjectURL(url); toast('已下载 txt 文件');
       };
     } catch (e) { toast('生成失败：' + e.message); }

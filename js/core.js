@@ -580,7 +580,7 @@ const IDB = {
 
 /* ---- 数据导出 / 导入（防丢手机保险） ---- */
 // 收集所有 mumu_* localStorage 键 + 照片库
-/* ===== v455 纯文字数据导出（供日程助理读取）=====
+/* ===== v456 纯文字数据导出（供日程助理读取）=====
    结构固定：① 使用说明 ② 每日计划任务（标题/日期/任务时间/分类/完成状态）
    ③ 全量文字数据（所有 mumu_ 键 + IndexedDB，按固定顺序，值转人读文本）。
    不含照片二进制；照片的文字信息仍在各 *Photos 记录键里。 */
@@ -602,17 +602,24 @@ var TXT_KEY_NAMES = {
   countdownHidden:'隐藏的倒计时', migratedNovelsV188:'小说迁移标记',
   mumu_quoteState:'金句状态', mumu_theme:'形象主题', mumu_palette:'配色', mumu_layout:'布局档位'
 };
-function _txtReadable(v, indent, depth) {
+var TXT_IMG_KEY = /cover|photo|icon|img|image|avatar|thumb|封面|照片|图片/i;
+function _txtSafeStr(s, keyHint) {
+  if (typeof s !== 'string') return s;
+  if (/^data:[^,]*;base64,/i.test(s) || (TXT_IMG_KEY.test(keyHint || '') && s.length > 200))
+    return '[图片，已省略（约 ' + Math.round(s.length / 1024) + ' KB）]';
+  return s;
+}
+function _txtReadable(v, indent, depth, keyHint) {
   if (depth > 12) return '…';
   var pad = '  '.repeat(indent);
   if (v === null || v === undefined) return '（空）';
-  if (typeof v === 'string') return v;
+  if (typeof v === 'string') return _txtSafeStr(v, keyHint);
   if (typeof v === 'number' || typeof v === 'boolean') return String(v);
   if (Array.isArray(v)) {
     if (!v.length) return '（无记录）';
     return '\n' + v.map(function (x, i) {
       if (x && typeof x === 'object' && !Array.isArray(x)) return pad + '· ' + _txtObjInline(x, indent + 1, depth + 1);
-      return pad + '· ' + _txtReadable(x, indent + 1, depth + 1);
+      return pad + '· ' + _txtReadable(x, indent + 1, depth + 1, keyHint);
     }).join('\n');
   }
   if (typeof v === 'object') {
@@ -621,7 +628,7 @@ function _txtReadable(v, indent, depth) {
     var isDateMap = keys.length && keys.every(function (k) { return /^\d{4}-\d{2}-\d{2}$/.test(k); });
     var ordered = isDateMap ? keys.slice().sort() : keys;
     return '\n' + ordered.map(function (k) {
-      return pad + k + '：' + _txtReadable(v[k], indent + 1, depth + 1);
+      return pad + k + '：' + _txtReadable(v[k], indent + 1, depth + 1, k);
     }).join('\n');
   }
   return String(v);
@@ -630,7 +637,7 @@ function _txtObjInline(o, indent, depth) {
   var parts = [];
   Object.keys(o).forEach(function (k) {
     var val = o[k];
-    parts.push(k + '：' + _txtReadable(val, indent, depth));
+    parts.push(k + '：' + _txtReadable(val, indent, depth, k));
   });
   return parts.join('；');
 }
@@ -652,14 +659,33 @@ function _txtTaskDone(t, date) {
     return t.manualDone ? '已完成' : '未完成';
   } catch (e) { return t.manualDone ? '已完成' : '未完成'; }
 }
-async function exportTextData() {
+function _txtSliceByDate(val, since) {
+  if (!since || val == null || typeof val !== 'object') return val;
+  var ks = Object.keys(val);
+  if (!Array.isArray(val) && ks.length && ks.every(function (k) { return /^\d{4}-\d{2}-\d{2}$/.test(k); })) {
+    var out = {}; ks.forEach(function (k) { if (k >= since) out[k] = val[k]; }); return out;
+  }
+  if (Array.isArray(val)) {
+    return val.filter(function (x) {
+      if (!x || typeof x !== 'object') return true;
+      var d = x.date || x.createdAt || x.at || x.day || x.created || x.time;
+      if (typeof d !== 'string' || !/^\d{4}-\d{2}-\d{2}/.test(d)) return true;
+      return d.slice(0, 10) >= since;
+    });
+  }
+  return val;
+}
+async function exportTextData(rangeDays) {
+  var days = (typeof rangeDays === 'number' && rangeDays > 0) ? rangeDays : 0;
+  var since = days ? addDays(todayStr(), -(days - 1)) : null;
   var full = await exportData();
   var L = full.localStorage || {};
   var lines = [];
   lines.push('═══════════════════════════════════════');
   lines.push('木木的工作台 · 全量文字数据');
   lines.push('导出时间：' + (todayStr()) + ' ' + new Date().toTimeString().slice(0, 5));
-  lines.push('说明：本文件包含工作台全部文字数据，结构固定。');
+  lines.push('说明：本文件包含工作台文字数据，结构固定；图片已省略，文字一条不删。');
+  lines.push('范围：' + (since ? ('最近 ' + days + ' 天（' + since + ' 起）') : '全部历史日期') + '。');
   lines.push('任务字段顺序固定为：标题 / 日期 / 任务时间 / 分类 / 完成状态。');
   lines.push('═══════════════════════════════════════');
   lines.push('');
@@ -669,6 +695,7 @@ async function exportTextData() {
   var dates = Object.keys(plans).sort();
   var taskCount = 0;
   dates.forEach(function (d) {
+    if (since && d < since) return;
     var list = plans[d] || [];
     list.forEach(function (t) {
       taskCount++;
@@ -709,13 +736,15 @@ async function exportTextData() {
   ordered.forEach(function (k) {
     var raw = L[k]; if (raw == null || raw === '' || raw === '{}' || raw === '[]') return;
     var val = raw; try { val = JSON.parse(raw); } catch (e) {}
+    var show = since ? _txtSliceByDate(val, since) : val;
+    if (show && typeof show === 'object' && !Object.keys(show).length) return;
     lines.push('');
     lines.push('─── ' + _txtLabel(k) + '（' + k + '）───');
-    lines.push(_txtReadable(val, 0, 0));
+    lines.push(_txtReadable(show, 0, 0));
   });
   lines.push('');
   lines.push('═══════════════════════════════════════');
-  lines.push('（导出结束，共 ' + taskCount + ' 条计划任务）');
+  lines.push('（导出结束，共 ' + taskCount + ' 条计划任务' + (since ? '，范围 ' + since + ' 起' : '') + '）');
   return lines.join('\n');
 }
 
