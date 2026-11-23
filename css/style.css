@@ -713,7 +713,7 @@ body.layout-cards .stat-combined{background:var(--card);border:1px solid var(--l
 body.layout-cards .todo-card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);margin-bottom:16px}
 body.layout-cards .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px 18px;margin-bottom:16px;overflow:hidden}
 body.layout-cards .home-grid{grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:20px}
-body.layout-cards .home-card{padding:16px 14px;border-bottom:none}
+body.layout-cards .home-card{padding:16px 14px;margin:0;border-bottom:none}
 /* —— flow 档：流式（第三个主题预留，本轮不启用） —— */
 body.layout-flow .stat-combined{background:var(--light);border:none;border-radius:12px;box-shadow:none}
 body.layout-flow .todo-card{background:transparent;border:none;border-radius:0;box-shadow:none;margin-bottom:8px}
