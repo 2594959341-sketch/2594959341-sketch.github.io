@@ -1,0 +1,13 @@
+{
+  "meta": {
+    "source": "木木的工作台",
+    "updated": "2026-11-23 15:47",
+    "desc": "工作台文字快照，供日程助理读取并规划。结构固定，仅更新 text 值。"
+  },
+  "sections": [
+    { "key": "today", "title": "今日安排", "text": "（待从工作台同步）" },
+    { "key": "upcoming", "title": "近期截止", "text": "（待从工作台同步）" },
+    { "key": "goals", "title": "目标进度", "text": "（待从工作台同步）" },
+    { "key": "energy", "title": "精力状态", "text": "（待从工作台同步）" }
+  ]
+}
