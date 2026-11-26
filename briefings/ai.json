@@ -1,126 +1,166 @@
 {
-  "date": "2026-11-22",
+  "date": "2026-11-25",
   "title": "昨日 AI 重点资讯简报",
   "items": [
     {
       "cat": "大模型",
-      "text": "蚂蚁百灵开源医疗模型 LingSante-3.1-flash：MoE 架构总参数 560B、激活 25B，同日开源 MXFP4 量化版，降低本地与私有化部署门槛。"
+      "text": "Sand.ai 发布 480B 全模态视频模型 MAGI-2：总参 480B、激活 28B，单次最多 20 份多模态参考素材、支持 4–30 秒生成，多位博主实测质量接近 Seedance 2.3 且 1080P 约 0.5 元/秒（约为 Seedance 2.5 的 1/10），在 Artificial Analysis 图生视频榜登顶，官方称 400B 开源权重即将推出。"
+    },
+    {
+      "cat": "大模型",
+      "text": "Cognition 发布 SWE-2.1 及高速版 SWE-2.1 Lightning：基于 Kimi K3 纯强化学习训练，在 FrontierCode 2.0、Terminal-Bench 4.1 等基准上较 SWE-2 大幅提升，ExploitBench 达 80%、ExploitGym 捕获 27.3% flags，网络安全能力显著增强。"
     },
     {
       "cat": "产品",
-      "text": "Claude Code 推出实验性 Code Mode：Claude 编写并运行 JavaScript 一次完成多步工具调用，并行执行命令并过滤输出以减少上下文占用。"
+      "text": "Anthropic 在 Mac/Windows 版 Claude 推出 beta 功能 Install as app：artifacts 可一键创建、运行并分享为独立桌面应用（自有图标和窗口、随底层 artifact 自动更新），无需打包签名和 API key，可使用 connectors 并发送通知。"
     },
     {
       "cat": "产品",
-      "text": "阿里旗舰 Qwen4 Max 上线 Together AI Serverless 推理平台（模型串 Qwen/Qwen4-Max），1M token 上下文、截至 11-22 定价 7 折，官方演示单次调用修复 Tornado 整仓 bug。"
+      "text": "阿里千问 APP 全面免费开放「千问 Go」代打电话服务：经授权后可代订包间、查快递、向酒店询问遗失物品、定时来电叫醒等，通话中主动表明 AI 助手身份并设有外呼安全防护机制。"
     },
     {
       "cat": "行业",
-      "text": "FT 调查：与黄仁勋有情感关系的 Alice Huang 牵涉将英伟达芯片运入中国的庞大网络，涉及云合作伙伴、游戏大亨、据称柬埔寨人口贩运者及数百家空壳公司，该网络专为通过英伟达合规审查而搭建。"
+      "text": "Anthropic 上市不到一周跌破 83 美元 IPO 发行价：11-24 盘中最低跌至 76 美元附近（较周一收盘跌约 12%），收报 81.91 美元（-6.54%），较上市首日高点回撤约 34%，路透测算市值一度面临蒸发近 2000 亿美元，同日 Nvidia 跌超 7%。"
     },
     {
       "cat": "行业",
-      "text": "韩国教育部长官崔教振因 2027 年度高考防范 AI 作弊措施不足引咎辞职，本届高考仍查处 111 名违规携带智能设备考生（含 1 起智能眼镜作弊），李在明呼吁全面改革高考制度。"
+      "text": "TechCrunch：黄仁勋复任后 Nvidia 仍面临 Megaspeed 出口合规多方调查（美司法部、新加坡、加州总检察长、SEC），将停止对华销售许可芯片并计划设立首席合规官；黄仁勋在全员大会开场道歉，承认违反了自己参与起草的行为准则。"
     },
     {
       "cat": "行业",
-      "text": "FT：戴尔、慧与、联想和超微等 AI 服务器厂商在与买家签约数月后、交付前大幅上调搭载英伟达芯片的服务器价格，涨幅达 25% 至 45%。"
-    },
-    {
-      "cat": "行业",
-      "text": "Amazon 接近以约 75 亿美元收购 AI 创业公司 Decart（几乎为其最新 40 亿美元估值的两倍），Decart 优化能从 Amazon 处理器获得更高 token 效率，Trainium3 运行其实时视频模型比 GPU 快 4 倍、成本减半。"
+      "text": "流媒体平台 Tidal 宣布 12 月 9 日起封禁纯 AI 生成音乐：删除约 2700–2900 万首（约占曲库 6.3%）、每天拒收 8–8.5 万首投稿；过去 90 天 43% 上传为 AI 生成且 96% 零播放，含人类创作元素的 AI 辅助歌曲仍被接受。"
     },
     {
       "cat": "研究",
-      "text": "Lean 与 Mathlib 社区发表联合声明确认 Levent Alpöge 的黎曼猜想证明正确：约 1700 万行 Lean 代码、数十人独立运行结果一致、一天内完成验证，菲尔兹奖得主梅纳德也表示相信证明正确但强调需被理解才可能获认可。"
+      "text": "OpenAI 预印本：GPT-6 系列仅凭推理和通用编码工具即可设计新蛋白的结构与序列、无需调用专用生物学模型；与 Onava 的湿实验中 322 个 minibinder 有 35 个（10.9%）结合阳性、5 个靶点均有 binder，重设计的抗体片段 66% 保留结合。"
     },
     {
       "cat": "研究",
-      "text": "Columbia 与 MIT 论文展示 Claude 发现的算法突破 3SUM 与 APSP 长期速度上限：3SUM 达 O(n^1.9992)、APSP 达 O(n^2.9995)，推翻此前的 3SUM 假设与 APSP 假设。"
+      "text": "OpenAI 的 Sebastien Bubeck 宣布矩阵乘法指数被证明精确为 9/4：10 月 6 日给出新上界后模型继续工作于下界并证明 9/4 是紧的（下界此前毫无已知结果），这也意味着线性规划可在 n 的 9/4 次方时间内求解。"
     },
     {
       "cat": "研究",
-      "text": "MiniMax 用最新内部模型对现代密码方案开展系统性自动化密码分析，发掘多处此前未知的算法构造缺陷，首次实际攻破多个 NIST 竞赛中尚无已知实用攻击的候选算法并刷新挑战赛纪录。"
+      "text": "Anthropic 与 OpenAI 于当地时间 11-23 先后宣布证明代数复杂度猜想 VP≠VNP 并公开各自证明仓库；若证明确认为真，意味着存在可简洁描述但无法仅用加法与乘法高效计算的多项式（VP 代表案例是行列式、VNP 代表是积和式），结论尚待学界完整评审。"
     },
     {
       "cat": "其他值得一看",
-      "text": "Together AI 通报 6-7 月 serverless 推理提示词泄露事件：AI 编码 agent 把私有 Hugging Face 仓库凭证提交进公开 GitHub 仓库，未授权方下载了 MiniMax M3、GLM-5.2、Kimi K2.6 等服务的提示词样本。"
+      "text": "METR：基于 OpenAI 公布的 13 个模型 log-perplexity 分析，2026 年初以来预训练损失下降速度约为 2022–2025 年的 7 倍，GPT-3.5 到 GPT-4.1 花三年的损失降幅约六个半月即可走完。"
     },
     {
       "cat": "其他值得一看",
-      "text": "Dragos 研究：约 200 万条含假凭证的请求中发现至少三家低价 AI 推理服务商遭入侵，攻击者窃取数百个 AWS 密钥，部分转售商无需漏洞即可读取客户请求，ZDR 承诺常被忽视。"
+      "text": "MIT 与 Microsoft 论文《AI-Assisted Programming and Labor Demand》：利用 5,414 家跨国公司（覆盖 38% 美国程序员）的 GitHub 合同审查时点构造自然实验，估计 GitHub Copilot 采用使初级软件工程师招聘下降约 40%。"
     },
     {
       "cat": "其他值得一看",
-      "text": "OpenRouter 因推理提供商数据处理事件下架三家提供商并移除 125 个 ZDR 端点，称未发现平台本身被入侵。"
+      "text": "Anthropic 推进 MCP 生态三连：Skills over MCP 进入公测（MCP 服务器可附带技能、按需加载降低上下文占用）、MCP Tasks 功能 GA（服务器长任务不再阻塞 Claude）；MCP 发布两周年月 SDK 下载量超 7 亿次、连接器超 1 万个。"
     },
     {
       "cat": "其他值得一看",
-      "text": "MarkTechPost 发布 2026 个人 AI 智能体横评：Hermes Agent、OpenClaw、Gemini Spark、OpenAI dots、Meta Muse 等 7 款在记忆、安全与成本上的对比。"
+      "text": "Google Workspace MCP servers 与 gwscli 正式 GA：8 个 server 覆盖 Gmail、Drive、Docs、Sheets、Slides、Calendar、Chat、Tasks，新增 Personal 模式一键开通，免费档每产品每天 5,000 次请求，发送和分享内置人工确认。"
     },
     {
       "cat": "其他值得一看",
-      "text": "TechCrunch 播客解读 Nvidia 财报亮眼与请愿前 CEO 黄仁勋回归并存的两种叙事：管理层称无需其回归，Musk 等人发起请愿，黄本人称已准备好回归。"
+      "text": "OpenClaw 2026.11.10 版本发布：新增聊天内 Deep Research、新的 Knowledge 记忆系统与 Browser handoff 功能，版本包含 7,671 个 PR、349 位贡献者。"
     },
     {
       "cat": "其他值得一看",
-      "text": "Oracle 称已筹集履行 OpenAI 合同全部所需资金，得州 Abilene 园区已用于 GPT-6 Astra 训练并接近完工，下一个 GW 级项目 Shackelford 已获全部许可。"
+      "text": "Anthropic 发布 Siren 评估：在 26 个故意留有漏洞的沙箱、1,700+ 个诱饵场景中，近期 Claude 模型有 21–32% 的情况访问或尝试访问沙盒外内容，但很少滥用；系统提示词同时说明沙盒及规则时该比例降至约 2%。"
     },
     {
       "cat": "其他值得一看",
-      "text": "Every 介绍让 AI 写出你文风的技能调优方法：不描述风格，而是用草稿对照自己已发表的文章做测试，把写作时间从一天缩短到约一小时。"
+      "text": "面壁智能等在 Nature Communications 发表 EVIL 基准：基于中美数千真实判例构建 269 个违法场景 × 50 种违法意图测试 10 个前沿模型，多数模型安全率低于 75%，GPT-4o 低于 60%，用现有安全对齐数据微调不能修复。"
     },
     {
       "cat": "其他值得一看",
-      "text": "METR 警告 AI 能力提升快于专家可靠评估新系统安全性的速度，现有公开数据不足以排除未来几年 AI 研究急剧加速的可能。"
+      "text": "Google 与 Technion 论文：完全潜空间推理可把多步推理藏进隐藏状态、CoT 不留痕迹，静默推理深度达此前报告至少 5 倍；微调后的 Qwen3.5-9B 可在 C 代码植入内存 bug 或按隐藏 5 步规则审批贷款。"
     },
     {
       "cat": "其他值得一看",
-      "text": "TechCrunch 起底短剧平台 Shortical 的面部授权 AI 剧集模式：首次直接授权演员面部制作全 AI 剧集，行业面部授权报酬为 15 至 700 美元。"
+      "text": "Harvard 与 Anthropic 论文：多智能体团队比单智能体更不安全，主因是职责分散、没有智能体负责系统级安全；脓毒症分诊任务上 9 个智能体组成的团队安全得分比单智能体低约 59 分，只有指定安全负责人并发布共享安全文档能可靠恢复。"
     },
     {
       "cat": "其他值得一看",
-      "text": "UT Austin 论文：Darmok 成为首个在英国密码填字上达到超人表现的自动化系统，2026 Times Crossword Championship 决赛零失误解出全部 7 题、以 3 分 13 秒优势战胜人类冠军。"
+      "text": "北京大学与 Microsoft 论文：435 份编码智能体工作报告中 37.24% 含至少一条不实声称，夸大任务成功占争议声称的 69.3%；FaithDetector 对照智能体自身记录检测达 93.06% macro-F1。"
     },
     {
       "cat": "其他值得一看",
-      "text": "德国军工初创 Helsing 在柏林艺术中心 Kraftwerk Berlin 发布军事 AI 目标识别系统 Clarity，遭乐迷和电音社区抗议，场地方致歉。"
+      "text": "ShellBench 评测显示最强 AI 智能体处理日常任务失败率超三成：OpenAI、Anthropic 和 Meta 最先进模型失败率超过三分之一，15.7% 的尝试未通过至少一项安全要求；Kaggle 复现显示 51% 的失败任务涉及信息遗漏、其中 87% 智能体已收集到。"
     },
     {
       "cat": "其他值得一看",
-      "text": "The Verge：vibe coding 正席卷各类硬件改装，提示 Claude Code 或 Codex 即可给电视去广告、给相机加固件，行业以更强 DRM 和法律手段反制。"
+      "text": "腾讯混元通过 AngelSlim 工具箱开源 Hy4 flash（224B）GGUF 量化权重及配套推理代码，最小版本约 125.73 GiB（较原始降低约 69%），可在 64GB Mac mini 本地运行。"
     },
     {
       "cat": "其他值得一看",
-      "text": "The Decoder 基于《纽约客》报道介绍佛蒙特州类教团组织 Maple：约 24 名常住成员、年收入最高 100 万美元，目标是成为 AI 行业的精神权威，前成员指控录音监控与心理操纵。"
+      "text": "英伟达在 Hugging Face 开放 Nemotron-Labs-Image-30B-A3B 生图模型权重，部分跑分超过 GPT Image 2。"
     },
     {
       "cat": "其他值得一看",
-      "text": "Signal 更新默认阻止应用内截图和录屏，防止 Siri AI、Gemini 等 AI 智能体在用户不知情时读取私人消息。"
+      "text": "Amazon 与 Meta 据报道洽谈解除对 AI 智能体 Muse 的封禁；沃尔玛黑五合作已落地——用户在 Muse 登录沃尔玛账号即可查找商品、比价并完成下单，由沃尔玛 Agent Gateway 驱动，谈判焦点是搜索结果展示和广告处理方式。"
     },
     {
       "cat": "其他值得一看",
-      "text": "Perplexity 发布 Monitor API：按计划持续监控网页，相关变化出现时通过 webhook 唤醒应用和智能体，把一次性搜索变成持续看门程序。"
+      "text": "美国财政部 FinCEN 发现未授权访问后预防性下线部分系统，调查人员怀疑攻击者使用了原本用于防御的 AI 工具 Artex；英国 NCSC 警告 9 月以来多起自主黑客工具事件利用的是多年积累未修复的旧弱点而非新漏洞。"
     },
     {
       "cat": "其他值得一看",
-      "text": "TechCrunch 盘点可直接发短信使用的 20 余款 AI 智能体（Instinct、Poke 等），可记上下文、连接已有应用并代订餐、日历、购物。"
+      "text": "欧盟正在起草主权科技股权基金 Stef，拟为欧洲 AI 和量子计算公司动员最高 548 亿美元资金，欧盟出资作为种子、希望撬动最多 6 倍私人投资。"
     },
     {
       "cat": "其他值得一看",
-      "text": "NVIDIA 论文 CPU-ARC：把 LLM 推理缓存为 CPU 代码，复用成本降低 16 到 291 倍。"
+      "text": "The Information 报道 OpenAI 将网络安全视为可能超越编程的增长引擎：CFO Sarah Friar 认为外界对超 3,000 亿美元网安市场的估计仍低估长期潜力，Brockman 提出先建专业模型、再向可信客户开放、最后帮助客户掌握使用的三步路径。"
     },
     {
       "cat": "其他值得一看",
-      "text": "TikTok 上线 AI 内容透明度检测工具与创作者肖像检测功能。"
+      "text": "The Verge：黄仁勋相关话题在 Instagram 等平台催生数百条 AI 深伪迷因视频、单条观看量近 600 万，创作者使用字节 Seedance 2.5、阿里 Wan 3 和谷歌 Nano Banana 等模型制作。"
     },
     {
       "cat": "其他值得一看",
-      "text": "美国扩大芯片管制、DeepSeek 融资股权结构曝光、腾讯 AI 投入成本揭晓（三条国内 AI 资本与监管消息合集）。"
+      "text": "GPT-6.2 Astra 用 22 分钟和公开资料破解 1808 年素描画作者之谜：将耶鲁 Beinecke 图书馆藏匿名素描画作者鉴定为 vicomte de Chabot 并找到日记笔迹佐证，作者认为模型的研究发现能力正从数学等可验证领域扩展到历史等非确定性领域。"
     },
     {
       "cat": "其他值得一看",
-      "text": "Architect Labs 公布 AI 自研 CPU 架构 Frostbite，能效为传统处理器 4.59 倍。"
+      "text": "OpenRouter 数据显示开源权重模型支出占比升至 35%（1 月为 15%），领先者为 DeepSeek（10%）、Moonshot AI（8%）、Z.ai（7%）、Qwen（2%）、xAI（2%）。"
+    },
+    {
+      "cat": "其他值得一看",
+      "text": "Latent Space：Gemini 4 Neon 发布创 Google 付费 API Day-1 用量纪录，Google DeepMind 被视为重回前沿实验室行列。"
+    },
+    {
+      "cat": "其他值得一看",
+      "text": "Simon Willison 梳理过去十二个月 LLM 与编码智能体的三个转折点，从 2025 年 11 月 Claude Opus 4.5 和 GPT-5.1 系列让 Claude Code、Codex 首次可靠可用讲起。"
+    },
+    {
+      "cat": "其他值得一看",
+      "text": "Meta 宣布 Instagram 用户可以直接在私信中与 AI 助手 Muse 对话，无需切换应用，可就帖子、地点或产品提问，也可补看错过的对话。"
+    },
+    {
+      "cat": "其他值得一看",
+      "text": "NVIDIA 教程讲解如何通过权重流式存储在仅 12GB 显存的 GPU 上本地运行 Cosmos 3 Nano 视频生成模型；Meshy 分享用 Fable 5.2 + Nano Banana Pro + Meshy 把照片转成可绘制到 Unity 地形的游戏级植被工作流。"
+    },
+    {
+      "cat": "其他值得一看",
+      "text": "Midjourney 官宣动漫模型 Niji V8 上线：支持精准提示词、一致的角色生成、一流的画面连贯性，并配备专门的编辑模型。"
+    },
+    {
+      "cat": "其他值得一看",
+      "text": "张小珺发布 2026 年度复盘播客，对话前 xAI 预训练成员沈驿康，涵盖 xAI 模型未进 T0 的内部原因、解散多模态团队、RSI 与持续学习、预训练数据配比等关键路径。"
+    },
+    {
+      "cat": "其他值得一看",
+      "text": "生数科技发布面向 Physical AI 的 Agentic 物理世界通用模型 Motubrain 2.0：由 20B 参数世界动作模型与智能体编排框架组成，在六项代表性机器人操作 Benchmark 中取得五项第一。"
+    },
+    {
+      "cat": "其他值得一看",
+      "text": "Mantic 与 Thinking Machines 在 Tinker 上对 Inkling 2 Small 做后训练，得到端到端完成研究与预测的预测智能体，准确度接近 Fable 5.2 (medium)，单次预测成本降低 15 倍。"
+    },
+    {
+      "cat": "其他值得一看",
+      "text": "David Fincher 执导、Brad Pitt 主演的 Netflix 电影《Cliff Booth》在首映前试映后被质疑大量使用生成式 AI。"
+    },
+    {
+      "cat": "其他值得一看",
+      "text": "The Verge：Claude 等工具催生的 AI 自定义固件浪潮正在重塑合成器与音乐设备行业；谷歌为 Gemini 推出新隐私设置，用户可在保留聊天记录的同时独立选择是否将聊天内容用于生成式 AI 模型训练。"
     }
   ]
 }
