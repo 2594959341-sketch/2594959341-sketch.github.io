@@ -2,31 +2,169 @@
   "date": "2026-11-26",
   "title": "昨日 AI 重点资讯简报",
   "items": [
-    { "cat": "大模型", "text": "MiniMax 发布 H3 Family：包含旗舰 H3、H3-Highspeed、H3-Lite、H3-Image 系列及 fal、Suno、HeyGen、Pika 等第三方扩展模型，H3 开源 100 天已衍生 1,472 个模型、累计下载超 1.48 亿次，旗舰 H3 支持 2K 输出、起价 $0.08/秒，H3-Image Highspeed 最快 10 秒内生成 4K 图像。" },
-    { "cat": "大模型", "text": "Thinking Machines 发布 Inkling 2 Mini：Hugging Face 提供 transformers、llama.cpp 和 MLX 的 Day-0 支持，Unsloth 同步发布 GGUF 量化版本，HF 团队在单张 RTX PRO 6000 上调优推理、单用户解码达 190.6 tok/s。" },
-    { "cat": "大模型", "text": "腾讯开源模型 Hy4 Flash 上线 Fireworks serverless：MoE 架构总参数约 220B、每 token 激活约 12B，1M token 上下文窗口（Fireworks 上线时为 512K），支持文本和图像输入，面向文档处理、研究、办公和 Agent 工作流。" },
-    { "cat": "产品", "text": "Pydantic AI 发布终端编码 agent Pax：基于 Harness SDK、一切皆插件，支持 --agent 接入自定义 Pydantic AI Agent、/sandbox 在十余种云端或本地沙箱间切换、ComputerUse 计算机使用，官方宣布 Harness 约一个月后进入 1.0。" },
-    { "cat": "产品", "text": "OpenAI 开始向部分 Pro 用户推送 ChatGPT 聊天与工作合并后的共享 Token 用量体验，此前官方预告 12 月起统一额度，社区曾质疑与 IPO 算力成本压力有关。" },
-    { "cat": "行业", "text": "FT 报道 Nvidia 已通知 Dell、Supermicro 等制造伙伴停止向马来西亚、新加坡、泰国和印尼发运服务器，因美国要求这些国家及巴西的先进 AI 芯片需申请许可；此前中国 AI 实验室经当地云厂商租用算力绕开直接出口禁令，Nvidia 2025 年经新加坡部门入账 1,040 亿美元、同比增长 72%；The Information 称芯片与 Token 收紧已拖慢中国 AI 实验室，Reuters 报道管制出现 18 个月空窗期。" },
-    { "cat": "行业", "text": "42 州总检察长介入 Character.AI 破产程序，试图阻止拍卖用户私密聊天数据：数据集含超 2,100 万美国账户聊天记录、逾 210 万属于未成年人，唯一披露的匿名竞拍方为特拉华州注册的 Smirks and Pangs Acquisition LLC，拍卖定于 12 月 1 日。" },
-    { "cat": "行业", "text": "Google 于 11 月 24 日正式开放八个 Workspace MCP 服务器，并在 API 条款中要求自 2027 年 2 月 1 日起由 AI Agent 驱动的工具必须通过这些服务器访问 Gmail、Drive 等 Workspace 服务，直接调用 REST API 将按 Standard 级配额受限。" },
-    { "cat": "研究", "text": "AI 数学双响：Anthropic 研究员 Luke Sernau 与 Claude 合作将黎曼猜想 Lean 形式化证明从 1,740 万行精简至 7.6 万行；OpenAI 同日宣称证明矩阵乘法指数 ω 恰好为 9/4，若证确认，线性规划有望 n 的 9/4 次方时间求解。" },
-    { "cat": "研究", "text": "Calif Research 发布 OEMpocalypse Part 2：通过 Knox DualDAR 的 confused-deputy 漏洞与内核驱动页 UAF 组成两阶段利用链，从零权限应用在 Galaxy S23、S26 EU、S26 US 和 S26 Ultra 四款机型高可靠获取 root；同日另一研究展示恶意网站可经 UAF 漏洞链绕过 Tor Browser 15.0.22 默认防御、泄露用户真实 IP。" },
-    { "cat": "其他值得一看", "text": "Katelyn Lesse 谈 2026 年如何用 Claude 构建软件：Pragmatic Engineer 发布对 Anthropic 平台工程负责人的播客访谈，覆盖 Claude API 与 Claude Code 基础设施建设。" },
-    { "cat": "其他值得一看", "text": "OpenRouter 发布教程演示如何通过 OpenRouter MCP 服务器作为连接器让 Claude 调用 74 款图像模型生成真实图片。" },
-    { "cat": "其他值得一看", "text": "Anthropic 介绍 Messages API 从 Python 迁移到 Rust 的校验方法：API 流量从 2024 年初到 2026 年秋增长约 1,800 倍，迁移后每请求 CPU 降低约 70%、首 token 中位时间缩短约 20%，且未停服。" },
-    { "cat": "其他值得一看", "text": "Google AI 开发者通过 470 个任务实测区分 context rot 与 context drift：模型在 73% 的运行中内部察觉文件冲突但 0% 会主动告知用户，95%–100% 情况下任务级 skill 文件会覆盖 AGENTS.md 的严格规则。" },
-    { "cat": "其他值得一看", "text": "FCC 批准 SpaceX Starmind 计划部署至多 100 万颗 AI 卫星。" },
-    { "cat": "其他值得一看", "text": "国家数据局就完善数据规则赋能人工智能创新发展公开征求意见。" },
-    { "cat": "其他值得一看", "text": "纽约州签署法案禁售 AI 聊天玩具、为期五年，违规每日最高罚 15,000 美元。" },
-    { "cat": "其他值得一看", "text": "SemiAnalysis 用 GDPx 基准评测近期新模型，GPT-6.2 Astra 居首。" },
-    { "cat": "其他值得一看", "text": "Johns Hopkins 与 Together AI 论文：低推理 effort 起步、失败再升级的策略，可比固定最高档省 41.5% 的 GPQA 成本。" },
-    { "cat": "其他值得一看", "text": "Karpathy 用 Claude Opus 5.5 耗时 7 小时构建真实数据版文明风格美国地图。" },
-    { "cat": "其他值得一看", "text": "Dario Amodei 发长文澄清不主张向 AI 交出人类自由意志，称 AI 须受合法民主程序治理，并透露 Anthropic 曾拒绝让自家模型用于自主武器。" },
-    { "cat": "其他值得一看", "text": "Anthropic 813 亿美元 IPO 推高总裁 Daniela Amodei 身家至 198 亿美元。" },
-    { "cat": "其他值得一看", "text": "Amazon 与 Meta 就解除购物智能体 Muse 封锁进行谈判。" },
-    { "cat": "其他值得一看", "text": "Epic CEO 斯威尼公开批评 Claude 误判其集合论研究为模型蒸馏。" },
-    { "cat": "其他值得一看", "text": "Thariq 宣布从 Anthropic 加入 OpenAI。" },
-    { "cat": "其他值得一看", "text": "卡兹克把斯坦福《人生意义设计课》做成 AI Prompt：四阶段 6 到 9 个问题生成 5,000 到 7,000 字的《个人意义设计手册》，用 GPT-6.2 完整实测全程约 20 到 30 分钟。" }
+    {
+      "cat": "大模型",
+      "text": "MiniMax 发布 H3 Family：包含旗舰 H3、H3-Highspeed、H3-Lite、H3-Image 系列及 fal、Suno、HeyGen、Pika 等第三方扩展模型，H3 开源 100 天已衍生 1,472 个模型、累计下载超 1.48 亿次，旗舰 H3 支持 2K 输出、起价 $0.08/秒，H3-Image Highspeed 最快 10 秒内生成 4K 图像。"
+    },
+    {
+      "cat": "大模型",
+      "text": "蚂蚁 inclusionAI 开源 Ming-Image-0.2-Design 图像生成模型：改进复杂构图、光照和文字渲染，面向电商主图、UI 设计稿和空间效果图，在 Artificial Analysis 的 AA-Image-T2I v2.1 榜单以 1,095 Elo 排名开源权重模型第一，Layer 版本周开源。"
+    },
+    {
+      "cat": "产品",
+      "text": "Pydantic AI 发布终端编码 agent Pax（pydantic-ai-pax）：基于 Harness SDK、一切皆插件，支持 --agent 接入自定义 Pydantic AI Agent、/sandbox 在十余种云端或本地沙箱间切换、ComputerUse 计算机使用，官方宣布 Harness 约一个月后进入 1.0。"
+    },
+    {
+      "cat": "产品",
+      "text": "OpenAI 开始向部分 Pro 用户推送 ChatGPT 聊天与工作合一体验、两者共用用量计数（Instant 模型对话不计入且超限可用），并宣布 12 月起 Plus、Pro、Business 套餐的 ChatGPT 与 Codex 用量额度将按 token 共享，重度用户可能更早触及上限。"
+    },
+    {
+      "cat": "行业",
+      "text": "FT 报道 Nvidia 已通知 Dell、Supermicro 等制造伙伴停止向马来西亚、新加坡、泰国和印尼发运服务器，因美国要求这些国家及巴西的先进 AI 芯片需申请许可；此前中国 AI 实验室经当地云厂商租用算力绕开直接出口禁令，Nvidia 2025 年经新加坡部门入账 1,040 亿美元、同比增长 72%。"
+    },
+    {
+      "cat": "行业",
+      "text": "The Information 报道，美国收紧芯片与 Token 获取已拖慢中国 AI 实验室：9 月以来限制远程使用境外 Nvidia 芯片及 OpenAI、Anthropic 的反蒸馏措施，已导致 DeepSeek、月之暗面、阿里巴巴等多个项目延迟，中国头部实验室预期与顶尖美国前沿模型的差距扩大；Reuters 报道管制曾有 18 个月空窗期、新规要求向中国总部企业开放超过 12M TPP 先进 AI 芯片的全球数据中心也需许可。"
+    },
+    {
+      "cat": "行业",
+      "text": "42 州总检察长介入 Character.AI 破产程序，试图阻止拍卖用户私密聊天数据：数据集含超 2,100 万美国账户聊天记录、逾 210 万属于未成年人，唯一披露的匿名竞拍方为特拉华州注册的 Smirks and Pangs Acquisition LLC，拍卖定于 12 月 1 日。"
+    },
+    {
+      "cat": "行业",
+      "text": "Google 于 11 月 24 日正式开放八个 Workspace MCP 服务器，并在 API 条款中要求自 2027 年 2 月 1 日起由 AI Agent 驱动的工具必须通过这些服务器访问 Gmail、Drive 等 Workspace 服务，直接调用 REST API 将按 Standard 级配额受限。"
+    },
+    {
+      "cat": "行业",
+      "text": "FCC 批准 SpaceX Starmind 计划部署至多 100 万颗搭载 AI 芯片的在轨计算卫星，为该机构首次批准完整的 AI 卫星星座：要求 2033 年前部署至少一颗、2040 年达到 100 万颗，同时批准光学失效时备用的无线电链路，但搁置其 600km 以上坟墓轨道处置请求。"
+    },
+    {
+      "cat": "研究",
+      "text": "AI 数学双响：Anthropic 研究员 Luke Sernau 与 Claude 发布 grh-lean 项目，将黎曼猜想与广义黎曼猜想的 Lean 形式化证明从 1,740 万行重写为约 7.6 万行紧凑版和约 30 万行可读版、代码量削减 99.56%；OpenAI 宣称证明矩阵乘法指数 ω 恰好为 9/4（结合 10 月的 ω≤9/4 上界），预印本发布在 GitHub openai/math 仓库。"
+    },
+    {
+      "cat": "研究",
+      "text": "Calif Research 在 OpenAI Patch the Planet 项目下发布 OEMpocalypse Part 2：经 Knox DualDAR confused-deputy 漏洞与内核驱动页 UAF 组成两阶段利用链，从零权限应用在 Galaxy S23、S26 EU、S26 US、S26 Ultra 四款机型高可靠获取 root；同日另一研究展示恶意网站可经 UAF 漏洞链绕过 Tor Browser 15.0.22 默认防御、泄露用户真实 IP。"
+    },
+    {
+      "cat": "其他值得一看",
+      "text": "Sand AI 480B 参数（28B 激活）视频模型 MAGI-2 登顶 Artificial Analysis AA-Video-I2V v2.1 榜、与 Dreamina Seedance 2.5 统计打平（T2V 榜第 7），11 月 24 日发布。"
+    },
+    {
+      "cat": "其他值得一看",
+      "text": "Higgsfield 独家上线 MAGI-2 并发布最完整工作流教程：13 类场景生成 30 秒带声音视频成本 2.40 美元（$0.08/秒），支持最长 30 秒 1080p、最多 20 个参考，开放权重即将推出。"
+    },
+    {
+      "cat": "其他值得一看",
+      "text": "PixVerse Canvas 推出 Anime Short Film 技能：可将任意真实视频转为动画短片，写一行故事并选择现代动画、90 年代手绘或少年漫风格，无需分镜，由 agent 自动生成整部影片。"
+    },
+    {
+      "cat": "其他值得一看",
+      "text": "Karpathy 让 Claude Opus 5.5 用真实美国数据填充文明风格游戏地图，7 小时生成 45K 行代码后完成，已部署在 karpathy.ai/usaciv/。"
+    },
+    {
+      "cat": "其他值得一看",
+      "text": "Kandinsky 6.0 在 FastVideo 上提速 30 倍：单块 RTX 5090 上，带音频的 5 秒片段从约 31 分钟缩至约 1 分钟。"
+    },
+    {
+      "cat": "其他值得一看",
+      "text": "Tripo H3.5 支持单图生成可打印手办：从一张参考图到可打印手办不到 30 分钟，含清理悬浮部件、生成高保真模型、分割填充、3D 打印检查全流程。"
+    },
+    {
+      "cat": "其他值得一看",
+      "text": "Pragmatic Engineer 发布对 Anthropic 平台工程负责人 Katelyn Lesse 的播客访谈，谈 2026 年如何用 Claude 构建软件，其团队负责 Claude API 及 Claude Code、Claude Desktop 基础设施。"
+    },
+    {
+      "cat": "其他值得一看",
+      "text": "OpenRouter 发布教程演示通过 OpenRouter MCP 服务器作为连接器让 Claude 调用图像模型生成真实图片，覆盖截至 2026 年 11 月 19 日的 74 款图像模型。"
+    },
+    {
+      "cat": "其他值得一看",
+      "text": "腾讯新开源模型 Hy4 Flash 上线 Fireworks serverless：MoE 架构总参数约 220B、每 token 激活约 12B，1M token 上下文窗口（上线时为 512K），支持文本和图像输入，面向文档处理、研究、办公和 Agent 工作流。"
+    },
+    {
+      "cat": "其他值得一看",
+      "text": "Anthropic 介绍 Messages API 从 Python 迁移到 Rust 的校验方法：API 流量从 2024 年初到 2026 年秋增长约 1,800 倍，迁移后每请求 CPU 降低约 70%、首 token 中位时间缩短约 20%，且未停服或冻结功能开发。"
+    },
+    {
+      "cat": "其他值得一看",
+      "text": "Google AI 开发者通过 470 个任务实测区分 context rot 与 context drift：模型在 73% 的运行中内部察觉文件冲突但 0% 会主动告知用户，95%–100% 情况下任务级 skill 文件会覆盖 AGENTS.md 的严格规则。"
+    },
+    {
+      "cat": "其他值得一看",
+      "text": "Hugging Face 团队在单张 RTX PRO 6000 96GB 上对 Inkling 2 Mini 做 46 次有效基准实验，单用户解码达 190.6 tok/s；Unsloth 同步发布多档 GGUF 量化版本与本地运行指南（DeepSWE v1.1 得分 48.2%）。"
+    },
+    {
+      "cat": "其他值得一看",
+      "text": "Google DeepMind 开发者体验负责人 Philipp Schmid 撰文解释为何在 Skills 与 CLI 兴起后仍更看好 MCP：Linear 和 Notion 的 agent 每周创建约 240 万条 issue 和页面，Atlassian 每天 MCP 工具调用超 500 万次、44% 用户来自软件团队之外，Notion 报告 60 倍 MCP 流量增长。"
+    },
+    {
+      "cat": "其他值得一看",
+      "text": "腾讯混元开源新一代草稿模型 DFly2：作为加速组件挂在 Hy4 flash 旁，权重与输出不变前提速最高 4.2 倍，通过 KV Share 与 Index Share 复用至多 2,048 个位置，实现零额外 KV 显存。"
+    },
+    {
+      "cat": "其他值得一看",
+      "text": "卡兹克将斯坦福《人生意义设计课》新书核心方法改成多轮对话 Prompt：四阶段 6 到 9 个问题生成 5,000 到 7,000 字的《个人意义设计手册》，用 GPT-6.2 完整实测，全程约 20 到 30 分钟。"
+    },
+    {
+      "cat": "其他值得一看",
+      "text": "Newcomer 分析 AI 公开市场恐慌未传导至一级市场：Sierra 以 300 亿美元估值融资超 10 亿、Cognition 传以 750 亿美元估值洽谈；neocloud 要求推理服务商预付高达 50% 合同金额以锁定算力。"
+    },
+    {
+      "cat": "其他值得一看",
+      "text": "Dario Amodei 发长文澄清不主张向 AI 交出人类自由意志，称该说法荒谬，重申 AI 须受合法民主程序治理、对递归自我改进设限，并透露 Anthropic 曾拒绝让自家模型用于自主武器；Mustafa Suleyman 声援并公布 Microsoft AI 行为准则红线。"
+    },
+    {
+      "cat": "其他值得一看",
+      "text": "Amazon 与 Meta 正谈判解除 Amazon 对 Meta 购物智能体 Muse 的访问封锁（9 月起阻断），分歧集中在广告收入与搜索结果控制权，Amazon 担心 Muse 绕过其年入 686 亿美元的广告业务。"
+    },
+    {
+      "cat": "其他值得一看",
+      "text": "Epic Games CEO 斯威尼公开批评 Claude 误判其集合论研究为模型蒸馏：他用公司账号每天仅输入一两个小时提示词却被中断研究并遭指控，暴露防蒸馏检测过于激进、开始干扰正常用户高水平工作的问题。"
+    },
+    {
+      "cat": "其他值得一看",
+      "text": "JPMorgan Chase 预计明年投资级 AI 债券发行达 4,500 亿美元（今年 3,680 亿），并预计 AI 资本开支到 2027 年接近翻倍至 1.4 万亿美元后趋于平稳。"
+    },
+    {
+      "cat": "其他值得一看",
+      "text": "SemiAnalysis 报告称 SpaceX 将小型计算集群的 Blackwell GPU 现货租赁价格从每 GPU 小时约 15.0–15.5 美元下调至 10–12 美元，降幅约 20%–35%。"
+    },
+    {
+      "cat": "其他值得一看",
+      "text": "纽约州签署法案，未来五年禁止在该州制造、分销和销售内置 AI 聊天机器人的玩具，成为继加州后第二个实施此类禁令的州；签署后 90 天生效，违规每天最高罚 15,000 美元。"
+    },
+    {
+      "cat": "其他值得一看",
+      "text": "国家数据局综合司发布《关于完善数据规则 赋能人工智能创新发展的若干意见》公开征求意见稿：支持合法获取的数据用于 AI 训练和推理，明确数据持有权、使用权、经营权运用规则，鼓励以数换数、模型换数据，并要求建立输出风险防控机制。"
+    },
+    {
+      "cat": "其他值得一看",
+      "text": "曝苹果因应用内存在色情内容，将 MiniMax 开发的 AI 角色聊天与创作平台 Talkie 从 App Store 下架（Google Play 与网页版仍可用）。"
+    },
+    {
+      "cat": "其他值得一看",
+      "text": "Charlie O’Neill 复盘用 Codex 等 LLM 在一个周末取得多项数论新结果：zeta 第六矩常数推进至 41.6406、二次 L 函数中心点非零比例至 94.53%、n 的 11/5 次方与 (n+1) 的 11/5 次方间素数存在等，并用 DeepSeek 和 Kimi 复现主要结果。"
+    },
+    {
+      "cat": "其他值得一看",
+      "text": "Together AI 将 Kimi-K3.1-Pro 的老挝语翻译能力蒸馏进 Qwen3.8-27B：约 3,800 条翻译训练 LoRA，学生模型达教师 93% 分数、全部输出老挝文且保住泰语能力，全部实验成本 260 美元。"
+    },
+    {
+      "cat": "其他值得一看",
+      "text": "腾讯宣布其生命科学实验室的 AI for Science 成果于 11 月 25 日以第一单位登上《Nature》主刊：AI 平台 ORIDTP 挑战高活性双靶点治疗性多肽的从头设计。"
+    },
+    {
+      "cat": "其他值得一看",
+      "text": "Stanford 研究估计圣克拉拉县无律师代理起诉的诉状中 72% 有 AI 起草痕迹（2024 年为 19%），研究分析了美国 4 个州法院的 127,518 起诉讼，律师撰写的诉状 AI 痕迹同期从 5% 升至 34%。"
+    },
+    {
+      "cat": "其他值得一看",
+      "text": "SemiAnalysis 用 11 月 1 日发布的 GDPx 基准（覆盖芯片设计、生物、金融、法律等 11 个前沿领域、14 家数据伙伴 206 个任务）评测近期新模型，GPT-6.2 Astra 居首。"
+    },
+    {
+      "cat": "其他值得一看",
+      "text": "Johns Hopkins 与 Together AI 论文测量 8 个模型在各 reasoning effort 档位的表现与成本：更高 effort 总体准确率上升但会做错低 effort 能解对的题，最高档成本最高达最低档 42 倍；低 effort 起步、失败再升级可比固定最高档省 41.5% GPQA 成本。"
+    }
   ]
 }
